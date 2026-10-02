@@ -192,6 +192,7 @@ export async function sendMessage(
   content: string,
   onEvent: (event: AgentEvent) => void,
   model?: string,
+  agent?: string,
 ): Promise<"streamed" | "already_running"> {
   const base = getApiBase();
   return consumeSse(
@@ -199,7 +200,7 @@ export async function sendMessage(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, model }),
+      body: JSON.stringify({ content, model, agent }),
     },
     onEvent,
   );

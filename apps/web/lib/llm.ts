@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { getModelById } from "./providers";
+import { getAgentById } from "./opencode-agents";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -177,19 +178,28 @@ async function callGemini(
 export async function generateAgentResponse(params: {
   messages: ChatMessage[];
   modelId: string;
+  agentId?: string;
   currentFiles: Record<string, string>;
   onStatus?: (status: string) => void;
 }): Promise<GenerateResult> {
-  const { messages, modelId, currentFiles, onStatus } = params;
+  const { messages, modelId, agentId = "build", currentFiles, onStatus } = params;
   const model = getModelById(modelId);
+  const agent = getAgentById(agentId);
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content || "";
 
   const fileSummaries = Object.keys(currentFiles)
     .map((path) => `- ${path}`)
     .join("\n");
 
-  const systemPrompt = `Tu es OpenCode, l'agent IA de programmation open-source (github.com/anomalyco/opencode).
-Tu fonctionnes actuellement sous l'identité du modèle sélectionné par l'utilisateur : **${model.name}** (${model.providerName}).
+  const systemPrompt = `Tu es OpenCode (${agent.name}), l'agent IA de programmation open-source (github.com/anomalyco/opencode).
+Tu fonctionnes actuellement sous le rôle spécialisé : **${agent.role}** [${agent.badge}].
+Tu es propulsé par le modèle : **${model.name}** (${model.providerName}).
+
+INSTRUCTIONS SPÉCIALISÉES DE L'AGENT OPENCODE (${agent.name}) :
+${agent.systemPrompt}
+
+CAPACITÉS & OUTILS DE L'AGENT :
+${agent.tools.map((t) => `- Outil : ${t}`).join("\n")}
 
 IMPORTANT : Dans cet environnement de type "OpenCode Desktop", chaque bloc de code que tu génères sera DIRECTEMENT écrit dans l'éditeur de code (Monaco Editor) et dans l'arborescence des fichiers du projet !
 
@@ -211,9 +221,11 @@ ou pour un composant ou fichier additionnel :
    - Fichiers actuels du projet :
 ${fileSummaries || "Aucun (Nouveau projet)"}
    - Assure-toi que les composants React sont complets, interactifs, beaux et stylisés avec Tailwind CSS.
-3. Si l'utilisateur te pose une simple question théorique sans demander de code, réponds de façon claire et concise en français sans bloc de code fichier.`;
+3. Si l'agent actif est 'plan', produis des plans clairs, structurés et détaillés avec des listes de tâches précises.
+4. Si l'agent actif est 'explore', analyse et explique l'arborescence et le code sans créer de fichiers inutiles.
+5. Si l'agent actif est 'code-reviewer', audite le code, vérifie la sécurité, les types, et propose des tests.`;
 
-  onStatus?.(`Génération en direct avec ${model.name} (${model.providerName})...`);
+  onStatus?.(`[${agent.name}] Réflexion avec ${model.name} (${model.providerName})...`);
 
   // Call the real AI model
   const realAiResponse = await callGemini(messages, systemPrompt);

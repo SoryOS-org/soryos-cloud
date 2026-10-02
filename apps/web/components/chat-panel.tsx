@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Square, FolderDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ToolStepCard } from "@/components/tool-step-card";
 import { ModelSelector } from "@/components/model-selector";
+import { AgentSelector } from "@/components/agent-selector";
 import { LiveButton } from "@/components/live-button";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
 
@@ -21,10 +22,13 @@ interface ChatPanelProps {
   status?: string | null;
   sessionTitle?: string;
   currentModelId?: string;
+  currentAgentId?: string;
   onModelChange?: (modelId: string) => void;
+  onAgentChange?: (agentId: string) => void;
   onSendMessage: (content: string) => void;
   onAbort?: () => void;
   onOpenLive?: () => void;
+  onOpenImport?: () => void;
 }
 
 function AssistantTurn({ message }: { message: ChatMessage }) {
@@ -55,10 +59,13 @@ export function ChatPanel({
   status,
   sessionTitle,
   currentModelId = DEFAULT_MODEL_ID,
+  currentAgentId = "build",
   onModelChange,
+  onAgentChange,
   onSendMessage,
   onAbort,
   onOpenLive,
+  onOpenImport,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -94,6 +101,18 @@ export function ChatPanel({
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenImport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenImport}
+              className="h-8 gap-1.5 border-[#e5e0d8] text-xs font-medium text-[#3d3830] hover:border-[#c6623f] hover:bg-[#faf8f5]"
+              title="Importer des fichiers ou un dépôt GitHub"
+            >
+              <FolderDown className="h-3.5 w-3.5 text-[#c6623f]" />
+              <span>Importer</span>
+            </Button>
+          )}
           {onOpenLive && <LiveButton onClick={onOpenLive} />}
           {loading && onAbort && (
             <Button
@@ -149,12 +168,29 @@ export function ChatPanel({
               className="min-h-[52px] max-h-[160px] min-w-0 flex-1 resize-none border-0 bg-transparent p-0 text-[15px] shadow-none placeholder:text-[#a39e94] focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <div className="mt-2 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <AgentSelector
+                  currentAgentId={currentAgentId}
+                  onAgentChange={onAgentChange ?? (() => {})}
+                />
                 <ModelSelector
                   currentModelId={currentModelId}
                   onModelChange={onModelChange ?? (() => {})}
                 />
                 {onOpenLive && <LiveButton onClick={onOpenLive} />}
+                {onOpenImport && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onOpenImport}
+                    className="h-8 gap-1.5 rounded-full border-[#e5e0d8] bg-white px-2.5 text-xs font-semibold text-[#3d3830] hover:border-[#c6623f]"
+                    title="Importer un dossier local ou dépôt GitHub"
+                  >
+                    <FolderDown className="h-3.5 w-3.5 text-[#c6623f]" />
+                    <span className="hidden sm:inline">Importer</span>
+                  </Button>
+                )}
               </div>
               <Button
                 onClick={handleSubmit}

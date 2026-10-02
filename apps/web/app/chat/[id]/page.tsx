@@ -18,12 +18,16 @@ import type { AgentEvent, ChatMessage, GetSessionResponse } from "@/lib/types";
 import { ChatPanel } from "@/components/chat-panel";
 import { PreviewPanel } from "@/components/preview-panel";
 import { LiveVoiceModal } from "@/components/live-voice-modal";
+import { ImportRepoModal } from "@/components/import-repo-modal";
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
+import { MessageSquare, Code2, Menu, FolderDown } from "lucide-react";
+import { LiveButton } from "@/components/live-button";
 
 function formatMessages(
   messages: GetSessionResponse["messages"],
@@ -65,7 +69,12 @@ export default function ChatPage({
   const [filePaths, setFilePaths] = useState<string[]>([]);
   const [sessionTitle, setSessionTitle] = useState<string>("Session");
   const [currentModel, setCurrentModel] = useState<string>(DEFAULT_MODEL_ID);
+  const [currentAgent, setCurrentAgent] = useState<string>("build");
   const [isLiveOpen, setIsLiveOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+
   const genRef = useRef(0);
   const textBufferRef = useRef("");
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,189 +108,125 @@ export default function ChatPage({
     [flushText],
   );
 
-  const makeEventHandler = useCallback(
-    (gen: number) => (event: AgentEvent) => {
-      if (gen !== genRef.current) return;
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const data = await getSession(sessionId);
+        if (!mounted) return;
+        setMessages(formatMessages(data.messages));
+        setPreviewUrl(data.preview_url);
+        setSessionTitle(data.title || "Session");
+        const paths = (await listSessionFiles(sessionId)).filter(isProjectFile);
+        if (mounted && paths.length) {
+          setFilePaths(paths.map(normalizeFilePath));
+        }
+      } catch (e) {
+        console.error("Failed to load session:", e);
+      }
+    }
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [sessionId]);
 
-      switch (event.type) {
-        case "status":
-          setStatus(event.message);
-          break;
+  const runStream = useCallback(
+    async (messageContent?: string) => {
+      const gen = ++genRef.current;
+      setLoading(true);
+      setStatus("Starting agent...");
 
-        case "text":
-          setStatus(null);
-          textBufferRef.current += event.delta;
+      const handleEvent = (ev: AgentEvent) => {
+        if (gen !== genRef.current) return;
+
+        if (ev.type === "status") {
+          const cleanStatus = (ev.message || "").replace(/\s+/g, " ").trim();
+          if (cleanStatus) {
+            setStatus(cleanStatus);
+          }
+        } else if (ev.type === "text" && ev.delta) {
+          textBufferRef.current += ev.delta;
           scheduleFlush(gen);
-          break;
-
-        case "tool_start":
-          setStatus(null);
+        } else if (ev.type === "tool_start") {
           flushText(gen);
           setMessages((prev) =>
             appendAssistantTool(prev, {
-              id: event.id,
-              name: event.name,
-              input: event.input,
+              id: ev.id,
+              name: ev.name,
+              input: ev.input,
               status: "running",
             }),
           );
-          break;
-
-        case "tool_end":
+        } else if (ev.type === "tool_end") {
+          flushText(gen);
           setMessages((prev) =>
-            updateAssistantTool(prev, event.id, {
-              output: event.output,
-              isError: event.isError,
-              status: event.isError ? "error" : "done",
+            updateAssistantTool(prev, ev.id, {
+              output: ev.output,
+              isError: Boolean(ev.isError),
+              status: ev.isError ? "error" : "done",
             }),
           );
-          break;
-
-        case "preview":
-          setPreviewUrl(event.url);
-          break;
-
-        case "files_changed":
           void refreshFiles();
-          break;
-
-        case "error":
-          setStatus(null);
-          flushText(gen);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content: `**Error:** ${event.message}`,
-            },
-          ]);
-          break;
-
-        case "done":
-          setStatus(null);
-          flushText(gen);
+        } else if (ev.type === "preview" && ev.url) {
+          setPreviewUrl(ev.url);
+        } else if (ev.type === "files_changed") {
           void refreshFiles();
-          break;
-      }
-    },
-    [flushText, scheduleFlush, refreshFiles],
-  );
-
-  const refreshFromServer = useCallback(
-    async (gen: number) => {
-      const s = await getSession(sessionId);
-      if (gen !== genRef.current) return s;
-      setSessionTitle(s.title);
-      if (s.model) setCurrentModel(s.model);
-      setMessages(formatMessages(s.messages));
-      await refreshFiles();
-      return s;
-    },
-    [sessionId, refreshFiles],
-  );
-
-  const pollUntilDone = useCallback(
-    async (gen: number) => {
-      while (gen === genRef.current) {
-        await sleep(1500);
-        const s = await refreshFromServer(gen);
-        if (!s.agent_running && !s.needs_run) break;
-      }
-    },
-    [refreshFromServer],
-  );
-
-  const runStream = useCallback(
-    async (gen: number, mode: "run" | "message", content?: string) => {
-      setLoading(true);
-      setStatus("Starting agent...");
-      const onEvent = makeEventHandler(gen);
+        }
+      };
 
       try {
-        const result =
-          mode === "run"
-            ? await streamRun(sessionId, onEvent)
-            : await sendMessage(sessionId, content!, onEvent, currentModel);
-
-        if (result === "already_running") {
-          setStatus("Agent running...");
-          await pollUntilDone(gen);
+        if (messageContent) {
+          const userMsg: ChatMessage = {
+            id: `user-${Date.now()}`,
+            role: "user",
+            content: messageContent,
+          };
+          setMessages((prev) => [...prev, userMsg]);
+          await sendMessage(sessionId, messageContent, handleEvent, currentModel, currentAgent);
+        } else {
+          await streamRun(sessionId, handleEvent);
         }
-        // ponytail: blocks persisted in DB via assistant+tool rows; live stream still uses block helpers
       } catch (e) {
+        console.error("Stream failed:", e);
         if (gen === genRef.current) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content: `**Error:** ${e instanceof Error ? e.message : "Agent failed"}`,
-            },
-          ]);
+          setStatus("Connection lost. Polling for updates...");
+          for (let i = 0; i < 30; i++) {
+            await sleep(2000);
+            if (gen !== genRef.current) break;
+            try {
+              const s = await getSession(sessionId);
+              setMessages(formatMessages(s.messages));
+              setPreviewUrl(s.preview_url);
+              setSessionTitle(s.title || "Session");
+              await refreshFiles();
+            } catch {
+              // ignore retry error
+            }
+          }
         }
       } finally {
         if (gen === genRef.current) {
           flushText(gen);
           setLoading(false);
           setStatus(null);
+          await refreshFiles();
+          try {
+            const finalSession = await getSession(sessionId);
+            setMessages(formatMessages(finalSession.messages));
+            setPreviewUrl(finalSession.preview_url);
+            setSessionTitle(finalSession.title || "Session");
+          } catch {
+            // ignore
+          }
         }
       }
     },
-    [sessionId, makeEventHandler, pollUntilDone, flushText, currentModel],
+    [sessionId, currentModel, currentAgent, refreshFiles, scheduleFlush, flushText],
   );
 
-  useEffect(() => {
-    const gen = ++genRef.current;
-
-    async function init() {
-      try {
-        const s = await getSession(sessionId);
-        if (gen !== genRef.current) return;
-
-        setSessionTitle(s.title);
-        const restored = formatMessages(s.messages);
-        setMessages(restored);
-        await refreshFiles();
-
-        if (s.needs_run) {
-          await runStream(gen, "run");
-        } else if (s.agent_running) {
-          setLoading(true);
-          setStatus("Agent running...");
-          await pollUntilDone(gen);
-          if (gen === genRef.current) {
-            setLoading(false);
-            setStatus(null);
-          }
-        }
-      } catch {
-        /* session not found */
-      }
-    }
-
-    void init();
-
-    const currentGenRef = genRef;
-    return () => {
-      currentGenRef.current++;
-    };
-  }, [sessionId, runStream, pollUntilDone, refreshFiles]);
-
-  useEffect(() => {
-    if (!loading) return;
-    const id = setInterval(() => void refreshFiles(), 4000);
-    return () => clearInterval(id);
-  }, [loading, refreshFiles]);
-
   const handleSendMessage = (content: string) => {
-    if (!content.trim() || loading) return;
-    const gen = genRef.current;
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: "user", content },
-    ]);
-    void runStream(gen, "message", content);
+    void runStream(content);
   };
 
   const handleAbort = () => {
@@ -292,25 +237,124 @@ export default function ChatPage({
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-white">
-      <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
-          <ResizablePanel defaultSize={45} minSize={25} className="min-w-0">
+    <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-white">
+      {/* App Sidebar with Mobile Drawer support */}
+      <AppSidebar
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Mobile / Tablet View Switcher Header (< lg) */}
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-[#faf8f5] px-3 lg:hidden">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e0d8] bg-white text-[#3d3830] active:bg-[#f5f1ea]"
+              aria-label="Ouvrir le menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <span className="max-w-[120px] truncate text-xs font-semibold text-[#3d3830]">
+              {sessionTitle}
+            </span>
+          </div>
+
+          {/* Segmented Control: Chat vs Code */}
+          <div className="flex items-center rounded-lg bg-[#eee9e1] p-0.5 text-xs font-medium">
+            <button
+              onClick={() => setMobileTab("chat")}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 transition ${
+                mobileTab === "chat"
+                  ? "bg-white text-[#3d3830] shadow-sm font-semibold"
+                  : "text-[#5c5348] hover:text-[#3d3830]"
+              }`}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Chat</span>
+            </button>
+            <button
+              onClick={() => setMobileTab("preview")}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 transition ${
+                mobileTab === "preview"
+                  ? "bg-white text-[#3d3830] shadow-sm font-semibold"
+                  : "text-[#5c5348] hover:text-[#3d3830]"
+              }`}
+            >
+              <Code2 className="h-3.5 w-3.5" />
+              <span>Code & Démo</span>
+              {filePaths.length > 0 && (
+                <span className="rounded-full bg-[#c6623f] px-1 py-0.2 text-[9px] font-bold text-white">
+                  {filePaths.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e0d8] bg-white text-[#5c5348] hover:text-[#c6623f]"
+              title="Importer un dépôt ou dossier"
+            >
+              <FolderDown className="h-4 w-4 text-[#c6623f]" />
+            </button>
+            <LiveButton onClick={() => setIsLiveOpen(true)} />
+          </div>
+        </div>
+
+        {/* Desktop Layout (>= lg): Split Resizable Panels */}
+        <div className="hidden lg:flex min-h-0 flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
+            <ResizablePanel defaultSize={45} minSize={25} className="min-w-0">
+              <ChatPanel
+                messages={messages}
+                loading={loading}
+                status={status}
+                sessionTitle={sessionTitle}
+                currentModelId={currentModel}
+                currentAgentId={currentAgent}
+                onModelChange={setCurrentModel}
+                onAgentChange={setCurrentAgent}
+                onSendMessage={handleSendMessage}
+                onAbort={handleAbort}
+                onOpenLive={() => setIsLiveOpen(true)}
+                onOpenImport={() => setIsImportOpen(true)}
+              />
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            <ResizablePanel defaultSize={55} minSize={25} className="min-w-0">
+              <PreviewPanel
+                sessionId={sessionId}
+                previewUrl={previewUrl}
+                filePaths={filePaths}
+                onPreviewUrl={setPreviewUrl}
+                onRefreshFiles={refreshFiles}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+
+        {/* Mobile / Tablet Layout (< lg): Active Tab Fullscreen */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:hidden">
+          {mobileTab === "chat" ? (
             <ChatPanel
               messages={messages}
               loading={loading}
               status={status}
               sessionTitle={sessionTitle}
               currentModelId={currentModel}
+              currentAgentId={currentAgent}
               onModelChange={setCurrentModel}
+              onAgentChange={setCurrentAgent}
               onSendMessage={handleSendMessage}
               onAbort={handleAbort}
               onOpenLive={() => setIsLiveOpen(true)}
+              onOpenImport={() => setIsImportOpen(true)}
             />
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          <ResizablePanel defaultSize={55} minSize={25} className="min-w-0">
+          ) : (
             <PreviewPanel
               sessionId={sessionId}
               previewUrl={previewUrl}
@@ -318,8 +362,9 @@ export default function ChatPage({
               onPreviewUrl={setPreviewUrl}
               onRefreshFiles={refreshFiles}
             />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          )}
+        </div>
+      </div>
 
       <LiveVoiceModal
         isOpen={isLiveOpen}
@@ -327,6 +372,15 @@ export default function ChatPage({
         sessionId={sessionId}
         onCodeGenerated={async () => {
           await refreshFiles();
+        }}
+      />
+
+      <ImportRepoModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        sessionId={sessionId}
+        onImportSuccess={() => {
+          void refreshFiles();
         }}
       />
     </div>

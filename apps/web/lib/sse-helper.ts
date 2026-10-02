@@ -11,6 +11,7 @@ export function createAgentStream(
   session: SessionData,
   userMessage?: string,
   modelId?: string,
+  agentId?: string,
 ): Response {
   if (userMessage) {
     session.messages.push({
@@ -57,6 +58,7 @@ export function createAgentStream(
             content: m.content,
           })),
           modelId: activeModel.id,
+          agentId: agentId || "build",
           currentFiles: session.files,
           onStatus: (statusMsg) => {
             send({ type: "status", message: statusMsg });

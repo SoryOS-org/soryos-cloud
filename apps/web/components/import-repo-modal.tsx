@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   FolderOpen,
   Github,
@@ -13,13 +14,14 @@ import {
   FileCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createSession } from "@/lib/api";
 import JSZip from "jszip";
 
 interface ImportRepoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sessionId: string;
-  onImportSuccess: () => void;
+  sessionId?: string;
+  onImportSuccess?: () => void;
 }
 
 type TabMode = "folder" | "github" | "zip";
@@ -36,11 +38,18 @@ export function ImportRepoModal({
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState<number | null>(null);
+  const router = useRouter();
 
   const folderInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  const ensureTargetSession = async (title: string): Promise<string> => {
+    if (sessionId) return sessionId;
+    const newSession = await createSession(title, "Import de code source");
+    return newSession.id;
+  };
 
   const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -57,16 +66,13 @@ export function ImportRepoModal({
 
       let processed = 0;
       for (const file of filesArray) {
-        // webkitRelativePath gives "my-folder/src/index.ts"
         const relativePath = file.webkitRelativePath || file.name;
-        // Strip top folder name if present
         const parts = relativePath.split("/");
         if (parts.length > 1) {
           parts.shift();
         }
         const cleanPath = parts.join("/");
 
-        // Skip binary and node_modules
         if (
           !cleanPath.includes("node_modules/") &&
           !cleanPath.includes(".git/") &&
@@ -88,8 +94,10 @@ export function ImportRepoModal({
         }
       }
 
+      const targetSessionId = await ensureTargetSession("Projet importé");
       setStatusText("Enregistrement dans l'espace de travail...");
-      const res = await fetch(`/api/sessions/${sessionId}/import`, {
+
+      const res = await fetch(`/api/sessions/${targetSessionId}/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ files: extracted }),
@@ -99,7 +107,11 @@ export function ImportRepoModal({
       if (!res.ok) throw new Error(data.error || "Erreur lors de l'import");
 
       setSuccessCount(data.count || Object.keys(extracted).length);
-      onImportSuccess();
+      onImportSuccess?.();
+
+      if (!sessionId) {
+        router.push(`/chat/${targetSessionId}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'import");
     } finally {
@@ -147,8 +159,10 @@ export function ImportRepoModal({
         }
       }
 
+      const targetSessionId = await ensureTargetSession(file.name.replace(/\.zip$/i, ""));
       setStatusText(`Importation de ${Object.keys(extracted).length} fichiers...`);
-      const res = await fetch(`/api/sessions/${sessionId}/import`, {
+
+      const res = await fetch(`/api/sessions/${targetSessionId}/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ files: extracted }),
@@ -158,7 +172,11 @@ export function ImportRepoModal({
       if (!res.ok) throw new Error(data.error || "Erreur lors de l'import");
 
       setSuccessCount(data.count || Object.keys(extracted).length);
-      onImportSuccess();
+      onImportSuccess?.();
+
+      if (!sessionId) {
+        router.push(`/chat/${targetSessionId}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'import du ZIP");
     } finally {
@@ -176,7 +194,11 @@ export function ImportRepoModal({
     setStatusText("Clonage et extraction des fichiers depuis GitHub...");
 
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/import`, {
+      const repoNameMatch = githubUrl.match(/github\.com\/[^/]+\/([^/]+)/);
+      const title = repoNameMatch ? repoNameMatch[1] : "Dépôt GitHub";
+      const targetSessionId = await ensureTargetSession(title);
+
+      const res = await fetch(`/api/sessions/${targetSessionId}/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repoUrl: githubUrl.trim() }),
@@ -186,7 +208,11 @@ export function ImportRepoModal({
       if (!res.ok) throw new Error(data.error || "Impossible d'importer le dépôt GitHub");
 
       setSuccessCount(data.count);
-      onImportSuccess();
+      onImportSuccess?.();
+
+      if (!sessionId) {
+        router.push(`/chat/${targetSessionId}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur d'importation");
     } finally {
