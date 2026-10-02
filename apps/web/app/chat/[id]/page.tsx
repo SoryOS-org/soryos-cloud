@@ -17,6 +17,7 @@ import {
 import type { AgentEvent, ChatMessage, GetSessionResponse } from "@/lib/types";
 import { ChatPanel } from "@/components/chat-panel";
 import { PreviewPanel } from "@/components/preview-panel";
+import { LiveVoiceModal } from "@/components/live-voice-modal";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -64,10 +65,10 @@ export default function ChatPage({
   const [filePaths, setFilePaths] = useState<string[]>([]);
   const [sessionTitle, setSessionTitle] = useState<string>("Session");
   const [currentModel, setCurrentModel] = useState<string>(DEFAULT_MODEL_ID);
+  const [isLiveOpen, setIsLiveOpen] = useState(false);
   const genRef = useRef(0);
   const textBufferRef = useRef("");
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fileRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshFiles = useCallback(async () => {
     const paths = (await listSessionFiles(sessionId)).filter(isProjectFile);
@@ -75,14 +76,6 @@ export default function ChatPage({
       setFilePaths(paths.map(normalizeFilePath));
     }
   }, [sessionId]);
-
-  const scheduleFileRefresh = useCallback(() => {
-    if (fileRefreshTimerRef.current) return;
-    fileRefreshTimerRef.current = setTimeout(() => {
-      fileRefreshTimerRef.current = null;
-      void refreshFiles();
-    }, 800);
-  }, [refreshFiles]);
 
   const flushText = useCallback((gen: number) => {
     const delta = textBufferRef.current;
@@ -311,6 +304,7 @@ export default function ChatPage({
               onModelChange={setCurrentModel}
               onSendMessage={handleSendMessage}
               onAbort={handleAbort}
+              onOpenLive={() => setIsLiveOpen(true)}
             />
           </ResizablePanel>
 
@@ -322,9 +316,19 @@ export default function ChatPage({
               previewUrl={previewUrl}
               filePaths={filePaths}
               onPreviewUrl={setPreviewUrl}
+              onRefreshFiles={refreshFiles}
             />
           </ResizablePanel>
         </ResizablePanelGroup>
+
+      <LiveVoiceModal
+        isOpen={isLiveOpen}
+        onClose={() => setIsLiveOpen(false)}
+        sessionId={sessionId}
+        onCodeGenerated={async () => {
+          await refreshFiles();
+        }}
+      />
     </div>
   );
 }

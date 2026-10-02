@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/app-sidebar";
 import { createSession } from "@/lib/api";
 import { ModelSelector } from "@/components/model-selector";
+import { LiveButton } from "@/components/live-button";
+import { LiveVoiceModal } from "@/components/live-voice-modal";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
 
 const EXAMPLES = [
@@ -22,6 +24,7 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_ID);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLiveOpen, setIsLiveOpen] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -75,10 +78,13 @@ export default function Home() {
               className="min-h-[100px] resize-none border-0 bg-transparent p-0 text-[15px] shadow-none placeholder:text-[#a39e94] focus-visible:ring-0"
             />
             <div className="mt-3 flex items-center justify-between gap-3">
-              <ModelSelector
-                currentModelId={selectedModel}
-                onModelChange={setSelectedModel}
-              />
+              <div className="flex items-center gap-2">
+                <ModelSelector
+                  currentModelId={selectedModel}
+                  onModelChange={setSelectedModel}
+                />
+                <LiveButton onClick={() => setIsLiveOpen(true)} />
+              </div>
               <Button
                 onClick={() => void handleSubmit()}
                 disabled={!prompt.trim() || loading}
@@ -93,6 +99,11 @@ export default function Home() {
               </Button>
             </div>
           </div>
+
+          <LiveVoiceModal
+            isOpen={isLiveOpen}
+            onClose={() => setIsLiveOpen(false)}
+          />
 
           {/* Quick Free Model Chips */}
           <div className="space-y-1.5 text-center">

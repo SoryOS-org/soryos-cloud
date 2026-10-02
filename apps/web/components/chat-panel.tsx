@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ToolStepCard } from "@/components/tool-step-card";
 import { ModelSelector } from "@/components/model-selector";
+import { LiveButton } from "@/components/live-button";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
 
 interface ChatPanelProps {
@@ -23,6 +24,7 @@ interface ChatPanelProps {
   onModelChange?: (modelId: string) => void;
   onSendMessage: (content: string) => void;
   onAbort?: () => void;
+  onOpenLive?: () => void;
 }
 
 function AssistantTurn({ message }: { message: ChatMessage }) {
@@ -56,6 +58,7 @@ export function ChatPanel({
   onModelChange,
   onSendMessage,
   onAbort,
+  onOpenLive,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -90,17 +93,20 @@ export function ChatPanel({
             {sessionTitle ?? "Session"}
           </h1>
         </div>
-        {loading && onAbort && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onAbort}
-            className="h-8 gap-1.5 border-[#e5e0d8] text-xs"
-          >
-            <Square className="h-3 w-3 fill-current" />
-            Stop
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenLive && <LiveButton onClick={onOpenLive} />}
+          {loading && onAbort && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAbort}
+              className="h-8 gap-1.5 border-[#e5e0d8] text-xs"
+            >
+              <Square className="h-3 w-3 fill-current" />
+              Stop
+            </Button>
+          )}
+        </div>
       </header>
 
       <ScrollArea className="relative z-10 min-h-0 flex-1">
@@ -143,10 +149,13 @@ export function ChatPanel({
               className="min-h-[52px] max-h-[160px] min-w-0 flex-1 resize-none border-0 bg-transparent p-0 text-[15px] shadow-none placeholder:text-[#a39e94] focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <div className="mt-2 flex items-center justify-between gap-3">
-              <ModelSelector
-                currentModelId={currentModelId}
-                onModelChange={onModelChange ?? (() => {})}
-              />
+              <div className="flex items-center gap-2">
+                <ModelSelector
+                  currentModelId={currentModelId}
+                  onModelChange={onModelChange ?? (() => {})}
+                />
+                {onOpenLive && <LiveButton onClick={onOpenLive} />}
+              </div>
               <Button
                 onClick={handleSubmit}
                 disabled={!input.trim() || loading}

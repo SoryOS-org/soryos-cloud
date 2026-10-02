@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronDown,
   Folder,
+  FolderDown,
   File,
   Globe,
   RefreshCw,
@@ -24,6 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Terminal } from "@/components/terminal";
+import { ImportRepoModal } from "@/components/import-repo-modal";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -83,6 +85,7 @@ interface PreviewPanelProps {
   previewUrl: string | null;
   filePaths: string[];
   onPreviewUrl?: (url: string | null) => void;
+  onRefreshFiles?: () => void;
 }
 
 export function PreviewPanel({
@@ -90,6 +93,7 @@ export function PreviewPanel({
   previewUrl,
   filePaths,
   onPreviewUrl,
+  onRefreshFiles,
 }: PreviewPanelProps) {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
@@ -98,6 +102,7 @@ export function PreviewPanel({
   const [loadingFile, setLoadingFile] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const ensureRef = useRef<Promise<void> | null>(null);
 
@@ -300,10 +305,18 @@ export function PreviewPanel({
 
             <TabsContent value="code" className="m-0 flex min-h-0 flex-1 overflow-hidden">
               <div className="flex w-56 shrink-0 flex-col overflow-hidden border-r border-[#eee9e1] bg-[#faf8f5]">
-                <div className="shrink-0 border-b border-[#eee9e1] px-3 py-2">
+                <div className="shrink-0 flex items-center justify-between border-b border-[#eee9e1] px-3 py-2">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[#c6623f]/80">
                     Files
                   </span>
+                  <button
+                    onClick={() => setIsImportOpen(true)}
+                    className="flex items-center gap-1 text-[11px] font-medium text-[#5c5348] hover:text-[#c6623f] transition"
+                    title="Importer un dossier local ou un dépôt GitHub"
+                  >
+                    <FolderDown className="h-3.5 w-3.5" />
+                    <span>Importer</span>
+                  </button>
                 </div>
                 <ScrollArea className="min-h-0 flex-1">
                   <div className="space-y-0.5 p-2">
@@ -450,6 +463,15 @@ export function PreviewPanel({
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      <ImportRepoModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        sessionId={sessionId}
+        onImportSuccess={() => {
+          onRefreshFiles?.();
+        }}
+      />
     </div>
   );
 }
