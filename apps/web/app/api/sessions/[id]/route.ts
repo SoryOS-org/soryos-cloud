@@ -17,6 +17,8 @@ export async function GET(
     title: session.title,
     sandbox_id: session.sandbox_id,
     sandbox_state: session.sandbox_state,
+    model: session.model,
+    provider: session.provider,
     messages: session.messages,
     preview_url: session.preview_url,
     needs_run: session.needs_run,

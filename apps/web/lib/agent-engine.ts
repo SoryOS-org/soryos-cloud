@@ -1,10 +1,13 @@
 import type { MessageBlock } from "./types";
+import { DEFAULT_MODEL_ID, getModelById } from "./providers";
 
 export interface SessionData {
   id: string;
   title: string;
   sandbox_id: string;
   sandbox_state: "running" | "paused" | "dead";
+  model: string;
+  provider: string;
   created_at: string;
   messages: Array<{
     id: string;
@@ -234,6 +237,8 @@ Includes responsive billboard hero, movie carousels, and item detail preview.
     title: "Build a Netflix clone",
     sandbox_id: "sbx-netflix-01",
     sandbox_state: "running",
+    model: "opencode/zen-coder-free",
+    provider: "OpenCode Zen",
     created_at: new Date(Date.now() - 3600000).toISOString(),
     messages: [
       {
@@ -304,16 +309,23 @@ export function listSessionsData(): Array<{ id: string; title: string; created_a
   return result.reverse();
 }
 
-export function createNewSession(title?: string, message?: string): SessionData {
+export function createNewSession(
+  title?: string,
+  message?: string,
+  model?: string,
+): SessionData {
   const id = crypto.randomUUID();
   const sessionTitle = title || (message ? message.slice(0, 60) : "New session");
   const now = new Date().toISOString();
+  const selectedModel = getModelById(model || DEFAULT_MODEL_ID);
 
   const newSession: SessionData = {
     id,
     title: sessionTitle,
     sandbox_id: `sbx-${id.slice(0, 8)}`,
     sandbox_state: "running",
+    model: selectedModel.id,
+    provider: selectedModel.providerName,
     created_at: now,
     messages: [],
     files: {},

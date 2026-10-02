@@ -11,12 +11,16 @@ import { ArrowUp, Square } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ToolStepCard } from "@/components/tool-step-card";
+import { ModelSelector } from "@/components/model-selector";
+import { DEFAULT_MODEL_ID } from "@/lib/providers";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
   loading: boolean;
   status?: string | null;
   sessionTitle?: string;
+  currentModelId?: string;
+  onModelChange?: (modelId: string) => void;
   onSendMessage: (content: string) => void;
   onAbort?: () => void;
 }
@@ -48,6 +52,8 @@ export function ChatPanel({
   loading,
   status,
   sessionTitle,
+  currentModelId = DEFAULT_MODEL_ID,
+  onModelChange,
   onSendMessage,
   onAbort,
 }: ChatPanelProps) {
@@ -136,8 +142,11 @@ export function ChatPanel({
               disabled={loading}
               className="min-h-[52px] max-h-[160px] min-w-0 flex-1 resize-none border-0 bg-transparent p-0 text-[15px] shadow-none placeholder:text-[#a39e94] focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-[#a39e94]">DeepSeek · Agent</span>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <ModelSelector
+                currentModelId={currentModelId}
+                onModelChange={onModelChange ?? (() => {})}
+              />
               <Button
                 onClick={handleSubmit}
                 disabled={!input.trim() || loading}

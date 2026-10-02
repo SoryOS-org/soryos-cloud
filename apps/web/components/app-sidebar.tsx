@@ -12,7 +12,18 @@ export function AppSidebar() {
   >([]);
 
   useEffect(() => {
-    void listSessions().then(setSessions);
+    let mounted = true;
+    void listSessions()
+      .then((data) => {
+        if (mounted) setSessions(data || []);
+      })
+      .catch(() => {
+        if (mounted) setSessions([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -53,9 +64,14 @@ export function AppSidebar() {
       </ScrollArea>
 
       <div className="border-t border-[#e8e2d8] px-4 py-3">
-        <div className="flex items-center gap-2 text-xs text-[#8a8278]">
-          <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#c6623f]" />
-          <span className="truncate">DeepSeek agent</span>
+        <div className="flex items-center justify-between text-xs text-[#8a8278]">
+          <div className="flex items-center gap-2 truncate">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#c6623f]" />
+            <span className="truncate font-medium text-[#5c5348]">OpenCode Zen & AI</span>
+          </div>
+          <span className="shrink-0 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
+            Free Tier
+          </span>
         </div>
       </div>
     </aside>

@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/app-sidebar";
 import { createSession } from "@/lib/api";
+import { ModelSelector } from "@/components/model-selector";
+import { DEFAULT_MODEL_ID } from "@/lib/providers";
 
 const EXAMPLES = [
   { icon: "📺", text: "Build a Netflix clone" },
@@ -17,6 +19,7 @@ const EXAMPLES = [
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_ID);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
@@ -27,7 +30,11 @@ export default function Home() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const session = await createSession(prompt.slice(0, 80), prompt.trim());
+      const session = await createSession(
+        prompt.slice(0, 80),
+        prompt.trim(),
+        selectedModel,
+      );
       router.push(`/chat/${session.id}`);
     } catch (e) {
       console.error(e);
@@ -51,11 +58,11 @@ export default function Home() {
       <main className="relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-hidden bg-white p-6">
         <div className="app-watermark pointer-events-none absolute inset-0" />
 
-        <div className="relative z-10 w-full max-w-2xl space-y-10">
+        <div className="relative z-10 w-full max-w-2xl space-y-8">
           <div className="space-y-3 text-center">
             <img src="/logo1.png" alt="CodeForge" className="mx-auto h-20 w-auto" />
             <p className="text-[15px] text-[#8a8278]">
-              AI agent workbench — LangGraph + E2B sandbox
+              AI agent workbench — Multi-provider code generation & execution
             </p>
           </div>
 
@@ -67,8 +74,11 @@ export default function Home() {
               onKeyDown={handleKeyDown}
               className="min-h-[100px] resize-none border-0 bg-transparent p-0 text-[15px] shadow-none placeholder:text-[#a39e94] focus-visible:ring-0"
             />
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs text-[#a39e94]">DeepSeek · Agent</span>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <ModelSelector
+                currentModelId={selectedModel}
+                onModelChange={setSelectedModel}
+              />
               <Button
                 onClick={() => void handleSubmit()}
                 disabled={!prompt.trim() || loading}

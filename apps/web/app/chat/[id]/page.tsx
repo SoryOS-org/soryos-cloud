@@ -22,6 +22,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { DEFAULT_MODEL_ID } from "@/lib/providers";
 
 function formatMessages(
   messages: GetSessionResponse["messages"],
@@ -62,6 +63,7 @@ export default function ChatPage({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [filePaths, setFilePaths] = useState<string[]>([]);
   const [sessionTitle, setSessionTitle] = useState<string>("Session");
+  const [currentModel, setCurrentModel] = useState<string>(DEFAULT_MODEL_ID);
   const genRef = useRef(0);
   const textBufferRef = useRef("");
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -178,6 +180,7 @@ export default function ChatPage({
       const s = await getSession(sessionId);
       if (gen !== genRef.current) return s;
       setSessionTitle(s.title);
+      if (s.model) setCurrentModel(s.model);
       setMessages(formatMessages(s.messages));
       await refreshFiles();
       return s;
@@ -206,7 +209,7 @@ export default function ChatPage({
         const result =
           mode === "run"
             ? await streamRun(sessionId, onEvent)
-            : await sendMessage(sessionId, content!, onEvent);
+            : await sendMessage(sessionId, content!, onEvent, currentModel);
 
         if (result === "already_running") {
           setStatus("Agent running...");
@@ -232,7 +235,7 @@ export default function ChatPage({
         }
       }
     },
-    [sessionId, makeEventHandler, pollUntilDone, flushText],
+    [sessionId, makeEventHandler, pollUntilDone, flushText, currentModel],
   );
 
   useEffect(() => {
@@ -303,6 +306,8 @@ export default function ChatPage({
               loading={loading}
               status={status}
               sessionTitle={sessionTitle}
+              currentModelId={currentModel}
+              onModelChange={setCurrentModel}
               onSendMessage={handleSendMessage}
               onAbort={handleAbort}
             />

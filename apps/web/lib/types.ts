@@ -13,6 +13,8 @@ export interface GetSessionResponse {
   title: string;
   sandbox_id: string | null;
   sandbox_state: "running" | "paused" | "dead";
+  model?: string;
+  provider?: string;
   messages: Array<{
     id: string;
     role: "user" | "assistant";

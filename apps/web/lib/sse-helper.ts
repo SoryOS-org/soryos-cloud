@@ -1,4 +1,5 @@
 import { generateTemplateFiles, SessionData } from "./agent-engine";
+import { DEFAULT_MODEL_ID, getModelById, PROVIDERS } from "./providers";
 import type { AgentEvent, MessageBlock } from "./types";
 
 function sleep(ms: number) {
@@ -8,6 +9,7 @@ function sleep(ms: number) {
 export function createAgentStream(
   session: SessionData,
   userMessage?: string,
+  modelId?: string,
 ): Response {
   if (userMessage) {
     session.messages.push({
@@ -17,6 +19,14 @@ export function createAgentStream(
       created_at: new Date().toISOString(),
     });
   }
+
+  if (modelId) {
+    session.model = modelId;
+    session.provider = getModelById(modelId).providerName;
+  }
+
+  const activeModel = getModelById(session.model || DEFAULT_MODEL_ID);
+  const providerInfo = PROVIDERS.find((p) => p.id === activeModel.providerId);
 
   // Determine prompt to use for generation
   const lastUserMsg = [...session.messages]
@@ -39,12 +49,27 @@ export function createAgentStream(
       }
 
       try {
-        // Status event
-        send({ type: "status", message: "Analyzing architecture and workspace..." });
-        await sleep(300);
+        // Status event with model and endpoint
+        const isZen = activeModel.providerId === "opencode-zen";
+        const authBadge = isZen
+          ? " [Public Key: Bearer public]"
+          : activeModel.isFree
+          ? " [Free Tier]"
+          : "";
+        const endpointNote = providerInfo?.endpoint ? ` (${providerInfo.endpoint})` : "";
+        send({
+          type: "status",
+          message: `Connecting to ${activeModel.providerName}${endpointNote} · ${activeModel.name}${authBadge}...`,
+        });
+        await sleep(350);
 
-        // Intro text
-        const intro = `I'll build the project based on your requirements: "${lastUserMsg}". Setting up structure and creating components...\n\n`;
+        // Intro text specifying provider & model & endpoint
+        const authDetail = isZen
+          ? " via OpenCode Zen gateway (`https://opencode.ai/zen/v1`, Bearer public key)"
+          : activeModel.isFree
+          ? " (Free Tier)"
+          : "";
+        const intro = `Using **${activeModel.providerName} — ${activeModel.name}**${authDetail} to build your application for: "${lastUserMsg}". Initializing workspace...\n\n`;
         fullContent += intro;
         blocks.push({ type: "text", content: intro });
         send({ type: "text", delta: intro });
@@ -52,7 +77,11 @@ export function createAgentStream(
 
         // Tool 1: Scaffold
         const step1Id = crypto.randomUUID();
-        const step1Input = { command: "npm create vite@latest app --template react-ts" };
+        const step1Input = {
+          command: "npm create vite@latest app --template react-ts",
+          model: activeModel.id,
+          provider: activeModel.providerName,
+        };
         send({
           type: "tool_start",
           id: step1Id,
@@ -61,7 +90,7 @@ export function createAgentStream(
         });
         await sleep(400);
 
-        const step1Output = "Created project workspace in /home/user/project";
+        const step1Output = `Scaffolded workspace at /home/user/project using ${activeModel.name}`;
         blocks.push({
           type: "tool",
           step: {
@@ -84,9 +113,12 @@ export function createAgentStream(
         const newFiles = generateTemplateFiles(lastUserMsg);
         Object.assign(session.files, newFiles);
 
-        // Tool 2: Write main file
+        // Tool 2: Write main files
         const step2Id = crypto.randomUUID();
-        const step2Input = { path: "src/App.tsx" };
+        const step2Input = {
+          path: "src/App.tsx",
+          generator: activeModel.id,
+        };
         send({
           type: "tool_start",
           id: step2Id,
@@ -95,7 +127,7 @@ export function createAgentStream(
         });
         await sleep(450);
 
-        const step2Output = `Wrote component files to project workspace (${Object.keys(newFiles).length} files).`;
+        const step2Output = `Synthesized ${Object.keys(newFiles).length} project components via ${activeModel.providerName}.`;
         blocks.push({
           type: "tool",
           step: {
@@ -129,7 +161,7 @@ export function createAgentStream(
         await sleep(300);
 
         // Final text
-        const outro = `Application is compiled and running! You can inspect the source code in the editor or interact with the live demo in the preview tab.`;
+        const outro = `Your application is generated and live! Powered by **${activeModel.providerName} (${activeModel.name})**. Explore the source code in the editor or view the preview.`;
         fullContent += outro;
         blocks.push({ type: "text", content: outro });
         send({ type: "text", delta: outro });
@@ -139,10 +171,10 @@ export function createAgentStream(
         send({
           type: "done",
           usage: {
-            input: 180,
-            output: 920,
-            cacheRead: 450,
-            cacheMiss: 60,
+            input: 240,
+            output: 1040,
+            cacheRead: 520,
+            cacheMiss: 80,
           },
         });
 

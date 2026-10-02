@@ -1,16 +1,26 @@
 import type { AgentEvent, GetSessionResponse } from "./types";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "";
+function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    return "";
+  }
+  const port = process.env.PORT || 3000;
+  return `http://127.0.0.1:${port}`;
+}
 
 export async function createSession(
   title?: string,
   message?: string,
+  model?: string,
 ): Promise<{ id: string; title: string }> {
-  const res = await fetch(`${API_BASE}/api/sessions`, {
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, message }),
+    body: JSON.stringify({ title, message, model }),
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.statusText}`);
   return res.json();
@@ -19,35 +29,56 @@ export async function createSession(
 export async function listSessions(): Promise<
   Array<{ id: string; title: string; created_at: string }>
 > {
-  const res = await fetch(`${API_BASE}/api/sessions`);
-  if (!res.ok) return [];
-  const data = (await res.json()) as { sessions: Array<{ id: string; title: string; created_at: string }> };
-  return data.sessions ?? [];
+  try {
+    const base = getApiBase();
+    const res = await fetch(`${base}/api/sessions`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { sessions: Array<{ id: string; title: string; created_at: string }> };
+    return data.sessions ?? [];
+  } catch (err) {
+    console.warn("Failed to list sessions:", err);
+    return [];
+  }
 }
 
 export async function getSession(id: string): Promise<GetSessionResponse> {
-  const res = await fetch(`${API_BASE}/api/sessions/${id}`);
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/sessions/${id}`, {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error(`Failed to get session: ${res.statusText}`);
   return res.json();
 }
 
 export async function abortSession(id: string): Promise<void> {
-  await fetch(`${API_BASE}/api/sessions/${id}/abort`, { method: "POST" });
+  const base = getApiBase();
+  await fetch(`${base}/api/sessions/${id}/abort`, { method: "POST" }).catch(() => {});
 }
 
 export async function listSessionFiles(sessionId: string): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/files`);
-  if (!res.ok) return [];
-  const data = (await res.json()) as { paths: string[] };
-  return data.paths ?? [];
+  try {
+    const base = getApiBase();
+    const res = await fetch(`${base}/api/sessions/${sessionId}/files`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { paths: string[] };
+    return data.paths ?? [];
+  } catch (err) {
+    console.warn("Failed to list session files:", err);
+    return [];
+  }
 }
 
 export async function fetchFile(
   sessionId: string,
   path: string,
 ): Promise<string> {
+  const base = getApiBase();
   const res = await fetch(
-    `${API_BASE}/api/sessions/${sessionId}/files/${encodeURIComponent(path)}`,
+    `${base}/api/sessions/${sessionId}/files/${encodeURIComponent(path)}`,
   );
   if (!res.ok) throw new Error(`Failed to fetch file: ${res.statusText}`);
   return res.text();
@@ -56,7 +87,8 @@ export async function fetchFile(
 export async function ensurePreview(
   sessionId: string,
 ): Promise<{ preview_url: string | null; status: string; output?: string | null }> {
-  const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/preview`);
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/sessions/${sessionId}/preview`);
   if (!res.ok) throw new Error(`Failed to load preview: ${res.statusText}`);
   return res.json();
 }
@@ -65,7 +97,8 @@ export async function runTerminal(
   sessionId: string,
   command: string,
 ): Promise<{ output: string; isError: boolean; cwd: string }> {
-  const res = await fetch(`${API_BASE}/api/sessions/${sessionId}/terminal`, {
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/sessions/${sessionId}/terminal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command }),
@@ -128,8 +161,9 @@ export async function streamRun(
   sessionId: string,
   onEvent: (event: AgentEvent) => void,
 ): Promise<"streamed" | "already_running"> {
+  const base = getApiBase();
   return consumeSse(
-    `${API_BASE}/api/sessions/${sessionId}/run`,
+    `${base}/api/sessions/${sessionId}/run`,
     { method: "POST" },
     onEvent,
   );
@@ -140,13 +174,15 @@ export async function sendMessage(
   sessionId: string,
   content: string,
   onEvent: (event: AgentEvent) => void,
+  model?: string,
 ): Promise<"streamed" | "already_running"> {
+  const base = getApiBase();
   return consumeSse(
-    `${API_BASE}/api/sessions/${sessionId}/messages`,
+    `${base}/api/sessions/${sessionId}/messages`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, model }),
     },
     onEvent,
   );

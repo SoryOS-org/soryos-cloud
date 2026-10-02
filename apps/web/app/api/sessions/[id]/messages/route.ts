@@ -24,5 +24,5 @@ export async function POST(
     return NextResponse.json({ error: "Message content required" }, { status: 400 });
   }
 
-  return createAgentStream(session, content);
+  return createAgentStream(session, content, body.model);
 }
