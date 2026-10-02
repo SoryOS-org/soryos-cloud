@@ -161,12 +161,21 @@ export function PreviewPanel({
   );
 
   useEffect(() => {
-    if (filePaths.length && !selectedPath) {
-      const first =
-        filePaths.find((p) => p.includes("/") && !p.split("/").some((s) => s.startsWith("."))) ??
-        filePaths.find((p) => p.includes(".")) ??
-        filePaths[0];
-      if (first) void loadFile(first);
+    if (filePaths.length) {
+      if (!selectedPath || !filePaths.includes(selectedPath)) {
+        const preferred =
+          filePaths.find((p) => p === "src/App.tsx") ??
+          filePaths.find((p) => p === "main.py") ??
+          filePaths.find((p) => p.endsWith(".tsx") || p.endsWith(".jsx")) ??
+          filePaths.find((p) => p.endsWith(".py")) ??
+          filePaths.find((p) => p.includes("/") && !p.split("/").some((s) => s.startsWith("."))) ??
+          filePaths.find((p) => p.includes(".")) ??
+          filePaths[0];
+        if (preferred) void loadFile(preferred);
+      } else {
+        // Reload currently open file so latest code created by AI appears immediately
+        void loadFile(selectedPath);
+      }
     }
   }, [filePaths, selectedPath, loadFile]);
 
@@ -312,9 +321,25 @@ export function PreviewPanel({
               <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                 {selectedPath ? (
                   <>
-                    <div className="shrink-0 border-b bg-muted/30 px-4 py-2">
-                      <span className="font-mono text-sm text-muted-foreground">
-                        {selectedPath}
+                    <div className="shrink-0 flex items-center justify-between border-b bg-muted/20 px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <File className="h-4 w-4 text-[#c6623f]" />
+                        <span className="font-mono text-sm font-medium text-foreground">
+                          {selectedPath}
+                        </span>
+                      </div>
+                      <span className="rounded bg-[#eee9e1]/60 px-2 py-0.5 font-mono text-[11px] text-muted-foreground uppercase">
+                        {selectedPath.endsWith(".tsx") || selectedPath.endsWith(".ts")
+                          ? "TypeScript React"
+                          : selectedPath.endsWith(".py")
+                            ? "Python"
+                            : selectedPath.endsWith(".css")
+                              ? "CSS"
+                              : selectedPath.endsWith(".json")
+                                ? "JSON"
+                                : selectedPath.endsWith(".html")
+                                  ? "HTML"
+                                  : "Text"}
                       </span>
                     </div>
                     <div className="min-h-0 flex-1">
@@ -328,11 +353,17 @@ export function PreviewPanel({
                           language={
                             selectedPath.endsWith(".tsx") || selectedPath.endsWith(".ts")
                               ? "typescript"
-                              : selectedPath.endsWith(".css")
-                                ? "css"
-                                : selectedPath.endsWith(".json")
-                                  ? "json"
-                                  : "plaintext"
+                              : selectedPath.endsWith(".py")
+                                ? "python"
+                                : selectedPath.endsWith(".css")
+                                  ? "css"
+                                  : selectedPath.endsWith(".json")
+                                    ? "json"
+                                    : selectedPath.endsWith(".html")
+                                      ? "html"
+                                      : selectedPath.endsWith(".js") || selectedPath.endsWith(".jsx")
+                                        ? "javascript"
+                                        : "plaintext"
                           }
                           value={fileContent}
                           options={{

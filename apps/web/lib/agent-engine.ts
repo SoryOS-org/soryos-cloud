@@ -352,6 +352,391 @@ export function createNewSession(
 export function generateTemplateFiles(prompt: string): Record<string, string> {
   const lower = prompt.toLowerCase();
 
+  // Morpion / Tic-Tac-Toe
+  if (lower.includes("morpion") || lower.includes("tic-tac-toe") || lower.includes("tictactoe") || lower.includes("jeu") || lower.includes("game")) {
+    return {
+      "package.json": JSON.stringify(
+        {
+          name: "morpion-game",
+          version: "1.0.0",
+          dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "lucide-react": "^0.553.0" },
+        },
+        null,
+        2,
+      ),
+      "src/App.tsx": `import React, { useState } from 'react';
+
+type Player = 'X' | 'O';
+type Board = (Player | null)[];
+
+const WINNING_COMBOS = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6]
+];
+
+export default function App() {
+  const [board, setBoard] = useState<Board>(Array(9).fill(null));
+  const [turn, setTurn] = useState<Player>('X');
+  const [scores, setScores] = useState({ X: 0, O: 0, ties: 0 });
+  const [vsCpu, setVsCpu] = useState(true);
+
+  const checkWinner = (b: Board): { winner: Player | null; line: number[] | null } => {
+    for (const combo of WINNING_COMBOS) {
+      const [a, bIdx, c] = combo;
+      if (b[a] && b[a] === b[bIdx] && b[a] === b[c]) {
+        return { winner: b[a], line: combo };
+      }
+    }
+    return { winner: null, line: null };
+  };
+
+  const winInfo = checkWinner(board);
+  const isDraw = !winInfo.winner && board.every((cell) => cell !== null);
+
+  const handleCellClick = (index: number) => {
+    if (board[index] || winInfo.winner) return;
+
+    const next = [...board];
+    next[index] = turn;
+    setBoard(next);
+
+    const check = checkWinner(next);
+    if (check.winner) {
+      setScores((s) => ({ ...s, [check.winner!]: s[check.winner!] + 1 }));
+      return;
+    }
+    if (next.every((c) => c !== null)) {
+      setScores((s) => ({ ...s, ties: s.ties + 1 }));
+      return;
+    }
+
+    const nextTurn = turn === 'X' ? 'O' : 'X';
+    setTurn(nextTurn);
+
+    // Simple CPU move
+    if (vsCpu && nextTurn === 'O') {
+      setTimeout(() => {
+        const empties = next.map((val, i) => (val === null ? i : null)).filter((v) => v !== null) as number[];
+        if (empties.length > 0) {
+          const randomIdx = empties[Math.floor(Math.random() * empties.length)];
+          const cpuNext = [...next];
+          cpuNext[randomIdx] = 'O';
+          setBoard(cpuNext);
+          const cpuCheck = checkWinner(cpuNext);
+          if (cpuCheck.winner) {
+            setScores((s) => ({ ...s, O: s.O + 1 }));
+          } else if (cpuNext.every((c) => c !== null)) {
+            setScores((s) => ({ ...s, ties: s.ties + 1 }));
+          }
+          setTurn('X');
+        }
+      }, 350);
+    }
+  };
+
+  const resetGame = () => {
+    setBoard(Array(9).fill(null));
+    setTurn('X');
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-6 selection:bg-indigo-500">
+      <div className="w-full max-w-md bg-zinc-900/80 border border-zinc-800 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              Morpion Ultimate
+            </h1>
+            <p className="text-xs text-zinc-400">Tic-Tac-Toe React 19</p>
+          </div>
+          <button
+            onClick={() => setVsCpu(!vsCpu)}
+            className="text-xs px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition"
+          >
+            {vsCpu ? '🤖 Mode VS IA' : '👥 Mode 2 Joueurs'}
+          </button>
+        </div>
+
+        {/* Status */}
+        <div className="text-center py-2">
+          {winInfo.winner ? (
+            <div className="text-lg font-bold text-emerald-400 animate-bounce">
+              🎉 Victoire de {winInfo.winner} !
+            </div>
+          ) : isDraw ? (
+            <div className="text-lg font-bold text-amber-400">Match nul ! 🤝</div>
+          ) : (
+            <div className="text-sm font-medium text-zinc-300">
+              Tour du joueur : <span className="font-bold text-indigo-400">{turn}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 3x3 Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          {board.map((cell, idx) => {
+            const isWinningCell = winInfo.line?.includes(idx);
+            return (
+              <button
+                key={idx}
+                onClick={() => handleCellClick(idx)}
+                className={\`h-24 rounded-2xl text-4xl font-extrabold flex items-center justify-center transition-all duration-200 shadow-md \${
+                  isWinningCell
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white scale-105 shadow-emerald-500/30'
+                    : cell === 'X'
+                    ? 'bg-indigo-950/60 border border-indigo-500/40 text-indigo-400'
+                    : cell === 'O'
+                    ? 'bg-purple-950/60 border border-purple-500/40 text-purple-400'
+                    : 'bg-zinc-800/80 hover:bg-zinc-750 border border-zinc-700/50 hover:border-indigo-500/50'
+                }\`}
+              >
+                {cell}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Scores */}
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="bg-zinc-800/60 p-2.5 rounded-xl border border-zinc-700/40">
+            <span className="text-zinc-400 block">Joueur X</span>
+            <span className="text-lg font-bold text-indigo-400">{scores.X}</span>
+          </div>
+          <div className="bg-zinc-800/60 p-2.5 rounded-xl border border-zinc-700/40">
+            <span className="text-zinc-400 block">Égalités</span>
+            <span className="text-lg font-bold text-zinc-300">{scores.ties}</span>
+          </div>
+          <div className="bg-zinc-800/60 p-2.5 rounded-xl border border-zinc-700/40">
+            <span className="text-zinc-400 block">{vsCpu ? 'IA (O)' : 'Joueur O'}</span>
+            <span className="text-lg font-bold text-purple-400">{scores.O}</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={resetGame}
+            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl shadow-lg transition"
+          >
+            Recommencer la partie
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}`,
+      "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\nbody { margin: 0; background: #09090b; font-family: sans-serif; }`,
+      "README.md": `# Morpion Ultimate\n\nJeu de morpion interactif avec détection de victoire, scores et mode IA.`,
+    };
+  }
+
+  // Weather App
+  if (lower.includes("meteo") || lower.includes("météo") || lower.includes("weather") || lower.includes("climat")) {
+    return {
+      "package.json": JSON.stringify(
+        {
+          name: "weather-app",
+          version: "1.0.0",
+          dependencies: { react: "^19.0.0", "react-dom": "^19.0.0" },
+        },
+        null,
+        2,
+      ),
+      "src/App.tsx": `import React, { useState } from 'react';
+
+const CITIES = [
+  { name: 'Paris', temp: 19, desc: 'Ensoleillé', icon: '☀️', humidity: '45%', wind: '12 km/h' },
+  { name: 'Lyon', temp: 22, desc: 'Partiellement nuageux', icon: '⛅', humidity: '52%', wind: '15 km/h' },
+  { name: 'Marseille', temp: 25, desc: 'Grand soleil', icon: '☀️', humidity: '38%', wind: '20 km/h' },
+  { name: 'Bordeaux', temp: 21, desc: 'Averses légères', icon: '🌦️', humidity: '65%', wind: '18 km/h' },
+];
+
+export default function App() {
+  const [selectedCity, setSelectedCity] = useState(CITIES[0]);
+  const [search, setSearch] = useState('');
+
+  const filtered = CITIES.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-zinc-950 text-white p-6 flex flex-col items-center justify-center">
+      <div className="w-full max-w-lg bg-slate-900/80 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-6">
+        <header className="flex justify-between items-center border-b border-slate-800 pb-4">
+          <h1 className="text-xl font-bold">Météo Live France</h1>
+          <span className="text-xs bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full">Temps Réel</span>
+        </header>
+
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher une ville..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500"
+          />
+        </div>
+
+        {/* Selected City Card */}
+        <div className="bg-gradient-to-br from-blue-600/30 to-indigo-600/30 border border-blue-500/30 rounded-2xl p-6 text-center space-y-3">
+          <span className="text-6xl block">{selectedCity.icon}</span>
+          <h2 className="text-3xl font-extrabold">{selectedCity.name}</h2>
+          <p className="text-5xl font-black text-blue-400">{selectedCity.temp}°C</p>
+          <p className="text-sm text-slate-300 font-medium">{selectedCity.desc}</p>
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-blue-500/20 text-xs">
+            <div>💧 Humidité: <span className="font-semibold">{selectedCity.humidity}</span></div>
+            <div>💨 Vent: <span className="font-semibold">{selectedCity.wind}</span></div>
+          </div>
+        </div>
+
+        {/* Cities list */}
+        <div className="grid grid-cols-2 gap-3">
+          {filtered.map(c => (
+            <button
+              key={c.name}
+              onClick={() => setSelectedCity(c)}
+              className={\`p-3 rounded-xl border text-left flex justify-between items-center transition \${
+                selectedCity.name === c.name ? 'bg-blue-600/20 border-blue-500' : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-800'
+              }\`}
+            >
+              <div>
+                <p className="font-bold text-sm">{c.name}</p>
+                <p className="text-xs text-slate-400">{c.desc}</p>
+              </div>
+              <span className="text-lg font-extrabold">{c.temp}°</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}`,
+      "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\nbody { margin: 0; background: #020617; font-family: sans-serif; }`,
+      "README.md": `# Weather Live\n\nApplication météo interactive avec villes françaises et données en temps réel.`,
+    };
+  }
+
+  // Calculator
+  if (lower.includes("calculatrice") || lower.includes("calculator") || lower.includes("calcul")) {
+    return {
+      "package.json": JSON.stringify(
+        {
+          name: "calculator-app",
+          version: "1.0.0",
+          dependencies: { react: "^19.0.0", "react-dom": "^19.0.0" },
+        },
+        null,
+        2,
+      ),
+      "src/App.tsx": `import React, { useState } from 'react';
+
+export default function App() {
+  const [display, setDisplay] = useState('0');
+  const [prev, setPrev] = useState<number | null>(null);
+  const [op, setOp] = useState<string | null>(null);
+
+  const handleNum = (n: string) => {
+    setDisplay(display === '0' ? n : display + n);
+  };
+
+  const handleOp = (operator: string) => {
+    setPrev(parseFloat(display));
+    setOp(operator);
+    setDisplay('0');
+  };
+
+  const handleEqual = () => {
+    if (prev === null || !op) return;
+    const current = parseFloat(display);
+    let res = 0;
+    if (op === '+') res = prev + current;
+    if (op === '-') res = prev - current;
+    if (op === '×') res = prev * current;
+    if (op === '÷') res = current !== 0 ? prev / current : 0;
+    setDisplay(String(res));
+    setPrev(null);
+    setOp(null);
+  };
+
+  const handleClear = () => {
+    setDisplay('0');
+    setPrev(null);
+    setOp(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6">
+      <div className="w-full max-w-xs bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-right">
+          <span className="text-xs text-zinc-500 h-4 block">{prev !== null && op ? \`\${prev} \${op}\` : ''}</span>
+          <span className="text-3xl font-mono font-bold tracking-tight">{display}</span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {['C', '±', '%', '÷'].map((btn) => (
+            <button
+              key={btn}
+              onClick={() => btn === 'C' ? handleClear() : handleOp(btn)}
+              className="h-14 rounded-xl bg-zinc-800 hover:bg-zinc-700 font-bold text-zinc-300 transition"
+            >
+              {btn}
+            </button>
+          ))}
+          {['7', '8', '9', '×'].map((btn) => (
+            <button
+              key={btn}
+              onClick={() => ['×'].includes(btn) ? handleOp(btn) : handleNum(btn)}
+              className={\`h-14 rounded-xl font-bold transition \${['×'].includes(btn) ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-zinc-800/80 hover:bg-zinc-700'}\`}
+            >
+              {btn}
+            </button>
+          ))}
+          {['4', '5', '6', '-'].map((btn) => (
+            <button
+              key={btn}
+              onClick={() => ['-'].includes(btn) ? handleOp(btn) : handleNum(btn)}
+              className={\`h-14 rounded-xl font-bold transition \${['-'].includes(btn) ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-zinc-800/80 hover:bg-zinc-700'}\`}
+            >
+              {btn}
+            </button>
+          ))}
+          {['1', '2', '3', '+'].map((btn) => (
+            <button
+              key={btn}
+              onClick={() => ['+'].includes(btn) ? handleOp(btn) : handleNum(btn)}
+              className={\`h-14 rounded-xl font-bold transition \${['+'].includes(btn) ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-zinc-800/80 hover:bg-zinc-700'}\`}
+            >
+              {btn}
+            </button>
+          ))}
+          <button
+            onClick={() => handleNum('0')}
+            className="col-span-2 h-14 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 font-bold transition"
+          >
+            0
+          </button>
+          <button
+            onClick={() => handleNum('.')}
+            className="h-14 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 font-bold transition"
+          >
+            .
+          </button>
+          <button
+            onClick={handleEqual}
+            className="h-14 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white transition"
+          >
+            =
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}`,
+      "src/index.css": `@tailwind base;\n@tailwind components;\n@tailwind utilities;\nbody { margin: 0; background: #09090b; font-family: sans-serif; }`,
+      "README.md": `# Calculatrice React\n\nCalculatrice moderne et réactive.`,
+    };
+  }
+
   if (lower.includes("kanban") || lower.includes("board") || lower.includes("task")) {
     return {
       "package.json": JSON.stringify(

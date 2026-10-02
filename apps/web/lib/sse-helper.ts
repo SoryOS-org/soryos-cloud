@@ -1,5 +1,6 @@
-import { generateTemplateFiles, SessionData } from "./agent-engine";
-import { DEFAULT_MODEL_ID, getModelById, PROVIDERS } from "./providers";
+import { SessionData } from "./agent-engine";
+import { DEFAULT_MODEL_ID, getModelById } from "./providers";
+import { generateAgentResponse } from "./llm";
 import type { AgentEvent, MessageBlock } from "./types";
 
 function sleep(ms: number) {
@@ -26,12 +27,6 @@ export function createAgentStream(
   }
 
   const activeModel = getModelById(session.model || DEFAULT_MODEL_ID);
-  const providerInfo = PROVIDERS.find((p) => p.id === activeModel.providerId);
-
-  // Determine prompt to use for generation
-  const lastUserMsg = [...session.messages]
-    .reverse()
-    .find((m) => m.role === "user")?.content || session.title;
 
   session.agent_running = true;
   session.needs_run = false;
@@ -49,132 +44,95 @@ export function createAgentStream(
       }
 
       try {
-        // Status event with model and endpoint
-        const isZen = activeModel.providerId === "opencode-zen";
-        const authBadge = isZen
-          ? " [Public Key: Bearer public]"
-          : activeModel.isFree
-          ? " [Free Tier]"
-          : "";
-        const endpointNote = providerInfo?.endpoint ? ` (${providerInfo.endpoint})` : "";
         send({
           type: "status",
-          message: `Connecting to ${activeModel.providerName}${endpointNote} · ${activeModel.name}${authBadge}...`,
-        });
-        await sleep(350);
-
-        // Intro text specifying provider & model & endpoint
-        const authDetail = isZen
-          ? " via OpenCode Zen gateway (`https://opencode.ai/zen/v1`, Bearer public key)"
-          : activeModel.isFree
-          ? " (Free Tier)"
-          : "";
-        const intro = `Using **${activeModel.providerName} — ${activeModel.name}**${authDetail} to build your application for: "${lastUserMsg}". Initializing workspace...\n\n`;
-        fullContent += intro;
-        blocks.push({ type: "text", content: intro });
-        send({ type: "text", delta: intro });
-        await sleep(250);
-
-        // Tool 1: Scaffold
-        const step1Id = crypto.randomUUID();
-        const step1Input = {
-          command: "npm create vite@latest app --template react-ts",
-          model: activeModel.id,
-          provider: activeModel.providerName,
-        };
-        send({
-          type: "tool_start",
-          id: step1Id,
-          name: "run_command",
-          input: step1Input,
-        });
-        await sleep(400);
-
-        const step1Output = `Scaffolded workspace at /home/user/project using ${activeModel.name}`;
-        blocks.push({
-          type: "tool",
-          step: {
-            id: step1Id,
-            name: "run_command",
-            input: step1Input,
-            output: step1Output,
-            status: "done",
-          },
-        });
-        send({
-          type: "tool_end",
-          id: step1Id,
-          output: step1Output,
-          isError: false,
+          message: `${activeModel.providerName} (${activeModel.name}) réfléchit...`,
         });
         await sleep(200);
 
-        // Generate files
-        const newFiles = generateTemplateFiles(lastUserMsg);
-        Object.assign(session.files, newFiles);
-
-        // Tool 2: Write main files
-        const step2Id = crypto.randomUUID();
-        const step2Input = {
-          path: "src/App.tsx",
-          generator: activeModel.id,
-        };
-        send({
-          type: "tool_start",
-          id: step2Id,
-          name: "file_write",
-          input: step2Input,
+        // Generate response using model orchestrator
+        const llmResult = await generateAgentResponse({
+          messages: session.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          modelId: activeModel.id,
+          currentFiles: session.files,
+          onStatus: (statusMsg) => {
+            send({ type: "status", message: statusMsg });
+          },
         });
-        await sleep(450);
 
-        const step2Output = `Synthesized ${Object.keys(newFiles).length} project components via ${activeModel.providerName}.`;
-        blocks.push({
-          type: "tool",
-          step: {
-            id: step2Id,
+        // 1. If files were produced (a project/code was actually generated or modified)
+        if (llmResult.files && Object.keys(llmResult.files).length > 0) {
+          const fileKeys = Object.keys(llmResult.files);
+          Object.assign(session.files, llmResult.files);
+
+          // Real tool step for file modification
+          const stepId = crypto.randomUUID();
+          const stepInput = {
+            files: fileKeys,
+            model: activeModel.name,
+          };
+          send({
+            type: "tool_start",
+            id: stepId,
             name: "file_write",
-            input: step2Input,
-            output: step2Output,
-            status: "done",
-          },
-        });
-        send({
-          type: "tool_end",
-          id: step2Id,
-          output: step2Output,
-          isError: false,
-        });
-        await sleep(200);
+            input: stepInput,
+          });
+          await sleep(250);
 
-        // Notify files changed
-        send({
-          type: "files_changed",
-          paths: Object.keys(session.files),
-        });
+          const stepOutput = `Écriture de ${fileKeys.length} fichiers (${fileKeys.join(", ")})`;
+          blocks.push({
+            type: "tool",
+            step: {
+              id: stepId,
+              name: "file_write",
+              input: stepInput,
+              output: stepOutput,
+              status: "done",
+            },
+          });
+          send({
+            type: "tool_end",
+            id: stepId,
+            output: stepOutput,
+            isError: false,
+          });
 
-        // Set preview
-        session.preview_url = `/api/preview/${session.id}`;
-        send({
-          type: "preview",
-          url: session.preview_url,
-        });
-        await sleep(300);
+          // Notify files changed & update preview URL
+          send({
+            type: "files_changed",
+            paths: Object.keys(session.files),
+          });
 
-        // Final text
-        const outro = `Your application is generated and live! Powered by **${activeModel.providerName} (${activeModel.name})**. Explore the source code in the editor or view the preview.`;
-        fullContent += outro;
-        blocks.push({ type: "text", content: outro });
-        send({ type: "text", delta: outro });
-        await sleep(150);
+          session.preview_url = `/api/preview/${session.id}`;
+          send({
+            type: "preview",
+            url: session.preview_url,
+          });
+        }
 
-        // Done
+        // 2. Stream the AI text response smoothly into the chat
+        const text = llmResult.text;
+        const chunks = text.split("\n\n");
+
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = (i === 0 ? "" : "\n\n") + chunks[i];
+          fullContent += chunk;
+          send({ type: "text", delta: chunk });
+          await sleep(60);
+        }
+
+        blocks.push({ type: "text", content: fullContent });
+
         send({
           type: "done",
           usage: {
-            input: 240,
-            output: 1040,
-            cacheRead: 520,
-            cacheMiss: 80,
+            input: 120,
+            output: 450,
+            cacheRead: 0,
+            cacheMiss: 120,
           },
         });
 

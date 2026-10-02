@@ -149,7 +149,7 @@ export default function ChatPage({
           break;
 
         case "files_changed":
-          scheduleFileRefresh();
+          void refreshFiles();
           break;
 
         case "error":
@@ -172,7 +172,7 @@ export default function ChatPage({
           break;
       }
     },
-    [flushText, scheduleFlush, scheduleFileRefresh, refreshFiles],
+    [flushText, scheduleFlush, refreshFiles],
   );
 
   const refreshFromServer = useCallback(
