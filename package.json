@@ -1,19 +1,20 @@
 {
   "name": "codeforge",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "turbo dev",
-    "dev:web": "pnpm --filter @codeforge/web dev",
-    "dev:api": "pnpm --filter @codeforge/api dev",
-    "build": "turbo build",
-    "typecheck": "turbo typecheck",
-    "lint": "turbo lint"
+    "dev": "npm run dev --workspace=@codeforge/web",
+    "dev:web": "npm run dev --workspace=@codeforge/web",
+    "build": "npm run build --workspace=@codeforge/web",
+    "typecheck": "npm run typecheck --workspace=@codeforge/web",
+    "lint": "npm run lint --workspace=@codeforge/web"
   },
   "devDependencies": {
     "turbo": "^2.5.4",
     "typescript": "^5.8.3"
   },
-  "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": ">=20"
   }

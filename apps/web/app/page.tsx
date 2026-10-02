@@ -18,18 +18,20 @@ const EXAMPLES = [
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
     setLoading(true);
+    setErrorMessage(null);
     try {
       const session = await createSession(prompt.slice(0, 80), prompt.trim());
       router.push(`/chat/${session.id}`);
     } catch (e) {
       console.error(e);
-      alert("Failed to create session. Is the server running on :8000?");
+      setErrorMessage("Failed to create session. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -81,6 +83,12 @@ export default function Home() {
               </Button>
             </div>
           </div>
+
+          {errorMessage && (
+            <div className="rounded border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
 
           <div className="flex flex-wrap justify-center gap-2">
             {EXAMPLES.map((ex) => (

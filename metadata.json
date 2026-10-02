@@ -1,0 +1,7 @@
+{
+  "name": "CodeForge",
+  "description": "AI agent workbench for code generation and execution powered by AI.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

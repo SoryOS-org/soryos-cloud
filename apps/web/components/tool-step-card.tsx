@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Check,
   CheckCircle2,
@@ -39,13 +39,10 @@ function StepIcon({ step }: { step: ToolStep }) {
 
 export function ToolStepCard({ step }: { step: ToolStep }) {
   const [copied, setCopied] = useState(false);
-  const [open, setOpen] = useState(step.status === "running");
+  const [userToggled, setUserToggled] = useState<boolean | null>(null);
+  const open = userToggled !== null ? userToggled : step.status === "running";
   const hasError = step.isError || step.status === "error";
   const showOutput = step.output && step.status !== "running";
-
-  useEffect(() => {
-    if (step.status === "running") setOpen(true);
-  }, [step.status]);
 
   const copyOutput = async () => {
     if (!step.output) return;
@@ -59,7 +56,7 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
       <div className="flex items-center justify-between gap-3 border-b border-[#eee9e1] bg-[#faf8f5] px-3 py-2">
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setUserToggled(!open)}
           className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs font-medium text-[#8a8278] hover:text-[#3d3830]"
         >
           <ChevronDown

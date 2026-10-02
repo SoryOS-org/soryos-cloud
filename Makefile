@@ -1,12 +1,6 @@
 .DEFAULT_GOAL := help
 
-PNPM := pnpm
-API_DIR := apps/api
-VENV := $(API_DIR)/venv
-PY := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
-
-.PHONY: help dev setup install install-js install-api api web build lint typecheck check-env
+.PHONY: help dev setup install build lint typecheck
 
 help: ## Show available commands
 	@echo "CodeForge"
@@ -16,38 +10,19 @@ help: ## Show available commands
 
 setup: install ## First-time setup (install deps + create .env)
 	@test -f .env || cp .env.example .env
-	@echo ""
-	@echo "Setup complete. Add your keys to .env, then run:"
-	@echo "  make dev"
+	@echo "Setup complete."
 
-install: install-js install-api ## Install all dependencies
+install: ## Install dependencies (npm)
+	npm install
 
-install-js: ## Install Node deps (pnpm)
-	$(PNPM) install
+dev: ## Run web (:3000)
+	npm run dev
 
-install-api: $(VENV)/bin/uvicorn ## Create Python venv + install API deps
-$(VENV)/bin/uvicorn: $(API_DIR)/requirements.txt
-	@test -d $(VENV) || python3 -m venv $(VENV)
-	$(PIP) install -q -r $(API_DIR)/requirements.txt
-	@touch $(VENV)/bin/uvicorn
+build: ## Build apps
+	npm run build
 
-dev: check-env install-js ## Run web (:3000) + api (:8000)
-	$(PNPM) dev
+lint: ## Lint apps
+	npm run lint
 
-api: check-env ## Run API only (:8000)
-	$(PNPM) dev:api
-
-web: check-env install-js ## Run web only (:3000)
-	$(PNPM) dev:web
-
-build: check-env ## Build all apps
-	$(PNPM) build
-
-lint: ## Lint all apps
-	$(PNPM) lint
-
-typecheck: ## Typecheck all apps
-	$(PNPM) typecheck
-
-check-env:
-	@test -f .env || (echo "Missing .env — run: make setup" && exit 1)
+typecheck: ## Typecheck apps
+	npm run typecheck
