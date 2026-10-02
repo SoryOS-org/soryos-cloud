@@ -15,7 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CodeForge",
   description:
-    "This is code generation and execution app powered by AI (bolt clone).",
+    "AI agent workbench for code generation and execution powered by AI.",
+  openGraph: {
+    title: "CodeForge",
+    description:
+      "AI agent workbench for code generation and execution powered by AI.",
+  },
 };
 
 export default function RootLayout({

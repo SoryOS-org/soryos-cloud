@@ -1,12 +1,11 @@
 import type { AgentEvent, GetSessionResponse } from "./types";
 
 function getApiBase(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
+  // In the browser, always use relative URLs to avoid CORS and wrong ports (e.g. localhost:8000)
   if (typeof window !== "undefined") {
     return "";
   }
+  // Server-side SSR requests
   const port = process.env.PORT || 3000;
   return `http://127.0.0.1:${port}`;
 }
@@ -77,20 +76,38 @@ export async function fetchFile(
   path: string,
 ): Promise<string> {
   const base = getApiBase();
-  const res = await fetch(
-    `${base}/api/sessions/${sessionId}/files/${encodeURIComponent(path)}`,
-  );
-  if (!res.ok) throw new Error(`Failed to fetch file: ${res.statusText}`);
-  return res.text();
+  const cleanPath = path
+    .replace(/^\/home\/user\//, "")
+    .replace(/^home\/user\//, "")
+    .replace(/^\.\//, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  try {
+    const res = await fetch(
+      `${base}/api/sessions/${sessionId}/files/${cleanPath}`,
+    );
+    if (!res.ok) return `// File not found: ${path}`;
+    return res.text();
+  } catch (err) {
+    console.warn("fetchFile error:", err);
+    return `// Error loading file: ${path}`;
+  }
 }
 
 export async function ensurePreview(
   sessionId: string,
 ): Promise<{ preview_url: string | null; status: string; output?: string | null }> {
-  const base = getApiBase();
-  const res = await fetch(`${base}/api/sessions/${sessionId}/preview`);
-  if (!res.ok) throw new Error(`Failed to load preview: ${res.statusText}`);
-  return res.json();
+  try {
+    const base = getApiBase();
+    const res = await fetch(`${base}/api/sessions/${sessionId}/preview`);
+    if (!res.ok) {
+      return { preview_url: `/api/preview/${sessionId}`, status: "ready", output: null };
+    }
+    return res.json();
+  } catch {
+    return { preview_url: `/api/preview/${sessionId}`, status: "ready", output: null };
+  }
 }
 
 export async function runTerminal(

@@ -269,8 +269,9 @@ export default function ChatPage({
 
     void init();
 
+    const currentGenRef = genRef;
     return () => {
-      genRef.current++;
+      currentGenRef.current++;
     };
   }, [sessionId, runStream, pollUntilDone, refreshFiles]);
 

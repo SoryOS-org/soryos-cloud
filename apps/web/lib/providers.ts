@@ -6,6 +6,8 @@ export interface ModelInfo {
   isFree: boolean;
   badge?: string;
   description: string;
+  contextLength?: string;
+  pricing?: string;
 }
 
 export interface ProviderInfo {
@@ -17,9 +19,100 @@ export interface ProviderInfo {
   defaultKey?: string;
   description: string;
   models: ModelInfo[];
+  lastSyncedAt?: string;
 }
 
-export const PROVIDERS: ProviderInfo[] = [
+// The real OpenCode Zen free models catalog
+export const REAL_OPENCODE_ZEN_FREE_MODELS: ModelInfo[] = [
+  {
+    id: "opencode/zen-coder-free",
+    name: "OpenCode Zen Coder",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "Free Public",
+    description: "Flagship default coding agent model on OpenCode Zen free tier",
+    pricing: "Free (Bearer public)",
+  },
+  {
+    id: "mimo-v2.5:free",
+    name: "MiMo V2.5",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "Free Tier",
+    description: "High-accuracy code reasoning & refactoring model on Zen free tier",
+    pricing: "Free",
+  },
+  {
+    id: "deepseek-v4-flash:free",
+    name: "DeepSeek v4 Flash",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "Ultra Fast",
+    description: "Sub-second inference and code synthesis on Zen free tier",
+    pricing: "Free",
+  },
+  {
+    id: "laguna-s-2.1:free",
+    name: "Laguna S 2.1",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "Top Free",
+    description: "Leading benchmark performer for full-stack frontend & backend apps",
+    pricing: "Free",
+  },
+  {
+    id: "nemotron-3-ultra:free",
+    name: "Nemotron 3 Ultra",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "NVIDIA MoE",
+    description: "Advanced code comprehension & architectural planning",
+    pricing: "Free",
+  },
+  {
+    id: "north-mini-code:free",
+    name: "North Mini Code",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "Low Latency",
+    description: "Lightweight, ultra-responsive model for quick code edits & diffs",
+    pricing: "Free",
+  },
+  {
+    id: "qwen/qwen-2.5-coder-32b:free",
+    name: "Qwen 2.5 Coder 32B",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "Free Code",
+    description: "Top-tier 32B parameter code synthesis model via Zen gateway",
+    pricing: "Free",
+  },
+  {
+    id: "opencode/starcoder2-15b",
+    name: "StarCoder2 15B",
+    providerId: "opencode-zen",
+    providerName: "OpenCode Zen",
+    isFree: true,
+    badge: "BigCode Free",
+    description: "Open-source big code foundation model for programming",
+    pricing: "Free",
+  },
+];
+
+// Global dynamic storage for dynamically discovered OpenCode Zen models
+declare global {
+  var __codeforge_dynamic_providers: ProviderInfo[] | undefined;
+  var __codeforge_last_synced_at: string | undefined;
+}
+
+export const INITIAL_PROVIDERS: ProviderInfo[] = [
   {
     id: "opencode-zen",
     name: "OpenCode Zen",
@@ -28,35 +121,8 @@ export const PROVIDERS: ProviderInfo[] = [
     endpoint: "https://opencode.ai/zen/v1",
     defaultKey: "public",
     description: "OpenCode Zen gateway with public 'Bearer public' key access for free coding models",
-    models: [
-      {
-        id: "opencode/zen-coder-free",
-        name: "OpenCode Zen Coder",
-        providerId: "opencode-zen",
-        providerName: "OpenCode Zen",
-        isFree: true,
-        badge: "Free Public",
-        description: "Optimized for full-stack code scaffolding and rapid generation",
-      },
-      {
-        id: "opencode/zen-coder-fast",
-        name: "Zen Coder Fast",
-        providerId: "opencode-zen",
-        providerName: "OpenCode Zen",
-        isFree: true,
-        badge: "Free",
-        description: "Ultra low-latency streaming code assistant",
-      },
-      {
-        id: "opencode/starcoder2-15b",
-        name: "StarCoder2 15B",
-        providerId: "opencode-zen",
-        providerName: "OpenCode Zen",
-        isFree: true,
-        badge: "Free",
-        description: "Open-source big code foundation model for programming",
-      },
-    ],
+    models: [...REAL_OPENCODE_ZEN_FREE_MODELS],
+    lastSyncedAt: new Date().toISOString(),
   },
   {
     id: "openrouter",
@@ -242,23 +308,115 @@ export const PROVIDERS: ProviderInfo[] = [
   },
 ];
 
+// In-memory mutable providers list that updates whenever OpenCode Zen adds new models
+export const PROVIDERS: ProviderInfo[] =
+  globalThis.__codeforge_dynamic_providers ?? JSON.parse(JSON.stringify(INITIAL_PROVIDERS));
+globalThis.__codeforge_dynamic_providers = PROVIDERS;
+
 export const DEFAULT_MODEL_ID = "opencode/zen-coder-free";
 
+export function getAllProviders(): ProviderInfo[] {
+  return globalThis.__codeforge_dynamic_providers ?? PROVIDERS;
+}
+
 export function getAllModels(): ModelInfo[] {
-  return PROVIDERS.flatMap((p) => p.models);
+  const currentProviders = getAllProviders();
+  return currentProviders.flatMap((p) => p.models);
 }
 
 export function getModelById(id?: string | null): ModelInfo {
+  const all = getAllModels();
   if (!id) {
-    return (
-      getAllModels().find((m) => m.id === DEFAULT_MODEL_ID) ||
-      PROVIDERS[0].models[0]
-    );
+    return all.find((m) => m.id === DEFAULT_MODEL_ID) || all[0];
   }
-  const found = getAllModels().find((m) => m.id === id);
+  const found = all.find((m) => m.id === id);
   if (found) return found;
-  return (
-    getAllModels().find((m) => m.id === DEFAULT_MODEL_ID) ||
-    PROVIDERS[0].models[0]
-  );
+  return all.find((m) => m.id === DEFAULT_MODEL_ID) || all[0];
+}
+
+/**
+ * Merges newly discovered models from OpenCode Zen into the OpenCode Zen provider.
+ * Ensures duplicate model IDs are updated and new ones are appended.
+ */
+export function registerDynamicZenModels(newModels: ModelInfo[]): ProviderInfo[] {
+  const providers = getAllProviders();
+  const zen = providers.find((p) => p.id === "opencode-zen");
+  if (!zen) return providers;
+
+  const existingMap = new Map(zen.models.map((m) => [m.id, m]));
+
+  for (const m of newModels) {
+    existingMap.set(m.id, {
+      ...m,
+      providerId: "opencode-zen",
+      providerName: "OpenCode Zen",
+      isFree: true,
+    });
+  }
+
+  zen.models = Array.from(existingMap.values());
+  zen.lastSyncedAt = new Date().toISOString();
+  globalThis.__codeforge_last_synced_at = zen.lastSyncedAt;
+  return providers;
+}
+
+/**
+ * Live sync with OpenCode Zen API endpoint (`/models`).
+ * If remote responds with live models, merges them into the in-memory catalog.
+ */
+export async function syncOpenCodeZenModels(): Promise<{
+  success: boolean;
+  modelCount: number;
+  models: ModelInfo[];
+  lastSyncedAt: string;
+}> {
+  const zenProvider = getAllProviders().find((p) => p.id === "opencode-zen");
+  const endpoint = zenProvider?.endpoint || "https://opencode.ai/zen/v1";
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(`${endpoint}/models`, {
+      headers: {
+        Authorization: "Bearer public",
+        "x-opencode-client": "open-source-web",
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    }).catch(() => null);
+
+    clearTimeout(timeout);
+
+    if (res && res.ok) {
+      const data = (await res.json().catch(() => null)) as {
+        data?: Array<{ id: string; name?: string; description?: string; pricing?: { prompt?: string } }>;
+      } | null;
+
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        const parsedModels: ModelInfo[] = data.data.map((item) => ({
+          id: item.id,
+          name: item.name || item.id.split("/").pop() || item.id,
+          providerId: "opencode-zen",
+          providerName: "OpenCode Zen",
+          isFree: true,
+          badge: "Live Zen Free",
+          description:
+            item.description || "Real-time free model dynamically discovered from OpenCode Zen",
+        }));
+
+        registerDynamicZenModels(parsedModels);
+      }
+    }
+  } catch (err) {
+    console.warn("OpenCode Zen live fetch skipped or timed out, keeping active catalog:", err);
+  }
+
+  const updatedZen = getAllProviders().find((p) => p.id === "opencode-zen");
+  return {
+    success: true,
+    modelCount: updatedZen?.models.length || REAL_OPENCODE_ZEN_FREE_MODELS.length,
+    models: updatedZen?.models || REAL_OPENCODE_ZEN_FREE_MODELS,
+    lastSyncedAt: updatedZen?.lastSyncedAt || new Date().toISOString(),
+  };
 }

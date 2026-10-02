@@ -94,6 +94,48 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Quick Free Model Chips */}
+          <div className="space-y-1.5 text-center">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-[#8a8278]">
+              Popular Free OpenCode Zen & Gateway Models
+            </p>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {[
+                { id: "opencode/zen-coder-free", label: "Zen Coder Free", badge: "Default" },
+                { id: "mimo-v2.5:free", label: "MiMo V2.5", badge: "Free" },
+                { id: "deepseek-v4-flash:free", label: "DeepSeek v4 Flash", badge: "Fast" },
+                { id: "laguna-s-2.1:free", label: "Laguna S 2.1", badge: "Top Free" },
+                { id: "nemotron-3-ultra:free", label: "Nemotron 3", badge: "MoE" },
+                { id: "deepseek/deepseek-r1:free", label: "DeepSeek R1", badge: "CoT Free" },
+              ].map((chip) => {
+                const isActive = selectedModel === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setSelectedModel(chip.id)}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-xs border rounded-none transition-colors cursor-pointer ${
+                      isActive
+                        ? "bg-[#3d3830] text-white border-[#3d3830]"
+                        : "bg-white text-[#5c5348] border-[#e5e0d8] hover:bg-[#faf8f5]"
+                    }`}
+                  >
+                    <span>{chip.label}</span>
+                    <span
+                      className={`text-[9px] px-1 py-0.2 rounded ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      }`}
+                    >
+                      {chip.badge}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {errorMessage && (
             <div className="rounded border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
               {errorMessage}
