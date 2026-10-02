@@ -21,6 +21,7 @@
   "dependencies": {
     "@google/genai": "^2.26.0",
     "@types/jszip": "^3.4.1",
-    "jszip": "^3.10.2"
+    "jszip": "^3.10.2",
+    "mermaid": "^12.1.0"
   }
 }

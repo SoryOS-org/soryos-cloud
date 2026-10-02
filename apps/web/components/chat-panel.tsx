@@ -8,8 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowUp, Square, FolderDown } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ToolStepCard } from "@/components/tool-step-card";
 import { ModelSelector } from "@/components/model-selector";
 import { AgentSelector } from "@/components/agent-selector";
@@ -43,7 +42,7 @@ function AssistantTurn({ message }: { message: ChatMessage }) {
             key={`text-${i}`}
             className="chat-prose prose prose-sm prose-stone max-w-none text-[15px] leading-relaxed text-[#3d3830]"
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
+            <MarkdownRenderer content={block.content} />
           </div>
         ) : (
           <ToolStepCard key={block.step.id} step={block.step} />
@@ -91,7 +90,7 @@ export function ChatPanel({
     <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-white">
       <div className="app-watermark pointer-events-none absolute inset-0" />
 
-      <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-white px-5">
+      <header className="relative z-10 hidden lg:flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-white px-5">
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/" className="shrink-0">
             <img src="/logo1.png" alt="CodeForge" className="h-5 w-auto" />
