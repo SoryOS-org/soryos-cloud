@@ -654,7 +654,15 @@ export function PreviewPanel({
                   </button>
                 </div>
                 <div className="min-h-0 flex-1">
-                  <Terminal sessionId={sessionId} providerId={providerId} />
+                  <Terminal
+                    sessionId={sessionId}
+                    providerId={providerId}
+                    onPortDetected={(port) => {
+                      if (port) {
+                        onPreviewUrl?.(`/api/preview/${sessionId}`);
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </ResizablePanel>

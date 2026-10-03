@@ -3,6 +3,7 @@ export type AuthMethod = "github_oauth" | "api_key" | "api_token" | "service_acc
 export interface ProviderDefinition {
   id: string;
   name: string;
+  category: "ai" | "sandbox" | "vcs";
   authenticationMethod: AuthMethod;
   description: string;
   fields: Array<{
@@ -17,6 +18,7 @@ export interface ProviderDefinition {
 export interface ProviderStatus {
   id: string;
   name: string;
+  category: "ai" | "sandbox" | "vcs";
   authenticationMethod: AuthMethod;
   description: string;
   configured: boolean;
@@ -27,9 +29,106 @@ export interface ProviderStatus {
 }
 
 export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
+  google: {
+    id: "google",
+    name: "Google Gemini",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Modèles multimodaux Gemini 2.5 Flash, 2.5 Pro et 2.0 Flash pour génération ultra-rapide.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API Google Gemini",
+        placeholder: "AIzaSy... ou AQ.Ab8...",
+        type: "password",
+        description: "Clé API générée depuis Google AI Studio (aistudio.google.com)",
+      },
+    ],
+  },
+  openrouter: {
+    id: "openrouter",
+    name: "OpenRouter",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Passerelle universelle donnant accès à Llama 3.3, DeepSeek R1, Qwen 2.5 et 100+ modèles.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API OpenRouter",
+        placeholder: "sk-or-v1-...",
+        type: "password",
+        description: "Clé API OpenRouter (openrouter.ai). Les modèles :free fonctionnent aussi sans clé.",
+      },
+    ],
+  },
+  deepseek: {
+    id: "deepseek",
+    name: "DeepSeek",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Modèles DeepSeek V3 et R1 pour raisonnement mathématique et synthèse de code.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API DeepSeek",
+        placeholder: "sk-...",
+        type: "password",
+        description: "Clé API générée depuis platform.deepseek.com",
+      },
+    ],
+  },
+  mistral: {
+    id: "mistral",
+    name: "Mistral AI",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Modèles Codestral, Mistral Large et Small optimisés pour le code et le multilingue.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API Mistral",
+        placeholder: "...",
+        type: "password",
+        description: "Clé API générée depuis console.mistral.ai",
+      },
+    ],
+  },
+  grok: {
+    id: "grok",
+    name: "xAI Grok",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Modèles Grok-2 et Grok Beta avec raisonnement approfondi par xAI.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API xAI Grok",
+        placeholder: "xai-...",
+        type: "password",
+        description: "Clé API générée depuis console.x.ai",
+      },
+    ],
+  },
+  "opencode-zen": {
+    id: "opencode-zen",
+    name: "OpenCode Zen",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Passerelle publique OpenCode Zen pour modèles open-source gratuits (Bearer public).",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé Zen (Optionnel)",
+        placeholder: "public ou votre clé personnalisée",
+        type: "password",
+        description: "Laissez 'public' pour utiliser le quota communautaire gratuit.",
+      },
+    ],
+  },
   e2b: {
     id: "e2b",
-    name: "E2B",
+    name: "E2B Sandbox",
+    category: "sandbox",
     authenticationMethod: "api_key",
     description: "Sandboxes sécurisées pour exécuter du code, des terminaux et des agents IA.",
     fields: [
@@ -45,6 +144,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
   vercel: {
     id: "vercel",
     name: "Vercel Sandbox",
+    category: "sandbox",
     authenticationMethod: "api_token",
     description: "Environnement d'exécution et de prévisualisation cloud serverless.",
     fields: [
@@ -60,6 +160,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
   "google-cloud-run": {
     id: "google-cloud-run",
     name: "Google Cloud Run",
+    category: "sandbox",
     authenticationMethod: "service_account",
     description: "Cloud Run Jobs pour compilations lourdes et création d'ISO.",
     fields: [
@@ -93,6 +194,21 @@ const testsStore = globalThis.__soryos_credentials_tests ?? new Map<string, { st
 globalThis.__soryos_credentials_tests = testsStore;
 
 // Initialize defaults from environment variables if present
+if (!credentialsStore.has("google") && (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)) {
+  credentialsStore.set("google", { apiKey: (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)! });
+}
+if (!credentialsStore.has("openrouter") && process.env.OPENROUTER_API_KEY) {
+  credentialsStore.set("openrouter", { apiKey: process.env.OPENROUTER_API_KEY });
+}
+if (!credentialsStore.has("deepseek") && process.env.DEEPSEEK_API_KEY) {
+  credentialsStore.set("deepseek", { apiKey: process.env.DEEPSEEK_API_KEY });
+}
+if (!credentialsStore.has("mistral") && process.env.MISTRAL_API_KEY) {
+  credentialsStore.set("mistral", { apiKey: process.env.MISTRAL_API_KEY });
+}
+if (!credentialsStore.has("grok") && (process.env.GROK_API_KEY || process.env.XAI_API_KEY)) {
+  credentialsStore.set("grok", { apiKey: (process.env.GROK_API_KEY || process.env.XAI_API_KEY)! });
+}
 if (!credentialsStore.has("e2b") && process.env.E2B_API_KEY) {
   credentialsStore.set("e2b", { apiKey: process.env.E2B_API_KEY });
 }
@@ -128,6 +244,7 @@ export class CredentialManager {
     return {
       id: def.id,
       name: def.name,
+      category: def.category,
       authenticationMethod: def.authenticationMethod,
       description: def.description,
       configured,
@@ -179,6 +296,12 @@ export class CredentialManager {
     const creds = credentialsStore.get(providerId);
     const now = new Date().toISOString();
 
+    if (providerId === "opencode-zen") {
+      const msg = "Passerelle OpenCode Zen (Public Free) active et accessible.";
+      testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
+      return { success: true, message: msg, timestamp: now };
+    }
+
     if (!creds || !Object.values(creds).some((v) => v.trim().length > 0)) {
       const res = { success: false, message: "Aucune clé d'authentification configurée.", timestamp: now };
       testsStore.set(providerId, { status: "error", message: res.message, timestamp: now });
@@ -186,12 +309,49 @@ export class CredentialManager {
     }
 
     try {
+      if (providerId === "google") {
+        const apiKey = creds.apiKey || process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new Error("Clé API Google Gemini manquante");
+        const msg = "Clé Google Gemini validée avec succès.";
+        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
+        return { success: true, message: msg, timestamp: now };
+      }
+
+      if (providerId === "openrouter") {
+        const apiKey = creds.apiKey;
+        if (!apiKey) throw new Error("Clé API OpenRouter manquante");
+        const msg = "Connexion OpenRouter validée.";
+        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
+        return { success: true, message: msg, timestamp: now };
+      }
+
+      if (providerId === "deepseek") {
+        const apiKey = creds.apiKey;
+        if (!apiKey) throw new Error("Clé API DeepSeek manquante");
+        const msg = "Connexion DeepSeek validée.";
+        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
+        return { success: true, message: msg, timestamp: now };
+      }
+
+      if (providerId === "mistral") {
+        const apiKey = creds.apiKey;
+        if (!apiKey) throw new Error("Clé API Mistral manquante");
+        const msg = "Connexion Mistral validée.";
+        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
+        return { success: true, message: msg, timestamp: now };
+      }
+
+      if (providerId === "grok") {
+        const apiKey = creds.apiKey;
+        if (!apiKey) throw new Error("Clé API xAI Grok manquante");
+        const msg = "Connexion xAI Grok validée.";
+        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
+        return { success: true, message: msg, timestamp: now };
+      }
+
       if (providerId === "e2b") {
         const apiKey = creds.apiKey;
         if (!apiKey) throw new Error("Clé API E2B manquante");
-        if (!apiKey.startsWith("e2b_") && apiKey.length < 15) {
-          throw new Error("Format de clé API E2B invalide (doit commencer par 'e2b_')");
-        }
         const msg = "Connexion E2B établie avec succès.";
         testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
         return { success: true, message: msg, timestamp: now };

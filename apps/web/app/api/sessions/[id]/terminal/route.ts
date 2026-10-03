@@ -1,7 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionData } from "@/lib/agent-engine";
-import { sandboxManager } from "@/lib/sandbox";
-import { GitHubRemoteFilesystem } from "@/lib/filesystem/remote-provider";
+import { ptyManager, TerminalInstance } from "@/lib/terminal/pty-manager";
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const session = getSessionData(id);
+
+  if (!session) {
+    return NextResponse.json({ error: "Session introuvable" }, { status: 404 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const terminalId = searchParams.get("terminalId");
+  const state = ptyManager.getOrCreateSessionState(id);
+
+  const terminalsList = Array.from(state.terminals.values()).map((t) => ({
+    id: t.id,
+    title: t.title,
+    shell: t.shell,
+    cwd: t.cwd,
+    gitBranch: t.gitBranch,
+    gitStatus: t.gitStatus,
+    isRunning: Boolean(t.activeProcess),
+    activeCommand: t.activeProcess?.command,
+    detectedPort: t.detectedPort,
+  }));
+
+  const active = terminalId ? state.terminals.get(terminalId) : state.terminals.get(state.activeTerminalId);
+
+  return NextResponse.json({
+    sessionId: id,
+    activeTerminalId: state.activeTerminalId,
+    terminals: terminalsList,
+    activeTerminal: active
+      ? {
+          id: active.id,
+          title: active.title,
+          shell: active.shell,
+          cwd: active.cwd,
+          buffer: active.buffer,
+          history: active.history,
+          gitBranch: active.gitBranch,
+          gitStatus: active.gitStatus,
+          isRunning: Boolean(active.activeProcess),
+          activeCommand: active.activeProcess?.command,
+          exitCode: active.exitCode,
+          detectedPort: active.detectedPort,
+        }
+      : null,
+  });
+}
 
 export async function POST(
   req: NextRequest,
@@ -15,117 +66,104 @@ export async function POST(
   }
 
   const body = await req.json().catch(() => ({}));
-  const rawCommand = (body.command || "").trim();
+  const action = body.action || "exec";
+  const state = ptyManager.getOrCreateSessionState(id);
+  const terminalId = body.terminalId || state.activeTerminalId;
 
-  if (!rawCommand) {
-    return NextResponse.json({ output: "", isError: false, cwd: session.cwd });
+  // 1. Create a new terminal tab
+  if (action === "create") {
+    const shell = body.shell || "/bin/bash";
+    const newTerm = ptyManager.createTerminal(id, shell);
+    return NextResponse.json({
+      success: true,
+      terminal: {
+        id: newTerm.id,
+        title: newTerm.title,
+        shell: newTerm.shell,
+        cwd: newTerm.cwd,
+        gitBranch: newTerm.gitBranch,
+        gitStatus: newTerm.gitStatus,
+      },
+      activeTerminalId: newTerm.id,
+    });
   }
 
-  const providerId = session.providerId || "github-codespaces";
-  const repoName = session.repository ? session.repository.split("/").pop() : "project";
-  const workingDir = session.cwd || `/workspaces/${repoName}`;
+  // 2. Close terminal tab
+  if (action === "close") {
+    const closed = ptyManager.closeTerminal(id, terminalId);
+    return NextResponse.json({
+      success: closed,
+      activeTerminalId: state.activeTerminalId,
+      terminals: Array.from(state.terminals.values()).map((t) => ({
+        id: t.id,
+        title: t.title,
+        cwd: t.cwd,
+      })),
+    });
+  }
 
-  // If running in GitHub Codespaces or GitHub Repository environment
-  if (providerId === "github-codespaces" || providerId === "github-repository") {
-    // 1. pwd
-    if (rawCommand === "pwd") {
-      return NextResponse.json({
-        output: workingDir,
-        isError: false,
-        cwd: workingDir,
-        providerId,
-      });
+  // 3. Clear terminal buffer
+  if (action === "clear") {
+    ptyManager.clearTerminal(id, terminalId);
+    return NextResponse.json({ success: true });
+  }
+
+  // 4. Send signal (Ctrl+C / SIGINT)
+  if (action === "signal") {
+    const signal = body.signal || "SIGINT";
+    const sent = ptyManager.sendSignal(id, terminalId, signal);
+    return NextResponse.json({ success: sent });
+  }
+
+  // 5. Switch active terminal
+  if (action === "switch") {
+    if (state.terminals.has(terminalId)) {
+      state.activeTerminalId = terminalId;
     }
+    return NextResponse.json({ success: true, activeTerminalId: state.activeTerminalId });
+  }
 
-    // 2. ls / dir
-    if (rawCommand === "ls" || rawCommand.startsWith("ls ") || rawCommand === "dir") {
-      const allPaths = Object.keys(session.files);
-      const topLevelItems = new Set<string>();
+  // 6. Execute real command
+  const command = (body.command || "").trim();
+  if (!command) {
+    const term = state.terminals.get(terminalId);
+    return NextResponse.json({
+      output: "",
+      isError: false,
+      cwd: term?.cwd || session.cwd || `/workspaces/project`,
+      gitBranch: term?.gitBranch || session.branch || "main",
+      gitStatus: term?.gitStatus || "clean",
+      exitCode: 0,
+    });
+  }
 
-      for (const p of allPaths) {
-        const parts = p.split("/");
-        if (parts.length > 1) {
-          topLevelItems.add(parts[0] + "/");
-        } else if (parts[0]) {
-          topLevelItems.add(parts[0]);
-        }
-      }
+  try {
+    const result = await ptyManager.executeCommand({
+      sessionId: id,
+      terminalId,
+      command,
+    });
 
-      const items = Array.from(topLevelItems).sort();
-      const output = items.length > 0 ? items.join("  ") : "README.md";
-
-      return NextResponse.json({
-        output,
-        isError: false,
-        cwd: workingDir,
-        providerId,
-      });
-    }
-
-    // 3. git status
-    if (rawCommand === "git status") {
-      const branch = session.branch || "main";
-      const output = `On branch ${branch}\nYour branch is up to date with 'origin/${branch}'.\nnothing to commit, working tree clean`;
-      return NextResponse.json({
-        output,
-        isError: false,
-        cwd: workingDir,
-        providerId,
-      });
-    }
-
-    // 4. git branch
-    if (rawCommand === "git branch") {
-      const branch = session.branch || "main";
-      return NextResponse.json({
-        output: `* ${branch}`,
-        isError: false,
-        cwd: workingDir,
-        providerId,
-      });
-    }
-
-    // 5. cat <file>
-    if (rawCommand.startsWith("cat ")) {
-      const targetFile = rawCommand.slice(4).trim().replace(/^\//, "");
-      let content = session.files[targetFile];
-
-      if (!content && session.repository) {
-        try {
-          const fs = new GitHubRemoteFilesystem(id, session.repository, session.branch || "main");
-          content = await fs.readFile(targetFile);
-          session.files[targetFile] = content;
-        } catch {
-          // not found
-        }
-      }
-
-      if (content !== undefined) {
-        return NextResponse.json({
-          output: content,
-          isError: false,
-          cwd: workingDir,
-          providerId,
-        });
-      }
-
-      return NextResponse.json({
-        output: `cat: ${targetFile}: No such file or directory`,
+    return NextResponse.json({
+      output: result.output,
+      isError: result.isError,
+      cwd: result.cwd,
+      exitCode: result.exitCode,
+      gitBranch: result.gitBranch,
+      gitStatus: result.gitStatus,
+      detectedPort: result.detectedPort,
+      providerId: session.providerId,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Erreur d'exécution";
+    return NextResponse.json(
+      {
+        output: `\x1b[31mTerminal execution error: ${msg}\x1b[0m\r\n`,
         isError: true,
-        cwd: workingDir,
-        providerId,
-      });
-    }
+        cwd: session.cwd,
+        exitCode: 1,
+      },
+      { status: 500 },
+    );
   }
-
-  // Fallback to standard execution in sandboxManager
-  const result = await sandboxManager.executeCommand(id, rawCommand, { cwd: session.cwd }, providerId);
-
-  return NextResponse.json({
-    output: result.output,
-    isError: result.isError,
-    cwd: session.cwd,
-    providerId,
-    artifacts: result.artifacts,
-  });
 }

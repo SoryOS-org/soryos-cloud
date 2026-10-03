@@ -302,8 +302,44 @@ Includes responsive billboard hero, movie carousels, and item detail preview.
   });
 }
 
-export function getSessionData(id: string): SessionData | undefined {
-  return sessions.get(id);
+export function getSessionData(id: string): SessionData {
+  let session = sessions.get(id);
+  if (!session) {
+    session = {
+      id,
+      title: "Workspace Session",
+      sandbox_id: `sandbox-${id}`,
+      sandbox_state: "running",
+      environment: "sandbox",
+      providerId: "github-codespaces",
+      model: DEFAULT_MODEL_ID,
+      provider: "Google Gemini",
+      created_at: new Date().toISOString(),
+      messages: [],
+      files: {
+        "src/App.tsx": `"use client";\n\nimport React from "react";\n\nexport default function App() {\n  return (\n    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-8">\n      <div className="text-center space-y-4">\n        <h1 className="text-3xl font-black">Workspace Session Ready</h1>\n        <p className="text-slate-400 text-sm">Session ID: ${id}</p>\n      </div>\n    </div>\n  );\n}`,
+        "src/index.css": `@import "tailwindcss";`,
+        "package.json": JSON.stringify(
+          {
+            name: "workspace-app",
+            private: true,
+            version: "0.1.0",
+            type: "module",
+            scripts: { dev: "vite", build: "tsc && vite build" },
+            dependencies: { react: "^19.0.0", "react-dom": "^19.0.0", "lucide-react": "^0.460.0" },
+          },
+          null,
+          2,
+        ),
+      },
+      preview_url: `/api/preview/${id}`,
+      needs_run: false,
+      agent_running: false,
+      cwd: "/workspaces/project",
+    };
+    sessions.set(id, session);
+  }
+  return session;
 }
 
 export function listSessionsData(): Array<{ id: string; title: string; created_at: string }> {
