@@ -26,7 +26,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
-import { MessageSquare, Code2, Menu, FolderDown } from "lucide-react";
+import { MessageSquare, Code2, Menu, FolderDown, Loader2, Check, AlertCircle, Cloud } from "lucide-react";
 import { LiveButton } from "@/components/live-button";
 
 function formatMessages(
@@ -56,6 +56,8 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+import { EnvironmentType, ProviderId } from "@/components/sandbox-selector";
+
 export default function ChatPage({
   params,
 }: {
@@ -70,6 +72,17 @@ export default function ChatPage({
   const [sessionTitle, setSessionTitle] = useState<string>("Session");
   const [currentModel, setCurrentModel] = useState<string>(DEFAULT_MODEL_ID);
   const [currentAgent, setCurrentAgent] = useState<string>("build");
+  const [currentEnvironment, setCurrentEnvironment] = useState<EnvironmentType>("sandbox");
+  const [currentProvider, setCurrentProvider] = useState<ProviderId>("e2b");
+  const [workspaceState, setWorkspaceState] = useState<
+    "NO_WORKSPACE" | "WORKSPACE_LOADING" | "WORKSPACE_READY" | "WORKSPACE_ERROR"
+  >("WORKSPACE_READY");
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [workspaceDetails, setWorkspaceDetails] = useState<{
+    repository?: string;
+    branch?: string;
+    codespaceId?: string;
+  }>({});
   const [isLiveOpen, setIsLiveOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -83,6 +96,34 @@ export default function ChatPage({
     const paths = (await listSessionFiles(sessionId)).filter(isProjectFile);
     if (paths.length) {
       setFilePaths(paths.map(normalizeFilePath));
+    }
+  }, [sessionId]);
+
+  const initWorkspace = useCallback(async (overrides?: {
+    codespaceId?: string;
+    repository?: string;
+    branch?: string;
+    providerId?: ProviderId;
+  }) => {
+    setWorkspaceState("WORKSPACE_LOADING");
+    setWorkspaceError(null);
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/init-workspace`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(overrides || {}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Impossible d'initialiser le Workspace");
+      }
+      setWorkspaceState("WORKSPACE_READY");
+      if (Array.isArray(data.paths)) {
+        setFilePaths(data.paths.filter(isProjectFile).map(normalizeFilePath));
+      }
+    } catch (err: any) {
+      setWorkspaceState("WORKSPACE_ERROR");
+      setWorkspaceError(err?.message || "Erreur de connexion au Workspace");
     }
   }, [sessionId]);
 
@@ -117,9 +158,36 @@ export default function ChatPage({
         setMessages(formatMessages(data.messages));
         setPreviewUrl(data.preview_url);
         setSessionTitle(data.title || "Session");
+        if (data.environment) {
+          setCurrentEnvironment(data.environment as EnvironmentType);
+        }
+        if (data.providerId) {
+          setCurrentProvider(data.providerId as ProviderId);
+        }
+        const details = {
+          repository: data.repository,
+          branch: data.branch,
+          codespaceId: data.codespaceId,
+        };
+        setWorkspaceDetails(details);
+
         const paths = (await listSessionFiles(sessionId)).filter(isProjectFile);
-        if (mounted && paths.length) {
-          setFilePaths(paths.map(normalizeFilePath));
+
+        // Auto-initialize remote workspace if files are empty
+        const isRemote =
+          (data.providerId === "github-codespaces" || data.providerId === "github-repository") &&
+          Boolean(data.repository || data.codespaceId);
+
+        if (isRemote && paths.length === 0) {
+          void initWorkspace({
+            ...details,
+            providerId: data.providerId as ProviderId,
+          });
+        } else {
+          setWorkspaceState((data.workspaceState as "NO_WORKSPACE" | "WORKSPACE_LOADING" | "WORKSPACE_READY" | "WORKSPACE_ERROR") || "WORKSPACE_READY");
+          if (paths.length) {
+            setFilePaths(paths.map(normalizeFilePath));
+          }
         }
       } catch (e) {
         console.error("Failed to load session:", e);
@@ -129,7 +197,24 @@ export default function ChatPage({
     return () => {
       mounted = false;
     };
-  }, [sessionId]);
+  }, [sessionId, initWorkspace]);
+
+  const handleEnvironmentAndProviderChange = async (
+    newEnv: EnvironmentType,
+    newProviderId: ProviderId
+  ) => {
+    setCurrentEnvironment(newEnv);
+    setCurrentProvider(newProviderId);
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ environment: newEnv, providerId: newProviderId }),
+      });
+    } catch (e) {
+      console.error("Failed to switch environment/provider:", e);
+    }
+  };
 
   const runStream = useCallback(
     async (messageContent?: string) => {
@@ -244,7 +329,75 @@ export default function ChatPage({
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Workspace Loading Overlay */}
+        {workspaceState === "WORKSPACE_LOADING" && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#faf8f5]/95 backdrop-blur-sm p-6 text-center space-y-4 animate-in fade-in">
+            <Loader2 className="h-10 w-10 text-[#c6623f] animate-spin" />
+            <div className="space-y-1.5 max-w-md">
+              <h2 className="text-base font-bold text-slate-900">
+                Connexion au GitHub Codespace & Initialisation...
+              </h2>
+              {workspaceDetails.repository && (
+                <p className="text-xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                  {workspaceDetails.repository} {workspaceDetails.branch ? `(${workspaceDetails.branch})` : ""}
+                </p>
+              )}
+              {workspaceDetails.codespaceId && (
+                <p className="text-[11px] text-slate-500 font-mono">
+                  Machine: {workspaceDetails.codespaceId}
+                </p>
+              )}
+              <div className="space-y-2 text-xs text-slate-600 pt-3 text-left bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Authentification GitHub vérifiée</span>
+                </div>
+                <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Codespace distant identifié</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-900 font-semibold">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#c6623f]" />
+                  <span>Chargement du Remote Filesystem & de l&apos;arborescence...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Workspace Error Overlay */}
+        {workspaceState === "WORKSPACE_ERROR" && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white p-6 text-center space-y-4 animate-in fade-in">
+            <div className="rounded-full bg-red-100 p-3 text-red-600">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <div className="space-y-1 max-w-md">
+              <h2 className="text-base font-bold text-slate-900">
+                Impossible de connecter le Codespace
+              </h2>
+              <p className="text-xs text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200 leading-relaxed">
+                {workspaceError || "Échec d'initialisation du Workspace distant."}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void initWorkspace(workspaceDetails)}
+                className="py-2 px-4 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm cursor-pointer"
+              >
+                Réessayer la connexion
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkspaceState("WORKSPACE_READY")}
+                className="py-2 px-3 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Ignorer et continuer
+              </button>
+            </div>
+          </div>
+        )}
         {/* Mobile / Tablet View Switcher Header (< lg) */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-[#faf8f5] px-3 lg:hidden">
           <div className="flex items-center gap-2">
@@ -316,8 +469,11 @@ export default function ChatPage({
                 sessionTitle={sessionTitle}
                 currentModelId={currentModel}
                 currentAgentId={currentAgent}
+                currentEnvironment={currentEnvironment}
+                currentProviderId={currentProvider}
                 onModelChange={setCurrentModel}
                 onAgentChange={setCurrentAgent}
+                onEnvironmentAndProviderChange={handleEnvironmentAndProviderChange}
                 onSendMessage={handleSendMessage}
                 onAbort={handleAbort}
                 onOpenLive={() => setIsLiveOpen(true)}
@@ -332,6 +488,7 @@ export default function ChatPage({
                 sessionId={sessionId}
                 previewUrl={previewUrl}
                 filePaths={filePaths}
+                providerId={currentProvider}
                 onPreviewUrl={setPreviewUrl}
                 onRefreshFiles={refreshFiles}
               />
@@ -351,8 +508,11 @@ export default function ChatPage({
               sessionTitle={sessionTitle}
               currentModelId={currentModel}
               currentAgentId={currentAgent}
+              currentEnvironment={currentEnvironment}
+              currentProviderId={currentProvider}
               onModelChange={setCurrentModel}
               onAgentChange={setCurrentAgent}
+              onEnvironmentAndProviderChange={handleEnvironmentAndProviderChange}
               onSendMessage={handleSendMessage}
               onAbort={handleAbort}
               onOpenLive={() => setIsLiveOpen(true)}
@@ -363,6 +523,7 @@ export default function ChatPage({
               sessionId={sessionId}
               previewUrl={previewUrl}
               filePaths={filePaths}
+              providerId={currentProvider}
               onPreviewUrl={setPreviewUrl}
               onRefreshFiles={refreshFiles}
             />

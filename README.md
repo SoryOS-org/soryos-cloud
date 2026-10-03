@@ -1,39 +1,27 @@
-<div align="center">
-
-<img width="360" alt="CodeForge" src="apps/web/public/logo1.png" />
+# SoryOS-Code
 
 **Describe an app. Watch an agent build it — live.**
 
-![VERSION](https://img.shields.io/badge/VERSION-2.0-F38020?style=for-the-badge&labelColor=333333)
+![VERSION](https://img.shields.io/badge/VERSION-3.0-F38020?style=for-the-badge&labelColor=333333)
 [![NODE](https://img.shields.io/badge/NODE-20+-339933?style=for-the-badge&logo=node.js&logoColor=white&labelColor=333333)](https://nodejs.org/)
-[![PYTHON](https://img.shields.io/badge/PYTHON-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=333333)](https://www.python.org/)
-
 [![NEXT.JS](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=next.js&logoColor=white&labelColor=333333)](https://nextjs.org/)
 [![REACT](https://img.shields.io/badge/REACT-19-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=333333)](https://react.dev/)
-[![FASTAPI](https://img.shields.io/badge/FASTAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white&labelColor=333333)](https://fastapi.tiangolo.com/)
-[![LANGGRAPH](https://img.shields.io/badge/LANGGRAPH-ReAct-1C3C3C?style=for-the-badge&labelColor=333333)](https://langchain-ai.github.io/langgraph/)
-[![DEEPSEEK](https://img.shields.io/badge/DEEPSEEK-Chat-4D6BFE?style=for-the-badge&labelColor=333333)](https://platform.deepseek.com/)
-[![E2B](https://img.shields.io/badge/E2B-Sandbox-FF4785?style=for-the-badge&labelColor=333333)](https://e2b.dev/)
-
-</div>
 
 ---
 
-https://github.com/user-attachments/assets/31b0f8ef-22d1-4da2-848d-90da132b8940
-
-
-CodeForge is an AI coding workbench. You describe what you want in natural language; a LangGraph agent plans, writes files, runs commands, and verifies the result inside an isolated E2B sandbox — while you follow every step in a Cursor-style interface.
+SoryOS-Code is an AI coding workbench powered by an extensible **Sandbox Provider Architecture**. You describe what you want in natural language; an autonomous AI agent plans, writes files, runs commands, and verifies the result inside an isolated Sandbox Provider — while you follow every step in a Cursor-style interface.
 
 No code generation in chat bubbles. Real files. Real terminal. Real preview.
 
-## Features
+## Multi-Provider Sandbox Architecture
 
-- **ReAct agent** — LangGraph loop with tools: read/write/edit files, shell, lint, dev server
-- **Live workspace** — file tree, Monaco editor, sandbox console, iframe preview
-- **Transparent runs** — interleaved markdown + collapsible tool steps, persisted across reloads
-- **Session history** — SQLite-backed conversations; resume or branch from any session
-- **E2B sandboxes** — cloud-isolated environments with Next.js preview on port 3000
-- **Server-owned state** — agent survives tab refresh; no fragile client-side session hacks
+SoryOS-Code abstracts code execution behind a unified `SandboxProvider` contract. You can seamlessly switch providers from a single interface:
+
+- ☁️ **E2B** (`e2b`) — Remote cloud sandbox for complete development, terminal, processes, and builds.
+- ☁️ **Vercel Sandbox** (`vercel`) — Cloud execution, builds, files, and commands.
+- ☁️ **Google Cloud Run** (`google-cloud-run`) — Cloud execution & long-running build jobs (`cargo build`, `cmake`, `gcc`, ISO generation, cross-compilation).
+- ☁️ **GitHub Codespaces** (`github-codespaces`) — Cloud development environment workspace.
+- 💻 **Local** (`local`) — Local machine execution directly on the user's system.
 
 ## Stack
 

@@ -1,6 +1,7 @@
 import { SessionData } from "./agent-engine";
 import { DEFAULT_MODEL_ID, getModelById } from "./providers";
 import { generateAgentResponse } from "./llm";
+import { GitHubRemoteFilesystem } from "./filesystem/remote-provider";
 import type { AgentEvent, MessageBlock } from "./types";
 
 function sleep(ms: number) {
@@ -69,6 +70,23 @@ export function createAgentStream(
         if (llmResult.files && Object.keys(llmResult.files).length > 0) {
           const fileKeys = Object.keys(llmResult.files);
           Object.assign(session.files, llmResult.files);
+
+          // If session is connected to GitHub Codespace or repository, sync files to remote environment
+          if (
+            (session.providerId === "github-codespaces" || session.providerId === "github-repository") &&
+            session.repository
+          ) {
+            try {
+              const fs = new GitHubRemoteFilesystem(session.id, session.repository, session.branch || "main");
+              for (const [fPath, fContent] of Object.entries(llmResult.files)) {
+                void fs.writeFile(fPath, fContent, `Agent update ${fPath} via SoryOS-Code`).catch((e) => {
+                  console.warn("Async remote write back warning:", e);
+                });
+              }
+            } catch (e) {
+              console.warn("Failed to instantiate remote filesystem for agent write:", e);
+            }
+          }
 
           // Real tool step for file modification
           const stepId = crypto.randomUUID();

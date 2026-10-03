@@ -22,23 +22,23 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "CodeForge",
+  title: "SoryOS-Code",
   description:
-    "AI agent workbench for code generation and execution on all devices.",
+    "AI agent workbench for code generation and execution with multi-provider sandbox architecture.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "CodeForge",
+    title: "SoryOS-Code",
   },
   icons: {
     icon: "/logo1.png",
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "CodeForge",
+    title: "SoryOS-Code",
     description:
-      "AI agent workbench for code generation and execution powered by AI.",
+      "AI agent workbench for code generation and execution with multi-provider sandbox architecture.",
   },
 };
 

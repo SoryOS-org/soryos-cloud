@@ -1,11 +1,19 @@
 import type { MessageBlock } from "./types";
 import { DEFAULT_MODEL_ID, getModelById } from "./providers";
+import { ProviderId } from "./sandbox";
 
 export interface SessionData {
   id: string;
   title: string;
   sandbox_id: string;
   sandbox_state: "running" | "paused" | "dead";
+  environment: "sandbox" | "local";
+  providerId: ProviderId;
+  codespaceId?: string;
+  repository?: string;
+  branch?: string;
+  workspaceState?: "NO_WORKSPACE" | "WORKSPACE_LOADING" | "WORKSPACE_READY" | "WORKSPACE_ERROR";
+  workspaceError?: string;
   model: string;
   provider: string;
   created_at: string;
@@ -237,6 +245,8 @@ Includes responsive billboard hero, movie carousels, and item detail preview.
     title: "Build a Netflix clone",
     sandbox_id: "sbx-netflix-01",
     sandbox_state: "running",
+    environment: "sandbox",
+    providerId: "e2b",
     model: "opencode/zen-coder-free",
     provider: "OpenCode Zen",
     created_at: new Date(Date.now() - 3600000).toISOString(),
@@ -324,6 +334,8 @@ export function createNewSession(
     title: sessionTitle,
     sandbox_id: `sbx-${id.slice(0, 8)}`,
     sandbox_state: "running",
+    environment: "sandbox",
+    providerId: "e2b",
     model: selectedModel.id,
     provider: selectedModel.providerName,
     created_at: now,

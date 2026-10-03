@@ -156,6 +156,15 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
         </button>
 
         <div className="flex shrink-0 items-center gap-2">
+          {/* Discreet Environment Badge if provided */}
+          {typeof step.metadata?.providerId === "string" && (
+            <span className="hidden sm:inline-flex items-center gap-1 rounded bg-[#e2ddd5]/60 px-2 py-0.5 text-[10px] font-medium text-[#4a433a] font-mono">
+              {step.metadata.providerId === "local"
+                ? "💻 Local"
+                : `☁️ Sandbox · ${step.metadata.providerId.toUpperCase()}`}
+            </span>
+          )}
+
           {/* Status badge */}
           {isPending ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">

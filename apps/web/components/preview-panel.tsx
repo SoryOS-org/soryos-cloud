@@ -90,6 +90,7 @@ interface PreviewPanelProps {
   sessionId: string;
   previewUrl: string | null;
   filePaths: string[];
+  providerId?: string;
   onPreviewUrl?: (url: string | null) => void;
   onRefreshFiles?: () => void;
 }
@@ -98,6 +99,7 @@ export function PreviewPanel({
   sessionId,
   previewUrl,
   filePaths,
+  providerId,
   onPreviewUrl,
   onRefreshFiles,
 }: PreviewPanelProps) {
@@ -293,9 +295,23 @@ export function PreviewPanel({
               {tree.length ? (
                 tree.map((node, i) => <FileTreeNode key={i} node={node} depth={0} />)
               ) : (
-                <p className="px-2 py-4 text-xs text-muted-foreground">
-                  Les fichiers apparaîtront dès que l&apos;agent écrira du code.
-                </p>
+                <div className="px-2 py-4 text-center space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {providerId === "github-codespaces" || providerId === "github-repository"
+                      ? "Synchronisation du Workspace distant..."
+                      : "Aucun fichier dans ce workspace."}
+                  </p>
+                  {onRefreshFiles && (
+                    <button
+                      type="button"
+                      onClick={() => onRefreshFiles()}
+                      className="text-[11px] font-semibold text-[#c6623f] hover:underline flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      <span>Actualiser les fichiers</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </ScrollArea>
@@ -638,7 +654,7 @@ export function PreviewPanel({
                   </button>
                 </div>
                 <div className="min-h-0 flex-1">
-                  <Terminal sessionId={sessionId} />
+                  <Terminal sessionId={sessionId} providerId={providerId} />
                 </div>
               </div>
             </ResizablePanel>

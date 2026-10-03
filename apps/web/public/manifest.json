@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "CodeForge",
-  "short_name": "CodeForge",
-  "description": "AI agent workbench for code generation and execution on all devices.",
+  "name": "SoryOS-Code",
+  "short_name": "SoryOS-Code",
+  "description": "AI agent workbench for code generation and execution with multi-provider sandbox architecture.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

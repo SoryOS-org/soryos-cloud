@@ -6,6 +6,7 @@ import { runTerminal } from "@/lib/api";
 
 interface TerminalProps {
   sessionId: string | null;
+  providerId?: string;
 }
 
 interface TerminalLine {
@@ -13,13 +14,13 @@ interface TerminalLine {
   content: string;
 }
 
-export function Terminal({ sessionId }: TerminalProps) {
+export function Terminal({ sessionId, providerId = "e2b" }: TerminalProps) {
   const [input, setInput] = useState("");
   const [cwd, setCwd] = useState("~");
   const [lines, setLines] = useState<TerminalLine[]>([
     {
       type: "output",
-      content: "Cloud Sandbox Ready (Wandbox 40+ Languages: Rust, C, C++, Python, Go, Java, Bash...)\nCommands execute isolated in the cloud without using local PC CPU/RAM.\nTry typing: 'python script.py', 'rustc main.rs', 'gcc main.c', etc.",
+      content: "SoryOS-Code Unified Sandbox Terminal\nSupported Providers: ☁️ E2B | ☁️ Vercel Sandbox | ☁️ Google Cloud Run | ☁️ GitHub Codespaces | 💻 Local Machine\nCommands execute through the selected SandboxProvider API contract.",
     },
   ]);
   const [executing, setExecuting] = useState(false);
@@ -90,6 +91,9 @@ export function Terminal({ sessionId }: TerminalProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-[#eee9e1] bg-[#faf8f5] px-3 py-2">
+        <span className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-[#e8e2d8] text-[10px] font-mono text-[#5c5348] font-bold">
+          {providerId === "local" ? "💻 Local" : `☁️ Sandbox · ${providerId.toUpperCase()}`}
+        </span>
         <span className="font-mono text-sm text-[#5c5348]">{cwd}</span>
         <span className="font-mono text-sm text-emerald-600">$</span>
         <input

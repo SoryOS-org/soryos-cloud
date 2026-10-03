@@ -1,5 +1,5 @@
 {
-  "name": "codeforge",
+  "name": "soryos-code",
   "private": true,
   "workspaces": [
     "apps/*"

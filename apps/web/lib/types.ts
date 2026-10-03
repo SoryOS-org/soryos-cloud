@@ -8,13 +8,31 @@ export type AgentEvent =
   | { type: "done"; usage: { input: number; output: number; cacheRead: number; cacheMiss: number } }
   | { type: "error"; message: string };
 
+export interface GitHubSessionContext {
+  username?: string;
+  avatarUrl?: string;
+  connected: boolean;
+  repository?: string;
+  branch?: string;
+  codespaceId?: string;
+  codespaceState?: "Running" | "Stopped" | "Building" | "Failed";
+}
+
 export interface GetSessionResponse {
   id: string;
   title: string;
   sandbox_id: string | null;
   sandbox_state: "running" | "paused" | "dead";
+  environment?: "sandbox" | "local";
+  providerId?: string;
   model?: string;
   provider?: string;
+  github?: GitHubSessionContext;
+  repository?: string;
+  branch?: string;
+  codespaceId?: string;
+  workspaceState?: "NO_WORKSPACE" | "WORKSPACE_LOADING" | "WORKSPACE_READY" | "WORKSPACE_ERROR" | string;
+  workspaceError?: string;
   messages: Array<{
     id: string;
     role: "user" | "assistant";

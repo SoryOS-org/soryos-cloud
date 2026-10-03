@@ -240,7 +240,7 @@ export async function GET(
         <a href="#" class="block px-3 py-2 rounded-lg hover:bg-slate-900 hover:text-white transition">Settings</a>
       </nav>
     </div>
-    <div class="text-xs text-slate-500">CodeForge Sandbox v2.4.0</div>
+    <div class="text-xs text-slate-500">SoryOS-Code Sandbox Architecture v3.0</div>
   </aside>
 
   <main class="flex-1 p-8 overflow-y-auto">
@@ -328,7 +328,7 @@ export async function GET(
     </div>
 
     <div class="border-t border-slate-700/60 pt-4 text-xs text-slate-500">
-      Powered by CodeForge · React 19 & Tailwind CSS
+      Powered by SoryOS-Code · Multi-Provider Sandbox Architecture
     </div>
   </div>
 </body>

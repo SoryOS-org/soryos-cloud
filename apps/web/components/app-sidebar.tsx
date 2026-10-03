@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Sparkles, FolderDown, X, Layers } from "lucide-react";
+import { Plus, Sparkles, FolderDown, X, Layers, Settings, Cloud } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { listSessions } from "@/lib/api";
 import { ImportRepoModal } from "@/components/import-repo-modal";
+import { SettingsModal } from "@/components/settings-modal";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 
 interface AppSidebarProps {
@@ -18,6 +19,7 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
     Array<{ id: string; title: string; created_at: string }>
   >([]);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -65,10 +67,20 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
             setIsImportOpen(true);
             onMobileClose?.();
           }}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce] text-left"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce] text-left cursor-pointer"
         >
           <FolderDown className="h-4 w-4 shrink-0 text-[#c6623f]" />
           Importer un projet
+        </button>
+        <button
+          onClick={() => {
+            setIsSettingsOpen(true);
+            onMobileClose?.();
+          }}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce] text-left cursor-pointer"
+        >
+          <Cloud className="h-4 w-4 shrink-0 text-emerald-700" />
+          Cloud Providers
         </button>
       </nav>
 
@@ -105,10 +117,10 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
         <div className="flex items-center justify-between text-xs text-[#8a8278] pt-1">
           <div className="flex items-center gap-2 truncate">
             <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#c6623f]" />
-            <span className="truncate font-medium text-[#5c5348]">OpenCode Multiplatform</span>
+            <span className="truncate font-bold text-[#3d3830]">SoryOS-Code</span>
           </div>
           <span className="shrink-0 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
-            PWA
+            v3.0
           </span>
         </div>
       </div>
@@ -140,6 +152,11 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
       <ImportRepoModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </>
   );

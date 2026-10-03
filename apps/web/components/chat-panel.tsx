@@ -31,6 +31,8 @@ import { LiveButton } from "@/components/live-button";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
 import { exportSessionAsMarkdown, exportSessionAsJSON } from "@/lib/export-session";
 
+import { SandboxSelector, EnvironmentType, ProviderId } from "@/components/sandbox-selector";
+
 interface ChatPanelProps {
   sessionId?: string;
   filePaths?: string[];
@@ -40,8 +42,12 @@ interface ChatPanelProps {
   sessionTitle?: string;
   currentModelId?: string;
   currentAgentId?: string;
+  currentEnvironment?: EnvironmentType;
+  currentProviderId?: ProviderId;
   onModelChange?: (modelId: string) => void;
   onAgentChange?: (agentId: string) => void;
+  onProviderChange?: (providerId: ProviderId) => void;
+  onEnvironmentAndProviderChange?: (env: EnvironmentType, providerId: ProviderId) => void;
   onSendMessage: (content: string) => void;
   onAbort?: () => void;
   onOpenLive?: () => void;
@@ -86,8 +92,12 @@ export function ChatPanel({
   sessionTitle = "Session",
   currentModelId = DEFAULT_MODEL_ID,
   currentAgentId = "build",
+  currentEnvironment = "sandbox",
+  currentProviderId = "e2b",
   onModelChange,
   onAgentChange,
+  onProviderChange,
+  onEnvironmentAndProviderChange,
   onSendMessage,
   onAbort,
   onOpenLive,
@@ -121,8 +131,8 @@ export function ChatPanel({
       {/* Header Bar */}
       <header className="relative z-10 hidden lg:flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-white px-5 shadow-2xs">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/" className="shrink-0 transition hover:opacity-80">
-            <img src="/logo1.png" alt="CodeForge" className="h-5 w-auto" />
+          <Link href="/" className="shrink-0 transition hover:opacity-80 flex items-center gap-2">
+            <span className="font-black text-sm tracking-tight text-[#3d3830]">SoryOS-Code</span>
           </Link>
           <div className="h-4 w-px bg-[#e5e0d8]" />
           <h1 className="truncate text-sm font-semibold text-[#3d3830]">
@@ -130,6 +140,16 @@ export function ChatPanel({
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {/* Sandbox Provider Selector */}
+          <SandboxSelector
+            sessionId={sessionId}
+            currentEnvironment={currentEnvironment}
+            currentProviderId={currentProviderId}
+            onSelectEnvironmentAndProvider={
+              onEnvironmentAndProviderChange ??
+              ((env, prov) => onProviderChange?.(prov))
+            }
+          />
           {/* Export Session Menu */}
           <div className="relative">
             <Button
@@ -282,6 +302,15 @@ export function ChatPanel({
             {/* Action Bar inside Input Container */}
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2.5 border-t border-[#f5f1ea] pt-2.5">
               <div className="flex flex-wrap items-center gap-2">
+                <SandboxSelector
+                  sessionId={sessionId}
+                  currentEnvironment={currentEnvironment}
+                  currentProviderId={currentProviderId}
+                  onSelectEnvironmentAndProvider={
+                    onEnvironmentAndProviderChange ??
+                    ((env, prov) => onProviderChange?.(prov))
+                  }
+                />
                 <AgentSelector
                   currentAgentId={currentAgentId}
                   onAgentChange={onAgentChange ?? (() => {})}
