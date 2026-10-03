@@ -2,6 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 import { getModelById } from "./providers";
 import { getAgentById } from "./opencode-agents";
 import { credentialManager } from "./credentials/manager";
+import { ptyManager } from "./terminal/pty-manager";
+import * as fs from "fs";
+import * as path from "path";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -37,7 +40,6 @@ export function extractFilesFromResponse(markdown: string): Record<string, strin
   }
 
   // 2. Preceding markdown heading or comment before code block:
-  // e.g. `### src/App.tsx`, `**main.py**`, `// src/App.tsx`, `# main.py`
   const blockRegex = /(?:(?:^|\n)(?:#{1,4}\s+|[\*\*_]{2}|`+)?([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?:[\*\*_]{2}|`+)?(?:\s*[:\-]\s*)?\n+)?```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
   while ((match = blockRegex.exec(markdown)) !== null) {
     const headerPath = match[1];
@@ -45,7 +47,6 @@ export function extractFilesFromResponse(markdown: string): Record<string, strin
     const code = match[3] ? match[3].trim() : "";
     if (!code || code.length < 15) continue;
 
-    // First line comment check
     const firstLine = code.split("\n")[0].trim();
     const commentMatch = firstLine.match(/^(?:\/\/|#|\/\*)\s*([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)/);
 
@@ -54,7 +55,6 @@ export function extractFilesFromResponse(markdown: string): Record<string, strin
       detectedPath = commentMatch[1];
     }
 
-    // Heuristic inference based on language tag and code structure
     if (!detectedPath) {
       if (lang === "python" || lang === "py" || (code.includes("import ") && code.includes("def "))) {
         detectedPath = "main.py";
@@ -81,39 +81,6 @@ export function extractFilesFromResponse(markdown: string): Record<string, strin
       if (!files[clean]) {
         files[clean] = code;
       }
-    }
-  }
-
-  // If a React App.tsx exists, ensure supporting workspace files exist
-  if (files["src/App.tsx"]) {
-    if (!files["package.json"]) {
-      files["package.json"] = JSON.stringify(
-        {
-          name: "codeforge-app",
-          private: true,
-          version: "0.0.0",
-          type: "module",
-          scripts: { dev: "vite", build: "tsc && vite build", preview: "vite preview" },
-          dependencies: {
-            react: "^19.0.0",
-            "react-dom": "^19.0.0",
-            "lucide-react": "^0.460.0",
-            "canvas-confetti": "^1.9.4",
-          },
-          devDependencies: {
-            "@types/react": "^19.0.0",
-            "@types/react-dom": "^19.0.0",
-            "@vitejs/plugin-react": "^4.3.4",
-            typescript: "^5.6.3",
-            vite: "^6.0.0",
-          },
-        },
-        null,
-        2,
-      );
-    }
-    if (!files["src/index.css"]) {
-      files["src/index.css"] = `@import "tailwindcss";\n\nbody {\n  margin: 0;\n  font-family: system-ui, -apple-system, sans-serif;\n}`;
     }
   }
 
@@ -228,275 +195,35 @@ async function callOpenAICompatible(
 }
 
 /**
- * Generates intelligent and complete application structure when network is offline or unconfigured
- */
-function generateSynthesizedResponse(
-  userQuery: string,
-  agentName: string,
-  modelName: string,
-): { text: string; files: Record<string, string> } {
-  const queryLower = userQuery.toLowerCase();
-  const isFrench = /[éàèùâêîôûç]/i.test(userQuery) || queryLower.includes("créer") || queryLower.includes("ajoute") || queryLower.includes("faire");
-
-  const title = queryLower.includes("dashboard")
-    ? "Tableau de Bord Analytics"
-    : queryLower.includes("game") || queryLower.includes("jeu")
-    ? "Arcade & Mini-Jeux"
-    : queryLower.includes("todo") || queryLower.includes("tâche")
-    ? "Gestionnaire de Tâches & Projets"
-    : "Application Interactive SoryOS";
-
-  const appTsx = `"use client";
-
-import React, { useState, useEffect } from "react";
-import { 
-  Sparkles, 
-  Terminal, 
-  CheckCircle2, 
-  Layers, 
-  Play, 
-  FolderGit2, 
-  Cpu, 
-  Settings, 
-  ArrowRight,
-  Code2,
-  Plus
-} from "lucide-react";
-
-export default function App() {
-  const [activeTab, setActiveTab] = useState<"overview" | "features" | "settings">("overview");
-  const [items, setItems] = useState<Array<{ id: string; text: string; done: boolean; category: string }>>([
-    { id: "1", text: "Architecture multi-sandbox & cloud providers prête", done: true, category: "Infra" },
-    { id: "2", text: "Synchronisation remote filesystem GitHub & Codespaces", done: true, category: "Sync" },
-    { id: "3", text: "Compilation interactive React 19 & Tailwind CSS", done: false, category: "UI" },
-  ]);
-  const [newItem, setNewItem] = useState("");
-
-  const toggleItem = (id: string) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it))
-    );
-  };
-
-  const addItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItem.trim()) return;
-    setItems((prev) => [
-      ...prev,
-      { id: Date.now().toString(), text: newItem.trim(), done: false, category: "Feature" },
-    ]);
-    setNewItem("");
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-8 flex flex-col items-center">
-      {/* Top Banner */}
-      <div className="w-full max-w-4xl bg-gradient-to-r from-[#c6623f]/20 via-orange-950/40 to-slate-900 border border-[#c6623f]/30 rounded-2xl p-6 mb-8 backdrop-blur-md shadow-xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-[#c6623f] flex items-center justify-center text-white shadow-lg shadow-[#c6623f]/20">
-              <Cpu className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                ${title}
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400">
-                Généré sur mesure pour votre prompt : <span className="text-[#c6623f] font-semibold">« ${userQuery.slice(0, 45)}... »</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-full flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-              Opérationnel
-            </span>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 mt-6 border-t border-slate-800/80 pt-4">
-          {(["overview", "features", "settings"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={\`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer \${
-                activeTab === tab
-                  ? "bg-[#c6623f] text-white shadow-sm"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-              }\`}
-            >
-              {tab === "overview" ? "Vue d'ensemble" : tab === "features" ? "Fonctionnalités" : "Configuration"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Workspace Area */}
-      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Interactive Manager */}
-        <div className="md:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-[#c6623f]" />
-              Feuille de Route & Actions
-            </h2>
-            <span className="text-xs text-slate-500">
-              {items.filter((i) => i.done).length} / {items.length} complétés
-            </span>
-          </div>
-
-          {/* Quick Add Form */}
-          <form onSubmit={addItem} className="flex gap-2">
-            <input
-              type="text"
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
-              placeholder="Ajouter une tâche ou un module..."
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#c6623f]"
-            />
-            <button
-              type="submit"
-              className="bg-[#c6623f] hover:bg-[#b05534] text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Ajouter</span>
-            </button>
-          </form>
-
-          {/* Items List */}
-          <div className="space-y-2">
-            {items.map((it) => (
-              <div
-                key={it.id}
-                onClick={() => toggleItem(it.id)}
-                className={\`flex items-center justify-between p-3 rounded-xl border transition cursor-pointer \${
-                  it.done
-                    ? "bg-slate-950/40 border-slate-800/40 opacity-70"
-                    : "bg-slate-950 border-slate-800 hover:border-slate-700"
-                }\`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={\`h-5 w-5 rounded-md border flex items-center justify-center transition \${
-                      it.done
-                        ? "bg-emerald-600 border-emerald-500 text-white"
-                        : "border-slate-700 bg-slate-900"
-                    }\`}
-                  >
-                    {it.done && <CheckCircle2 className="h-3.5 w-3.5" />}
-                  </div>
-                  <span
-                    className={\`text-xs font-medium \${
-                      it.done ? "line-through text-slate-500" : "text-slate-200"
-                    }\`}
-                  >
-                    {it.text}
-                  </span>
-                </div>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-                  {it.category}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column: Engine Stats */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-[#c6623f]" />
-            Statistiques Système
-          </h3>
-
-          <div className="space-y-3 text-xs">
-            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-              <div className="text-slate-500">Moteur Frontend</div>
-              <div className="font-mono text-white font-semibold">React 19 + Vite 6 + Tailwind</div>
-            </div>
-            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-              <div className="text-slate-500">Environnement</div>
-              <div className="font-mono text-emerald-400 font-semibold">SoryOS Sandbox Engine</div>
-            </div>
-            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-              <div className="text-slate-500">Persistance Git</div>
-              <div className="font-mono text-cyan-400 font-semibold">GitHub Remote Filesystem</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-`;
-
-  const files: Record<string, string> = {
-    "src/App.tsx": appTsx,
-    "src/index.css": `@import "tailwindcss";\n\nbody {\n  margin: 0;\n  background-color: #020617;\n  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;\n}`,
-    "package.json": JSON.stringify(
-      {
-        name: "soryos-app",
-        private: true,
-        version: "0.1.0",
-        type: "module",
-        scripts: { dev: "vite", build: "tsc && vite build", preview: "vite preview" },
-        dependencies: {
-          react: "^19.0.0",
-          "react-dom": "^19.0.0",
-          "lucide-react": "^0.460.0",
-          "canvas-confetti": "^1.9.4",
-        },
-        devDependencies: {
-          "@types/react": "^19.0.0",
-          "@types/react-dom": "^19.0.0",
-          "@vitejs/plugin-react": "^4.3.4",
-          typescript: "^5.6.3",
-          vite: "^6.0.0",
-        },
-      },
-      null,
-      2,
-    ),
-  };
-
-  const text = isFrench
-    ? `### Implémentation réalisée pour votre demande
-
-J'ai généré et déployé l'architecture de votre application dans l'espace de travail :
-
-- **\`src/App.tsx\`** : Composant interactif complet avec gestion d'état, tableau de bord responsive et interface moderne aux couleurs de SoryOS.
-- **\`src/index.css\`** : Styles Tailwind CSS et configuration dark mode.
-- **\`package.json\`** : Dépendances React 19, Lucide Icons et tooling Vite.
-
-Vous pouvez maintenant tester l'application directement dans l'onglet de prévisualisation et configurer vos clés API dans le menu **Paramètres** de la barre latérale.`
-    : `### Implementation ready for your request
-
-I have created and deployed the complete application structure into your workspace:
-
-- **\`src/App.tsx\`** : Full interactive React 19 component with state management and responsive UI.
-- **\`src/index.css\`** : Tailwind CSS styling.
-- **\`package.json\`** : Core dependencies and build tooling.
-
-You can preview the interactive app now in the Preview panel or fine-tune API keys in Settings.`;
-
-  return { text, files };
-}
-
-/**
- * Universal Agent Response Orchestrator
- * Dispatches to Gemini, OpenRouter, DeepSeek, Mistral, xAI, Zen or synthesized fallback
+ * Real AI generation engine for SoryOS-Code
+ * NO FAKE ACTIONS. If provider is unavailable, returns explicit error.
+ * If user sends conversational message ("Salut"), returns conversational response with NO file changes.
  */
 export async function generateAgentResponse(params: {
+  sessionId?: string;
   messages: ChatMessage[];
   modelId: string;
   agentId?: string;
   currentFiles: Record<string, string>;
   onStatus?: (status: string) => void;
 }): Promise<GenerateResult> {
-  const { messages, modelId, agentId = "build", currentFiles, onStatus } = params;
+  const { sessionId, messages, modelId, agentId = "build", currentFiles, onStatus } = params;
   const model = getModelById(modelId);
   const agent = getAgentById(agentId);
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+
+  // Check if user input is purely conversational / greeting
+  const isGreeting =
+    /^(salut|bonjour|hello|hi|hey|ça va|ca va|good morning|good evening)\b/i.test(lastUserMsg.trim()) &&
+    lastUserMsg.trim().length < 25;
+
+  if (isGreeting) {
+    return {
+      text: `Bonjour ! Je suis OpenCode (${agent.name}). Comment puis-je vous aider sur votre projet aujourd'hui ?`,
+      source: "gemini",
+      isConversational: true,
+    };
+  }
 
   const fileSummaries = Object.keys(currentFiles)
     .map((path) => `- ${path}`)
@@ -506,149 +233,115 @@ export async function generateAgentResponse(params: {
 Tu fonctionnes actuellement sous le rôle spécialisé : **${agent.role}** [${agent.badge}].
 Tu es propulsé par le modèle : **${model.name}** (${model.providerName}).
 
-INSTRUCTIONS SPÉCIALISÉES DE L'AGENT OPENCODE (${agent.name}) :
-${agent.systemPrompt}
-
-CAPACITÉS & OUTILS DE L'AGENT :
-${agent.tools.map((t) => `- Outil : ${t}`).join("\n")}
-
-Règles de communication et de réponse dans le chat (Style OpenCode) :
-1. **PAS de duplication de code brut dans le texte du chat** : Les modifications de code doivent être définies sous forme de blocs markdown annotés avec leur chemin de fichier : \`\`\`tsx filepath=src/App.tsx ... \`\`\` ou \`\`\`json filepath=package.json ... \`\`\`.
-2. **Explication fichier par fichier** : Dans ton message textuel de réponse, fournis un résumé professionnel et structuré expliquant précisément ce que tu as modifié ou implémenté fichier par fichier.
-3. Pour les applications web interactives :
-   - Fichier principal : \`src/App.tsx\` (React 19 + TypeScript + Tailwind CSS).
-   - Fichiers actuels du projet :
-${fileSummaries || "Aucun (Nouveau projet)"}
-   - Assure-toi que les composants React sont complets, interactifs, beaux et stylisés avec Tailwind CSS.
-4. Si l'agent actif est 'plan', produis des plans clairs, structurés et détaillés avec des listes de tâches précises.
-5. Si l'agent actif est 'explore', analyse et explique l'arborescence et le code.`;
+INSTRUCTIONS STRICTES DE L'AGENT :
+1. **PAS D'ACTION FICTIVE** : Ne prétends jamais avoir écrit ou modifié des fichiers à moins de fournir de vrais blocs de code avec leur chemin exact (ex: \`\`\`tsx filepath=src/App.tsx ... \`\`\`).
+2. Si l'utilisateur demande une simple discussion, réponds simplement en mode conversationnel sans modifier aucun fichier.
+3. Si l'utilisateur demande du code, fournis les blocs de code complets avec le chemin exact.
+4. Fichiers actuels du projet :\n${fileSummaries || "Aucun (Nouveau projet)"}`;
 
   onStatus?.(`[${agent.name}] Consultation de ${model.name} (${model.providerName})...`);
 
+  let rawResponse: string | null = null;
+  let responseSource: GenerateResult["source"] = "gemini";
+
   // 1. Google Gemini Provider
   if (model.providerId === "google" || model.id.startsWith("gemini")) {
-    const geminiResp = await callGemini(messages, systemPrompt);
-    if (geminiResp) {
-      const extracted = extractFilesFromResponse(geminiResp);
-      const hasFiles = Object.keys(extracted).length > 0;
-      return {
-        text: geminiResp,
-        source: "gemini",
-        files: hasFiles ? extracted : undefined,
-        isConversational: !hasFiles,
-      };
-    }
+    rawResponse = await callGemini(messages, systemPrompt);
+    responseSource = "gemini";
   }
 
   // 2. OpenRouter Provider
-  if (model.providerId === "openrouter" || model.id.includes(":free")) {
+  if (!rawResponse && (model.providerId === "openrouter" || model.id.includes(":free"))) {
     const customKey = credentialManager.getCredentials("openrouter")?.apiKey || process.env.OPENROUTER_API_KEY;
-    const openRouterResp = await callOpenAICompatible(
+    rawResponse = await callOpenAICompatible(
       "https://openrouter.ai/api/v1/chat/completions",
       customKey,
       model.id,
       messages,
       systemPrompt,
     );
-    if (openRouterResp) {
-      const extracted = extractFilesFromResponse(openRouterResp);
-      const hasFiles = Object.keys(extracted).length > 0;
-      return {
-        text: openRouterResp,
-        source: "openrouter",
-        files: hasFiles ? extracted : undefined,
-        isConversational: !hasFiles,
-      };
-    }
+    responseSource = "openrouter";
   }
 
   // 3. DeepSeek Provider
-  if (model.providerId === "deepseek") {
+  if (!rawResponse && model.providerId === "deepseek") {
     const customKey = credentialManager.getCredentials("deepseek")?.apiKey || process.env.DEEPSEEK_API_KEY;
-    const deepseekResp = await callOpenAICompatible(
+    rawResponse = await callOpenAICompatible(
       "https://api.deepseek.com/v1/chat/completions",
       customKey,
       model.id,
       messages,
       systemPrompt,
     );
-    if (deepseekResp) {
-      const extracted = extractFilesFromResponse(deepseekResp);
-      const hasFiles = Object.keys(extracted).length > 0;
-      return {
-        text: deepseekResp,
-        source: "deepseek",
-        files: hasFiles ? extracted : undefined,
-        isConversational: !hasFiles,
-      };
-    }
+    responseSource = "deepseek";
   }
 
   // 4. Mistral Provider
-  if (model.providerId === "mistral") {
+  if (!rawResponse && model.providerId === "mistral") {
     const customKey = credentialManager.getCredentials("mistral")?.apiKey || process.env.MISTRAL_API_KEY;
-    const mistralResp = await callOpenAICompatible(
+    rawResponse = await callOpenAICompatible(
       "https://api.mistral.ai/v1/chat/completions",
       customKey,
       model.id,
       messages,
       systemPrompt,
     );
-    if (mistralResp) {
-      const extracted = extractFilesFromResponse(mistralResp);
-      const hasFiles = Object.keys(extracted).length > 0;
-      return {
-        text: mistralResp,
-        source: "mistral",
-        files: hasFiles ? extracted : undefined,
-        isConversational: !hasFiles,
-      };
-    }
+    responseSource = "mistral";
   }
 
   // 5. xAI Grok Provider
-  if (model.providerId === "grok") {
+  if (!rawResponse && model.providerId === "grok") {
     const customKey = credentialManager.getCredentials("grok")?.apiKey || process.env.GROK_API_KEY || process.env.XAI_API_KEY;
-    const grokResp = await callOpenAICompatible(
+    rawResponse = await callOpenAICompatible(
       "https://api.x.ai/v1/chat/completions",
       customKey,
       model.id,
       messages,
       systemPrompt,
     );
-    if (grokResp) {
-      const extracted = extractFilesFromResponse(grokResp);
-      const hasFiles = Object.keys(extracted).length > 0;
-      return {
-        text: grokResp,
-        source: "grok",
-        files: hasFiles ? extracted : undefined,
-        isConversational: !hasFiles,
-      };
-    }
+    responseSource = "grok";
   }
 
-  // 6. Try fallback to Gemini
-  const fallbackGemini = await callGemini(messages, systemPrompt);
-  if (fallbackGemini) {
-    const extracted = extractFilesFromResponse(fallbackGemini);
-    const hasFiles = Object.keys(extracted).length > 0;
+  // 6. Fallback to Gemini
+  if (!rawResponse) {
+    rawResponse = await callGemini(messages, systemPrompt);
+    responseSource = "gemini";
+  }
+
+  // If ALL AI providers failed or are unavailable, return explicit error (NO FAKE FALLBACK)
+  if (!rawResponse) {
     return {
-      text: fallbackGemini,
-      source: "gemini",
-      files: hasFiles ? extracted : undefined,
-      isConversational: !hasFiles,
+      text: `⚠️ **AI Provider Unavailable**\n\nLe fournisseur IA (${model.providerName} / ${model.name}) n'a retourné aucune réponse ou est actuellement indisponible.\n\nVeuillez vérifier votre clé API dans les **Paramètres** ou réessayer ultérieurement. Aucun fichier n'a été modifié.`,
+      source: "fallback",
+      isConversational: true,
     };
   }
 
-  // 7. Resilient Synthesizer Fallback (Guaranteed response & file generation)
-  onStatus?.(`[${agent.name}] Génération de la solution dans le workspace...`);
-  const synthesized = generateSynthesizedResponse(lastUserMsg, agent.name, model.name);
+  // Extract files from response
+  const extractedFiles = extractFilesFromResponse(rawResponse);
+  const hasFiles = Object.keys(extractedFiles).length > 0;
+
+  // If files were extracted and sessionId is provided, write them to disk and verify existence
+  if (hasFiles && sessionId) {
+    try {
+      const workspaceDir = ptyManager.ensureWorkspaceDir(sessionId);
+      for (const [filePath, content] of Object.entries(extractedFiles)) {
+        const fullPath = path.join(workspaceDir, filePath);
+        const parentDir = path.dirname(fullPath);
+        if (!fs.existsSync(parentDir)) {
+          fs.mkdirSync(parentDir, { recursive: true });
+        }
+        fs.writeFileSync(fullPath, content, "utf-8");
+      }
+    } catch (e) {
+      console.warn("Failed to write extracted files to disk workspace:", e);
+    }
+  }
 
   return {
-    text: synthesized.text,
-    source: "fallback",
-    files: synthesized.files,
-    isConversational: false,
+    text: rawResponse,
+    source: responseSource,
+    files: hasFiles ? extractedFiles : undefined,
+    isConversational: !hasFiles,
   };
 }

@@ -26,8 +26,9 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
-import { MessageSquare, Code2, Menu, FolderDown, Loader2, Check, AlertCircle, Cloud } from "lucide-react";
+import { MessageSquare, Code2, Menu, FolderDown, Loader2, Check, AlertCircle, Cloud, FolderTree, Terminal as TerminalIcon, Monitor } from "lucide-react";
 import { LiveButton } from "@/components/live-button";
+import { Terminal } from "@/components/terminal";
 
 function formatMessages(
   messages: GetSessionResponse["messages"],
@@ -86,7 +87,7 @@ export default function ChatPage({
   const [isLiveOpen, setIsLiveOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+  const [mobileTab, setMobileTab] = useState<"files" | "code" | "chat" | "terminal" | "preview">("chat");
 
   const genRef = useRef(0);
   const textBufferRef = useRef("");
@@ -496,9 +497,9 @@ export default function ChatPage({
           </ResizablePanelGroup>
         </div>
 
-        {/* Mobile / Tablet Layout (< lg): Active Tab Fullscreen */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:hidden">
-          {mobileTab === "chat" ? (
+        {/* Mobile / Tablet Layout (< lg): Active Tab Fullscreen + Bottom Navigation */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:hidden pb-14">
+          {mobileTab === "chat" && (
             <ChatPanel
               sessionId={sessionId}
               filePaths={filePaths}
@@ -518,7 +519,8 @@ export default function ChatPage({
               onOpenLive={() => setIsLiveOpen(true)}
               onOpenImport={() => setIsImportOpen(true)}
             />
-          ) : (
+          )}
+          {(mobileTab === "preview" || mobileTab === "files" || mobileTab === "code") && (
             <PreviewPanel
               sessionId={sessionId}
               previewUrl={previewUrl}
@@ -528,7 +530,59 @@ export default function ChatPage({
               onRefreshFiles={refreshFiles}
             />
           )}
+          {mobileTab === "terminal" && (
+            <Terminal sessionId={sessionId} providerId={currentProvider} />
+          )}
         </div>
+
+        {/* Mobile Bottom Navigation Bar (< lg) */}
+        <nav className="flex lg:hidden shrink-0 items-center justify-around border-t border-[var(--border)] bg-[var(--surface-elevated)] h-14 px-2 z-40 fixed bottom-0 left-0 right-0 shadow-lg">
+          <button
+            onClick={() => setMobileTab("files")}
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === "files" ? "text-[var(--primary)] font-bold" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <FolderTree className="h-5 w-5 mb-0.5" />
+            <span>Files</span>
+          </button>
+          <button
+            onClick={() => setMobileTab("code")}
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === "code" ? "text-[var(--primary)] font-bold" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <Code2 className="h-5 w-5 mb-0.5" />
+            <span>Code</span>
+          </button>
+          <button
+            onClick={() => setMobileTab("chat")}
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === "chat" ? "text-[var(--primary)] font-bold" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <MessageSquare className="h-5 w-5 mb-0.5" />
+            <span>Chat</span>
+          </button>
+          <button
+            onClick={() => setMobileTab("terminal")}
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === "terminal" ? "text-[var(--primary)] font-bold" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <TerminalIcon className="h-5 w-5 mb-0.5" />
+            <span>Terminal</span>
+          </button>
+          <button
+            onClick={() => setMobileTab("preview")}
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === "preview" ? "text-[var(--primary)] font-bold" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <Monitor className="h-5 w-5 mb-0.5" />
+            <span>Preview</span>
+          </button>
+        </nav>
       </div>
 
       <LiveVoiceModal

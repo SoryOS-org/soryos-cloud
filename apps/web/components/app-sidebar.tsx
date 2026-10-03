@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Sparkles, FolderDown, X, Layers, Settings, Cloud } from "lucide-react";
+import { Plus, Sparkles, FolderDown, X, Layers, Settings, Cloud, Palette } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { listSessions } from "@/lib/api";
 import { ImportRepoModal } from "@/components/import-repo-modal";
-import { SettingsModal } from "@/components/settings-modal";
+import { SettingsPanel } from "@/components/settings-panel";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 
 interface AppSidebarProps {
@@ -37,16 +37,16 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
   }, []);
 
   const sidebarContent = (
-    <div className="flex h-full w-full flex-col bg-[#f5f1ea]">
+    <div className="flex h-full w-full flex-col bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)] border-r border-[var(--border)]">
       {/* Mobile Header with Close button */}
-      <div className="flex items-center justify-between border-b border-[#e8e2d8] px-4 py-3 md:hidden">
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-[#c6623f]" />
-          <span className="font-semibold text-sm text-[#3d3830]">Menu & Projets</span>
+          <Layers className="h-4 w-4 text-[var(--primary)]" />
+          <span className="font-semibold text-sm">Menu & Projets</span>
         </div>
         <button
           onClick={onMobileClose}
-          className="rounded-lg p-1.5 text-gray-500 hover:bg-[#ebe5da] transition"
+          className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] transition"
           aria-label="Fermer le menu"
         >
           <X className="h-5 w-5" />
@@ -57,36 +57,36 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
         <Link
           href="/"
           onClick={onMobileClose}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce]"
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:bg-[var(--surface-hover)]"
         >
-          <Plus className="h-4 w-4 shrink-0 text-[#c6623f]" />
-          Nouvelle session
+          <Plus className="h-4 w-4 text-[var(--primary)]" />
+          <span>Nouveau projet IA</span>
         </Link>
         <button
           onClick={() => {
             setIsImportOpen(true);
             onMobileClose?.();
           }}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce] text-left cursor-pointer"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:bg-[var(--surface-hover)] cursor-pointer"
         >
-          <FolderDown className="h-4 w-4 shrink-0 text-[#c6623f]" />
-          Importer un projet
+          <FolderDown className="h-4 w-4 text-emerald-600" />
+          <span>Importer un dépôt</span>
         </button>
         <button
           onClick={() => {
             setIsSettingsOpen(true);
             onMobileClose?.();
           }}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce] text-left cursor-pointer"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:bg-[var(--surface-hover)] cursor-pointer"
         >
-          <Cloud className="h-4 w-4 shrink-0 text-emerald-700" />
-          Cloud Providers
+          <Settings className="h-4 w-4 text-purple-600" />
+          <span>Settings & Appearance</span>
         </button>
       </nav>
 
-      <div className="mt-5 px-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[#c6623f]">
-          Sessions récentes
+      <div className="px-3 pt-6 pb-2">
+        <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+          Projets récents
         </p>
       </div>
 
@@ -98,7 +98,7 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
                 key={s.id}
                 href={`/chat/${s.id}`}
                 onClick={onMobileClose}
-                className="block min-w-0 rounded-lg px-3 py-2.5 text-sm text-[#5c5348] transition-colors hover:bg-[#ebe5da] active:bg-[#e2dcce]"
+                className="block min-w-0 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
                 title={s.title}
               >
                 <span className="block truncate font-medium">{s.title}</span>
@@ -106,18 +106,18 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
             ))}
           </div>
         ) : (
-          <p className="px-3 py-2 text-xs text-[#8a8278]">Aucune session enregistrée</p>
+          <p className="px-3 py-2 text-xs text-[var(--muted-foreground)]">Aucune session enregistrée</p>
         )}
       </ScrollArea>
 
       {/* PWA & Footer info */}
-      <div className="border-t border-[#e8e2d8] p-3 space-y-2.5">
+      <div className="border-t border-[var(--border)] p-3 space-y-2.5 bg-[var(--surface-elevated)]">
         <PWAInstallButton className="w-full justify-center" />
 
-        <div className="flex items-center justify-between text-xs text-[#8a8278] pt-1">
+        <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] pt-1">
           <div className="flex items-center gap-2 truncate">
-            <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#c6623f]" />
-            <span className="truncate font-bold text-[#3d3830]">SoryOS-Code</span>
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--primary)]" />
+            <span className="truncate font-bold text-[var(--foreground)]">SoryOS-Code</span>
           </div>
           <span className="shrink-0 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
             v3.0
@@ -130,7 +130,7 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
   return (
     <>
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden md:flex h-full w-[240px] shrink-0 flex-col border-r border-[#e8e2d8]">
+      <aside className="hidden md:flex h-full w-[240px] shrink-0 flex-col border-r border-[var(--border)]">
         {sidebarContent}
       </aside>
 
@@ -154,7 +154,7 @@ export function AppSidebar({ mobileOpen = false, onMobileClose }: AppSidebarProp
         onClose={() => setIsImportOpen(false)}
       />
 
-      <SettingsModal
+      <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
