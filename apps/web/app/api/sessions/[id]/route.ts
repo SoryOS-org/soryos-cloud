@@ -30,6 +30,7 @@ export async function GET(
     model: session.model,
     provider: session.provider,
     messages: session.messages,
+    files: session.files || {},
     preview_url: session.preview_url,
     needs_run: session.needs_run,
     agent_running: session.agent_running,

@@ -1,3 +1,6 @@
+import { computeFingerprint, maskSecret } from "../ai/helpers";
+import type { ResolvedCredential, CredentialSource } from "../ai/types";
+
 export type AuthMethod = "github_oauth" | "api_key" | "api_token" | "service_account";
 
 export interface ProviderDefinition {
@@ -22,10 +25,16 @@ export interface ProviderStatus {
   authenticationMethod: AuthMethod;
   description: string;
   configured: boolean;
+  source: CredentialSource;
+  sourceLabel: string;
+  keyLength: number;
+  fingerprint: string;
   maskedKey?: string;
   lastTestedAt?: string;
   lastTestStatus?: "success" | "error" | "untested";
   lastTestMessage?: string;
+  httpStatus?: number;
+  latencyMs?: number;
 }
 
 export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
@@ -34,46 +43,30 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     name: "Google Gemini",
     category: "ai",
     authenticationMethod: "api_key",
-    description: "Modèles multimodaux Gemini 2.5 Flash, 2.5 Pro et 2.0 Flash pour génération ultra-rapide.",
+    description: "Modèles Google Gemini 3.8 Flash, 3.1 Pro et 3.1 Flash Lite pour génération ultra-rapide.",
     fields: [
       {
         key: "apiKey",
         label: "Clé API Google Gemini",
         placeholder: "AIzaSy... ou AQ.Ab8...",
         type: "password",
-        description: "Clé API générée depuis Google AI Studio (aistudio.google.com)",
+        description: "Clé API issue de Google AI Studio (aistudio.google.com)",
       },
     ],
   },
-  openrouter: {
-    id: "openrouter",
-    name: "OpenRouter",
+  openai: {
+    id: "openai",
+    name: "OpenAI",
     category: "ai",
     authenticationMethod: "api_key",
-    description: "Passerelle universelle donnant accès à Llama 3.3, DeepSeek R1, Qwen 2.5 et 100+ modèles.",
+    description: "Modèles officiels OpenAI GPT-4o, GPT-4o Mini et o3-mini pour code et raisonnement.",
     fields: [
       {
         key: "apiKey",
-        label: "Clé API OpenRouter",
-        placeholder: "sk-or-v1-...",
+        label: "Clé API OpenAI",
+        placeholder: "sk-proj-...",
         type: "password",
-        description: "Clé API OpenRouter (openrouter.ai). Les modèles :free fonctionnent aussi sans clé.",
-      },
-    ],
-  },
-  deepseek: {
-    id: "deepseek",
-    name: "DeepSeek",
-    category: "ai",
-    authenticationMethod: "api_key",
-    description: "Modèles DeepSeek V3 et R1 pour raisonnement mathématique et synthèse de code.",
-    fields: [
-      {
-        key: "apiKey",
-        label: "Clé API DeepSeek",
-        placeholder: "sk-...",
-        type: "password",
-        description: "Clé API générée depuis platform.deepseek.com",
+        description: "Clé API générée depuis platform.openai.com",
       },
     ],
   },
@@ -93,6 +86,54 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
       },
     ],
   },
+  openrouter: {
+    id: "openrouter",
+    name: "OpenRouter",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Passerelle universelle donnant accès à Llama 3.3, DeepSeek R1, Qwen 2.5 et 100+ modèles.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API OpenRouter",
+        placeholder: "sk-or-v1-...",
+        type: "password",
+        description: "Clé API OpenRouter (openrouter.ai). Modèles :free disponibles.",
+      },
+    ],
+  },
+  "opencode-zen": {
+    id: "opencode-zen",
+    name: "OpenCode Zen",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Passerelle OpenCode Zen pour modèles coding communautaires (Bearer public ou clé pro).",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé OpenCode Zen",
+        placeholder: "public ou votre clé personnelle",
+        type: "password",
+        description: "Laissez 'public' pour quota communautaire, ou votre clé OpenCode.",
+      },
+    ],
+  },
+  deepseek: {
+    id: "deepseek",
+    name: "DeepSeek",
+    category: "ai",
+    authenticationMethod: "api_key",
+    description: "Modèles DeepSeek V3 et R1 pour raisonnement mathématique et synthèse de code.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Clé API DeepSeek",
+        placeholder: "sk-...",
+        type: "password",
+        description: "Clé API générée depuis platform.deepseek.com",
+      },
+    ],
+  },
   grok: {
     id: "grok",
     name: "xAI Grok",
@@ -106,22 +147,6 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
         placeholder: "xai-...",
         type: "password",
         description: "Clé API générée depuis console.x.ai",
-      },
-    ],
-  },
-  "opencode-zen": {
-    id: "opencode-zen",
-    name: "OpenCode Zen",
-    category: "ai",
-    authenticationMethod: "api_key",
-    description: "Passerelle publique OpenCode Zen pour modèles open-source gratuits (Bearer public).",
-    fields: [
-      {
-        key: "apiKey",
-        label: "Clé Zen (Optionnel)",
-        placeholder: "public ou votre clé personnalisée",
-        type: "password",
-        description: "Laissez 'public' pour utiliser le quota communautaire gratuit.",
       },
     ],
   },
@@ -162,7 +187,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
     name: "Google Cloud Run",
     category: "sandbox",
     authenticationMethod: "service_account",
-    description: "Cloud Run Jobs pour compilations lourdes et création d'ISO.",
+    description: "Cloud Run Jobs pour compilations lourdes et conteneurs.",
     fields: [
       {
         key: "projectId",
@@ -176,7 +201,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
         label: "Service Account JSON Key",
         placeholder: '{\n  "type": "service_account",\n  "project_id": "..."\n}',
         type: "textarea",
-        description: "Clé JSON du compte de service GCP avec rôles Cloud Run Admin",
+        description: "Clé JSON du compte de service GCP",
       },
     ],
   },
@@ -184,61 +209,166 @@ export const PROVIDER_REGISTRY: Record<string, ProviderDefinition> = {
 
 declare global {
   var __soryos_credentials_store: Map<string, Record<string, string>> | undefined;
-  var __soryos_credentials_tests: Map<string, { status: "success" | "error"; message: string; timestamp: string }> | undefined;
+  var __soryos_session_credentials: Map<string, Map<string, Record<string, string>>> | undefined;
+  var __soryos_credentials_tests: Map<
+    string,
+    { status: "success" | "error"; message: string; timestamp: string; httpStatus?: number; latencyMs?: number }
+  > | undefined;
 }
 
 const credentialsStore = globalThis.__soryos_credentials_store ?? new Map<string, Record<string, string>>();
 globalThis.__soryos_credentials_store = credentialsStore;
 
-const testsStore = globalThis.__soryos_credentials_tests ?? new Map<string, { status: "success" | "error"; message: string; timestamp: string }>();
+const sessionCredentialsStore =
+  globalThis.__soryos_session_credentials ?? new Map<string, Map<string, Record<string, string>>>();
+globalThis.__soryos_session_credentials = sessionCredentialsStore;
+
+const testsStore =
+  globalThis.__soryos_credentials_tests ??
+  new Map<
+    string,
+    { status: "success" | "error"; message: string; timestamp: string; httpStatus?: number; latencyMs?: number }
+  >();
 globalThis.__soryos_credentials_tests = testsStore;
 
-// Initialize defaults from environment variables if present
-if (!credentialsStore.has("google") && (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)) {
-  credentialsStore.set("google", { apiKey: (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)! });
-}
-if (!credentialsStore.has("openrouter") && process.env.OPENROUTER_API_KEY) {
-  credentialsStore.set("openrouter", { apiKey: process.env.OPENROUTER_API_KEY });
-}
-if (!credentialsStore.has("deepseek") && process.env.DEEPSEEK_API_KEY) {
-  credentialsStore.set("deepseek", { apiKey: process.env.DEEPSEEK_API_KEY });
-}
-if (!credentialsStore.has("mistral") && process.env.MISTRAL_API_KEY) {
-  credentialsStore.set("mistral", { apiKey: process.env.MISTRAL_API_KEY });
-}
-if (!credentialsStore.has("grok") && (process.env.GROK_API_KEY || process.env.XAI_API_KEY)) {
-  credentialsStore.set("grok", { apiKey: (process.env.GROK_API_KEY || process.env.XAI_API_KEY)! });
-}
-if (!credentialsStore.has("e2b") && process.env.E2B_API_KEY) {
-  credentialsStore.set("e2b", { apiKey: process.env.E2B_API_KEY });
-}
-if (!credentialsStore.has("vercel") && (process.env.VERCEL_TOKEN || process.env.VERCEL_API_TOKEN)) {
-  credentialsStore.set("vercel", { apiToken: (process.env.VERCEL_TOKEN || process.env.VERCEL_API_TOKEN)! });
-}
-if (!credentialsStore.has("google-cloud-run") && process.env.GCP_PROJECT_ID) {
-  credentialsStore.set("google-cloud-run", {
-    projectId: process.env.GCP_PROJECT_ID,
-    serviceAccountKey: process.env.GCP_SERVICE_ACCOUNT_KEY || "",
-  });
-}
-
-export function maskSecret(val?: string): string {
-  if (!val) return "";
-  const trimmed = val.trim();
-  if (trimmed.length <= 8) return "********";
-  const start = trimmed.slice(0, 4);
-  const end = trimmed.slice(-4);
-  return `${start}****************${end}`;
-}
-
 export class CredentialManager {
-  getProviderStatus(providerId: string): ProviderStatus | null {
+  /**
+   * Resolves credential following strict priority order:
+   * 1. Session / Project override
+   * 2. Project / UI Store (configured through settings)
+   * 3. Environment variable fallback
+   * 4. Public default (only if specifically supported by provider like OpenCode Zen)
+   * 5. Unconfigured (none)
+   */
+  resolveCredentials(providerId: string, sessionId?: string): ResolvedCredential {
+    // 1. Session / Project override
+    if (sessionId) {
+      const sessionMap = sessionCredentialsStore.get(sessionId);
+      const sessionCreds = sessionMap?.get(providerId);
+      const sessionKey = sessionCreds?.apiKey || sessionCreds?.apiToken;
+      if (sessionKey && sessionKey.trim().length > 0) {
+        return {
+          providerId,
+          source: "session_override",
+          sourceLabel: `Session Store (${sessionId.slice(0, 8)})`,
+          isConfigured: true,
+          keyLength: sessionKey.trim().length,
+          fingerprint: computeFingerprint(sessionKey),
+          apiKey: sessionKey.trim(),
+          extraFields: sessionCreds,
+        };
+      }
+    }
+
+    // 2. Project / UI Store
+    const storeCreds = credentialsStore.get(providerId);
+    const storeKey = storeCreds?.apiKey || storeCreds?.apiToken;
+    if (storeKey && storeKey.trim().length > 0) {
+      return {
+        providerId,
+        source: "project_store",
+        sourceLabel: "Project Settings Store",
+        isConfigured: true,
+        keyLength: storeKey.trim().length,
+        fingerprint: computeFingerprint(storeKey),
+        apiKey: storeKey.trim(),
+        extraFields: storeCreds,
+      };
+    }
+
+    // 3. Environment variable fallback
+    const envKey = this.getEnvKeyForProvider(providerId);
+    if (envKey && envKey.trim().length > 0) {
+      return {
+        providerId,
+        source: "environment_variable",
+        sourceLabel: `Env Var (${this.getEnvVarName(providerId)})`,
+        isConfigured: true,
+        keyLength: envKey.trim().length,
+        fingerprint: computeFingerprint(envKey),
+        apiKey: envKey.trim(),
+      };
+    }
+
+    // 4. Provider-specific public default
+    if (providerId === "opencode-zen") {
+      return {
+        providerId,
+        source: "public_default",
+        sourceLabel: "Zen Public Gateway (Bearer public)",
+        isConfigured: true,
+        keyLength: 6,
+        fingerprint: computeFingerprint("public"),
+        apiKey: "public",
+      };
+    }
+
+    // 5. Unconfigured
+    return {
+      providerId,
+      source: "none",
+      sourceLabel: "Non configuré",
+      isConfigured: false,
+      keyLength: 0,
+      fingerprint: "none",
+    };
+  }
+
+  private getEnvKeyForProvider(providerId: string): string | undefined {
+    switch (providerId) {
+      case "google":
+        return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      case "openai":
+        return process.env.OPENAI_API_KEY;
+      case "mistral":
+        return process.env.MISTRAL_API_KEY;
+      case "openrouter":
+        return process.env.OPENROUTER_API_KEY;
+      case "deepseek":
+        return process.env.DEEPSEEK_API_KEY;
+      case "grok":
+        return process.env.GROK_API_KEY || process.env.XAI_API_KEY;
+      case "opencode-zen":
+        return process.env.OPENCODE_API_KEY;
+      case "e2b":
+        return process.env.E2B_API_KEY;
+      case "vercel":
+        return process.env.VERCEL_TOKEN || process.env.VERCEL_API_TOKEN;
+      default:
+        return undefined;
+    }
+  }
+
+  private getEnvVarName(providerId: string): string {
+    switch (providerId) {
+      case "google":
+        return process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : "GOOGLE_API_KEY";
+      case "openai":
+        return "OPENAI_API_KEY";
+      case "mistral":
+        return "MISTRAL_API_KEY";
+      case "openrouter":
+        return "OPENROUTER_API_KEY";
+      case "deepseek":
+        return "DEEPSEEK_API_KEY";
+      case "grok":
+        return process.env.GROK_API_KEY ? "GROK_API_KEY" : "XAI_API_KEY";
+      case "opencode-zen":
+        return "OPENCODE_API_KEY";
+      case "e2b":
+        return "E2B_API_KEY";
+      case "vercel":
+        return "VERCEL_TOKEN";
+      default:
+        return "ENV";
+    }
+  }
+
+  getProviderStatus(providerId: string, sessionId?: string): ProviderStatus | null {
     const def = PROVIDER_REGISTRY[providerId];
     if (!def) return null;
 
-    const creds = credentialsStore.get(providerId);
-    const configured = Boolean(creds && Object.values(creds).some((v) => v && v.trim().length > 0));
-    const primaryKey = creds ? Object.values(creds)[0] : undefined;
+    const resolved = this.resolveCredentials(providerId, sessionId);
     const test = testsStore.get(providerId);
 
     return {
@@ -247,19 +377,29 @@ export class CredentialManager {
       category: def.category,
       authenticationMethod: def.authenticationMethod,
       description: def.description,
-      configured,
-      maskedKey: configured ? maskSecret(primaryKey) : undefined,
+      configured: resolved.isConfigured,
+      source: resolved.source,
+      sourceLabel: resolved.sourceLabel,
+      keyLength: resolved.keyLength,
+      fingerprint: resolved.fingerprint,
+      maskedKey: resolved.isConfigured && resolved.apiKey ? maskSecret(resolved.apiKey) : undefined,
       lastTestedAt: test?.timestamp,
       lastTestStatus: test ? test.status : "untested",
       lastTestMessage: test?.message,
+      httpStatus: test?.httpStatus,
+      latencyMs: test?.latencyMs,
     };
   }
 
-  getAllStatuses(): ProviderStatus[] {
-    return Object.keys(PROVIDER_REGISTRY).map((id) => this.getProviderStatus(id)!);
+  getAllStatuses(sessionId?: string): ProviderStatus[] {
+    return Object.keys(PROVIDER_REGISTRY).map((id) => this.getProviderStatus(id, sessionId)!);
   }
 
-  saveCredentials(providerId: string, fields: Record<string, string>): { success: boolean; status: ProviderStatus } {
+  saveCredentials(
+    providerId: string,
+    fields: Record<string, string>,
+    sessionId?: string,
+  ): { success: boolean; status: ProviderStatus } {
     const def = PROVIDER_REGISTRY[providerId];
     if (!def) throw new Error(`Provider inconnu: ${providerId}`);
 
@@ -270,117 +410,65 @@ export class CredentialManager {
       }
     }
 
-    credentialsStore.set(providerId, sanitized);
+    if (sessionId) {
+      if (!sessionCredentialsStore.has(sessionId)) {
+        sessionCredentialsStore.set(sessionId, new Map());
+      }
+      sessionCredentialsStore.get(sessionId)!.set(providerId, sanitized);
+    } else {
+      credentialsStore.set(providerId, sanitized);
+    }
+
     testsStore.delete(providerId);
 
     return {
       success: true,
-      status: this.getProviderStatus(providerId)!,
+      status: this.getProviderStatus(providerId, sessionId)!,
     };
   }
 
-  deleteCredentials(providerId: string): { success: boolean; status: ProviderStatus } {
-    credentialsStore.delete(providerId);
+  deleteCredentials(providerId: string, sessionId?: string): { success: boolean; status: ProviderStatus } {
+    if (sessionId) {
+      sessionCredentialsStore.get(sessionId)?.delete(providerId);
+    } else {
+      credentialsStore.delete(providerId);
+    }
     testsStore.delete(providerId);
+
     return {
       success: true,
-      status: this.getProviderStatus(providerId)!,
+      status: this.getProviderStatus(providerId, sessionId)!,
     };
   }
 
-  getCredentials(providerId: string): Record<string, string> | undefined {
-    return credentialsStore.get(providerId);
+  getCredentials(providerId: string, sessionId?: string): Record<string, string> | undefined {
+    if (sessionId) {
+      const sessionCreds = sessionCredentialsStore.get(sessionId)?.get(providerId);
+      if (sessionCreds) return sessionCreds;
+    }
+    const store = credentialsStore.get(providerId);
+    if (store) return store;
+
+    const envKey = this.getEnvKeyForProvider(providerId);
+    if (envKey) {
+      return { apiKey: envKey };
+    }
+    return undefined;
   }
 
-  async testConnection(providerId: string): Promise<{ success: boolean; message: string; timestamp: string }> {
-    const creds = credentialsStore.get(providerId);
-    const now = new Date().toISOString();
-
-    if (providerId === "opencode-zen") {
-      const msg = "Passerelle OpenCode Zen (Public Free) active et accessible.";
-      testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-      return { success: true, message: msg, timestamp: now };
-    }
-
-    if (!creds || !Object.values(creds).some((v) => v.trim().length > 0)) {
-      const res = { success: false, message: "Aucune clé d'authentification configurée.", timestamp: now };
-      testsStore.set(providerId, { status: "error", message: res.message, timestamp: now });
-      return res;
-    }
-
-    try {
-      if (providerId === "google") {
-        const apiKey = creds.apiKey || process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("Clé API Google Gemini manquante");
-        const msg = "Clé Google Gemini validée avec succès.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "openrouter") {
-        const apiKey = creds.apiKey;
-        if (!apiKey) throw new Error("Clé API OpenRouter manquante");
-        const msg = "Connexion OpenRouter validée.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "deepseek") {
-        const apiKey = creds.apiKey;
-        if (!apiKey) throw new Error("Clé API DeepSeek manquante");
-        const msg = "Connexion DeepSeek validée.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "mistral") {
-        const apiKey = creds.apiKey;
-        if (!apiKey) throw new Error("Clé API Mistral manquante");
-        const msg = "Connexion Mistral validée.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "grok") {
-        const apiKey = creds.apiKey;
-        if (!apiKey) throw new Error("Clé API xAI Grok manquante");
-        const msg = "Connexion xAI Grok validée.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "e2b") {
-        const apiKey = creds.apiKey;
-        if (!apiKey) throw new Error("Clé API E2B manquante");
-        const msg = "Connexion E2B établie avec succès.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "vercel") {
-        const token = creds.apiToken;
-        if (!token) throw new Error("Token API Vercel manquant");
-        const msg = "Connexion Vercel Sandbox vérifiée.";
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      if (providerId === "google-cloud-run") {
-        const projectId = creds.projectId;
-        if (!projectId) throw new Error("Project ID Google Cloud manquant");
-        const msg = `Projet GCP '${projectId}' configuré pour Cloud Run.`;
-        testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-        return { success: true, message: msg, timestamp: now };
-      }
-
-      const msg = "Connexion vérifiée avec succès.";
-      testsStore.set(providerId, { status: "success", message: msg, timestamp: now });
-      return { success: true, message: msg, timestamp: now };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erreur de connexion";
-      testsStore.set(providerId, { status: "error", message: msg, timestamp: now });
-      return { success: false, message: msg, timestamp: now };
-    }
+  recordTestResult(
+    providerId: string,
+    status: "success" | "error",
+    message: string,
+    extra?: { httpStatus?: number; latencyMs?: number },
+  ) {
+    testsStore.set(providerId, {
+      status,
+      message,
+      timestamp: new Date().toISOString(),
+      httpStatus: extra?.httpStatus,
+      latencyMs: extra?.latencyMs,
+    });
   }
 }
 

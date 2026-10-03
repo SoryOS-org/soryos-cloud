@@ -22,91 +22,50 @@ export interface ProviderInfo {
   lastSyncedAt?: string;
 }
 
-// The real OpenCode Zen free models catalog
+// OpenCode Zen actual supported catalog
 export const REAL_OPENCODE_ZEN_FREE_MODELS: ModelInfo[] = [
   {
-    id: "opencode/zen-coder-free",
-    name: "OpenCode Zen Coder",
+    id: "mimo-v2.5-free",
+    name: "MiMo V2.5 (Free)",
     providerId: "opencode-zen",
     providerName: "OpenCode Zen",
     isFree: true,
-    badge: "Free Public",
-    description: "Flagship default coding agent model on OpenCode Zen free tier",
+    badge: "Zen Free",
+    description: "Modèle de raisonnement et de refactorisation de code sur la passerelle Zen.",
     pricing: "Free (Bearer public)",
   },
   {
-    id: "mimo-v2.5:free",
-    name: "MiMo V2.5",
+    id: "deepseek-v4-flash-free",
+    name: "DeepSeek v4 Flash (Free)",
     providerId: "opencode-zen",
     providerName: "OpenCode Zen",
     isFree: true,
-    badge: "Free Tier",
-    description: "High-accuracy code reasoning & refactoring model on Zen free tier",
+    badge: "Zen Ultra Fast",
+    description: "Synthèse de code sub-seconde et génération dynamique sur passerelle Zen.",
     pricing: "Free",
   },
   {
-    id: "deepseek-v4-flash:free",
-    name: "DeepSeek v4 Flash",
-    providerId: "opencode-zen",
-    providerName: "OpenCode Zen",
-    isFree: true,
-    badge: "Ultra Fast",
-    description: "Sub-second inference and code synthesis on Zen free tier",
-    pricing: "Free",
-  },
-  {
-    id: "laguna-s-2.1:free",
-    name: "Laguna S 2.1",
-    providerId: "opencode-zen",
-    providerName: "OpenCode Zen",
-    isFree: true,
-    badge: "Top Free",
-    description: "Leading benchmark performer for full-stack frontend & backend apps",
-    pricing: "Free",
-  },
-  {
-    id: "nemotron-3-ultra:free",
-    name: "Nemotron 3 Ultra",
+    id: "nemotron-3-ultra-free",
+    name: "Nemotron 3 Ultra (Free)",
     providerId: "opencode-zen",
     providerName: "OpenCode Zen",
     isFree: true,
     badge: "NVIDIA MoE",
-    description: "Advanced code comprehension & architectural planning",
+    description: "Architecture de planification logicielle et compréhension avancée du code.",
     pricing: "Free",
   },
   {
-    id: "north-mini-code:free",
-    name: "North Mini Code",
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash (Zen Route)",
     providerId: "opencode-zen",
     providerName: "OpenCode Zen",
     isFree: true,
-    badge: "Low Latency",
-    description: "Lightweight, ultra-responsive model for quick code edits & diffs",
-    pricing: "Free",
-  },
-  {
-    id: "qwen/qwen-2.5-coder-32b:free",
-    name: "Qwen 2.5 Coder 32B",
-    providerId: "opencode-zen",
-    providerName: "OpenCode Zen",
-    isFree: true,
-    badge: "Free Code",
-    description: "Top-tier 32B parameter code synthesis model via Zen gateway",
-    pricing: "Free",
-  },
-  {
-    id: "opencode/starcoder2-15b",
-    name: "StarCoder2 15B",
-    providerId: "opencode-zen",
-    providerName: "OpenCode Zen",
-    isFree: true,
-    badge: "BigCode Free",
-    description: "Open-source big code foundation model for programming",
+    badge: "Zen Gateway",
+    description: "Routage du modèle Gemini 3.8 Flash via la passerelle OpenCode Zen.",
     pricing: "Free",
   },
 ];
 
-// Global dynamic storage for dynamically discovered OpenCode Zen models
 declare global {
   var __codeforge_dynamic_providers: ProviderInfo[] | undefined;
   var __codeforge_last_synced_at: string | undefined;
@@ -114,114 +73,95 @@ declare global {
 
 export const INITIAL_PROVIDERS: ProviderInfo[] = [
   {
-    id: "opencode-zen",
-    name: "OpenCode Zen",
-    badge: "Public Key",
+    id: "google",
+    name: "Google Gemini",
+    badge: "Recommandé",
     hasFreeTier: true,
-    endpoint: "https://opencode.ai/zen/v1",
-    defaultKey: "public",
-    description: "OpenCode Zen gateway with public 'Bearer public' key access for free coding models",
-    models: [...REAL_OPENCODE_ZEN_FREE_MODELS],
-    lastSyncedAt: new Date().toISOString(),
-  },
-  {
-    id: "openrouter",
-    name: "OpenRouter",
-    badge: "Free Models",
-    hasFreeTier: true,
-    endpoint: "https://openrouter.ai/api/v1",
-    description: "Universal model router with free community access",
+    endpoint: "https://generativelanguage.googleapis.com",
+    description: "Modèles officiels Google Gemini 3.8 Flash, 3.1 Pro et 3.1 Flash Lite.",
     models: [
       {
-        id: "meta-llama/llama-3.3-70b-instruct:free",
-        name: "Llama 3.3 70B",
-        providerId: "openrouter",
-        providerName: "OpenRouter",
+        id: "gemini-3.8-flash",
+        name: "Gemini 3.8 Flash",
+        providerId: "google",
+        providerName: "Google Gemini",
         isFree: true,
-        badge: "Free",
-        description: "Meta's flagship open model with instruction tuning",
+        badge: "Recommandé",
+        description: "Vitesse d'inférence exceptionnelle, fenêtre de contexte massive et excellent en code.",
       },
       {
-        id: "deepseek/deepseek-r1:free",
-        name: "DeepSeek R1",
-        providerId: "openrouter",
-        providerName: "OpenRouter",
-        isFree: true,
-        badge: "Free Reasoning",
-        description: "Frontier reasoning model with extended reflection",
+        id: "gemini-3.1-pro-preview",
+        name: "Gemini 3.1 Pro Preview",
+        providerId: "google",
+        providerName: "Google Gemini",
+        isFree: false,
+        badge: "Frontier",
+        description: "Raisonnement avancé, mathématiques et architecture système complexe.",
       },
       {
-        id: "qwen/qwen-2.5-coder-32b-instruct:free",
-        name: "Qwen 2.5 Coder 32B",
-        providerId: "openrouter",
-        providerName: "OpenRouter",
+        id: "gemini-3.1-flash-lite",
+        name: "Gemini 3.1 Flash Lite",
+        providerId: "google",
+        providerName: "Google Gemini",
         isFree: true,
-        badge: "Free Code",
-        description: "Alibaba's benchmark leader for code synthesis",
-      },
-      {
-        id: "google/gemini-2.0-flash-exp:free",
-        name: "Gemini 2.0 Flash Exp",
-        providerId: "openrouter",
-        providerName: "OpenRouter",
-        isFree: true,
-        badge: "Free",
-        description: "Experimental high-speed multimodal reasoning",
-      },
-      {
-        id: "mistralai/mistral-7b-instruct:free",
-        name: "Mistral 7B Instruct",
-        providerId: "openrouter",
-        providerName: "OpenRouter",
-        isFree: true,
-        badge: "Free",
-        description: "Compact, efficient French foundation model",
+        badge: "Ultra Rapide",
+        description: "Latence minimale et coût réduit pour modifications légères et itérations.",
       },
     ],
   },
   {
-    id: "google",
-    name: "Google Gemini",
-    badge: "Free Tier",
-    hasFreeTier: true,
-    endpoint: "https://generativelanguage.googleapis.com/v1beta",
-    description: "State-of-the-art multimodal reasoning and coding",
+    id: "openai",
+    name: "OpenAI",
+    badge: "Officiel",
+    hasFreeTier: false,
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    description: "Modèles officiels OpenAI GPT-4o, GPT-4o Mini et o3-mini.",
     models: [
       {
-        id: "gemini-2.5-flash",
-        name: "Gemini 2.5 Flash",
-        providerId: "google",
-        providerName: "Google Gemini",
-        isFree: true,
-        badge: "Recommended",
-        description: "Sub-second latency, massive context window, excellent code generation",
+        id: "gpt-4o",
+        name: "GPT-4o",
+        providerId: "openai",
+        providerName: "OpenAI",
+        isFree: false,
+        badge: "Flagship",
+        description: "Modèle multimodal frontière d'OpenAI pour raisonnement et code complexe.",
       },
       {
-        id: "gemini-2.5-flash-lite",
-        name: "Gemini 2.5 Flash Lite",
-        providerId: "google",
-        providerName: "Google Gemini",
-        isFree: true,
-        badge: "Free Tier",
-        description: "Cost-efficient lightweight intelligence for fast edits",
+        id: "gpt-4o-mini",
+        name: "GPT-4o Mini",
+        providerId: "openai",
+        providerName: "OpenAI",
+        isFree: false,
+        badge: "Fast",
+        description: "Compact, ultra-rapide et économique pour génération quotidienne.",
       },
       {
-        id: "gemini-2.0-flash",
-        name: "Gemini 2.0 Flash",
-        providerId: "google",
-        providerName: "Google Gemini",
-        isFree: true,
-        badge: "General",
-        description: "General-purpose agent workflows and complex task completion",
+        id: "o3-mini",
+        name: "o3-mini",
+        providerId: "openai",
+        providerName: "OpenAI",
+        isFree: false,
+        badge: "Reasoning",
+        description: "Modèle de raisonnement avancé pour logique et mathématiques.",
+      },
+      {
+        id: "gpt-4-turbo",
+        name: "GPT-4 Turbo",
+        providerId: "openai",
+        providerName: "OpenAI",
+        isFree: false,
+        badge: "Pro 128k",
+        description: "Version 128k context pour grands dépôts de code.",
       },
     ],
   },
   {
     id: "mistral",
     name: "Mistral AI",
+    badge: "European Pro",
     hasFreeTier: false,
-    endpoint: "https://api.mistral.ai/v1",
-    description: "European champion open weights and specialized coding models",
+    endpoint: "https://api.mistral.ai/v1/chat/completions",
+    description: "Modèles Codestral, Mistral Large et Small optimisés pour le code.",
     models: [
       {
         id: "codestral-latest",
@@ -230,7 +170,7 @@ export const INITIAL_PROVIDERS: ProviderInfo[] = [
         providerName: "Mistral AI",
         isFree: false,
         badge: "Code Pro",
-        description: "Mistral's dedicated generative code completion model",
+        description: "Modèle Mistral dédié à la complétion et la génération de code.",
       },
       {
         id: "mistral-large-latest",
@@ -239,7 +179,7 @@ export const INITIAL_PROVIDERS: ProviderInfo[] = [
         providerName: "Mistral AI",
         isFree: false,
         badge: "Flagship",
-        description: "Top-tier reasoning with native multi-lingual capabilities",
+        description: "Raisonnement général de premier rang avec capacités multilingues.",
       },
       {
         id: "mistral-small-latest",
@@ -248,43 +188,74 @@ export const INITIAL_PROVIDERS: ProviderInfo[] = [
         providerName: "Mistral AI",
         isFree: false,
         badge: "Fast",
-        description: "Low-latency balanced model for rapid prototyping",
+        description: "Faible latence pour revues de code et assistants réactifs.",
       },
     ],
   },
   {
-    id: "grok",
-    name: "xAI Grok",
-    hasFreeTier: false,
-    endpoint: "https://api.x.ai/v1",
-    description: "Real-time knowledge and unfiltered reasoning by xAI",
+    id: "openrouter",
+    name: "OpenRouter",
+    badge: "Free Models",
+    hasFreeTier: true,
+    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+    description: "Passerelle universelle donnant accès à Llama 3.3, DeepSeek R1 et Qwen 2.5.",
     models: [
       {
-        id: "grok-beta",
-        name: "Grok Beta",
-        providerId: "grok",
-        providerName: "xAI Grok",
-        isFree: false,
-        badge: "Reasoning",
-        description: "Frontier mathematical and logic deduction agent",
+        id: "meta-llama/llama-3.3-70b-instruct:free",
+        name: "Llama 3.3 70B (Free)",
+        providerId: "openrouter",
+        providerName: "OpenRouter",
+        isFree: true,
+        badge: "Free Tier",
+        description: "Modèle open-source phare de Meta pour programmation et instructions.",
       },
       {
-        id: "grok-2",
-        name: "Grok 2",
-        providerId: "grok",
-        providerName: "xAI Grok",
-        isFree: false,
-        badge: "Flagship",
-        description: "General conversational and software engineering model",
+        id: "deepseek/deepseek-r1:free",
+        name: "DeepSeek R1 (Free)",
+        providerId: "openrouter",
+        providerName: "OpenRouter",
+        isFree: true,
+        badge: "Free Reasoning",
+        description: "Modèle de raisonnement avec réflexion approfondie.",
+      },
+      {
+        id: "qwen/qwen-2.5-coder-32b-instruct:free",
+        name: "Qwen 2.5 Coder 32B (Free)",
+        providerId: "openrouter",
+        providerName: "OpenRouter",
+        isFree: true,
+        badge: "Free Code",
+        description: "Modèle d'Alibaba spécialement entraîné sur les langages de code.",
+      },
+      {
+        id: "mistralai/mistral-7b-instruct:free",
+        name: "Mistral 7B Instruct (Free)",
+        providerId: "openrouter",
+        providerName: "OpenRouter",
+        isFree: true,
+        badge: "Fast Free",
+        description: "Modèle compact et agile pour requêtes rapides.",
       },
     ],
+  },
+  {
+    id: "opencode-zen",
+    name: "OpenCode Zen",
+    badge: "Zen Gateway",
+    hasFreeTier: true,
+    endpoint: "https://opencode.ai/zen/v1",
+    defaultKey: "public",
+    description: "Passerelle publique OpenCode Zen pour modèles coding communautaires.",
+    models: [...REAL_OPENCODE_ZEN_FREE_MODELS],
+    lastSyncedAt: new Date().toISOString(),
   },
   {
     id: "deepseek",
     name: "DeepSeek",
+    badge: "MoE",
     hasFreeTier: true,
-    endpoint: "https://api.deepseek.com/v1",
-    description: "Open-weights reasoning, coder, and chat architectures",
+    endpoint: "https://api.deepseek.com/v1/chat/completions",
+    description: "Modèles DeepSeek V3 et DeepSeek R1 pour calculs et code.",
     models: [
       {
         id: "deepseek-chat",
@@ -292,8 +263,8 @@ export const INITIAL_PROVIDERS: ProviderInfo[] = [
         providerId: "deepseek",
         providerName: "DeepSeek",
         isFree: true,
-        badge: "Popular",
-        description: "671B MoE architecture with exceptional code and reasoning",
+        badge: "Popular MoE",
+        description: "671B MoE très rapide avec compétences avancées en programmation.",
       },
       {
         id: "deepseek-reasoner",
@@ -301,19 +272,46 @@ export const INITIAL_PROVIDERS: ProviderInfo[] = [
         providerId: "deepseek",
         providerName: "DeepSeek",
         isFree: true,
-        badge: "CoT",
-        description: "In-depth chain-of-thought verification for edge cases",
+        badge: "Reasoning CoT",
+        description: "Vérification étape par étape pour algorithmes difficiles.",
+      },
+    ],
+  },
+  {
+    id: "grok",
+    name: "xAI Grok",
+    badge: "xAI",
+    hasFreeTier: false,
+    endpoint: "https://api.x.ai/v1/chat/completions",
+    description: "Raisonnement non filtré et connaissances en temps réel.",
+    models: [
+      {
+        id: "grok-2-latest",
+        name: "Grok 2",
+        providerId: "grok",
+        providerName: "xAI Grok",
+        isFree: false,
+        badge: "Flagship",
+        description: "Modèle de pointe conversationnel et génie logiciel par xAI.",
+      },
+      {
+        id: "grok-beta",
+        name: "Grok Beta",
+        providerId: "grok",
+        providerName: "xAI Grok",
+        isFree: false,
+        badge: "Fast Beta",
+        description: "Version d'expérimentation rapide pour déductions et interactions.",
       },
     ],
   },
 ];
 
-// In-memory mutable providers list that updates whenever OpenCode Zen adds new models
 export const PROVIDERS: ProviderInfo[] =
   globalThis.__codeforge_dynamic_providers ?? JSON.parse(JSON.stringify(INITIAL_PROVIDERS));
 globalThis.__codeforge_dynamic_providers = PROVIDERS;
 
-export const DEFAULT_MODEL_ID = "opencode/zen-coder-free";
+export const DEFAULT_MODEL_ID = "gemini-3.8-flash";
 
 export function getAllProviders(): ProviderInfo[] {
   return globalThis.__codeforge_dynamic_providers ?? PROVIDERS;
@@ -336,7 +334,6 @@ export function getModelById(id?: string | null): ModelInfo {
 
 /**
  * Merges newly discovered models from OpenCode Zen into the OpenCode Zen provider.
- * Ensures duplicate model IDs are updated and new ones are appended.
  */
 export function registerDynamicZenModels(newModels: ModelInfo[]): ProviderInfo[] {
   const providers = getAllProviders();
@@ -362,7 +359,6 @@ export function registerDynamicZenModels(newModels: ModelInfo[]): ProviderInfo[]
 
 /**
  * Live sync with OpenCode Zen API endpoint (`/models`).
- * If remote responds with live models, merges them into the in-memory catalog.
  */
 export async function syncOpenCodeZenModels(): Promise<{
   success: boolean;
@@ -390,7 +386,7 @@ export async function syncOpenCodeZenModels(): Promise<{
 
     if (res && res.ok) {
       const data = (await res.json().catch(() => null)) as {
-        data?: Array<{ id: string; name?: string; description?: string; pricing?: { prompt?: string } }>;
+        data?: Array<{ id: string; name?: string; description?: string }>;
       } | null;
 
       if (data && Array.isArray(data.data) && data.data.length > 0) {
@@ -400,16 +396,16 @@ export async function syncOpenCodeZenModels(): Promise<{
           providerId: "opencode-zen",
           providerName: "OpenCode Zen",
           isFree: true,
-          badge: "Live Zen Free",
+          badge: "Live Zen",
           description:
-            item.description || "Real-time free model dynamically discovered from OpenCode Zen",
+            item.description || "Modèle découvert dynamiquement depuis OpenCode Zen",
         }));
 
         registerDynamicZenModels(parsedModels);
       }
     }
   } catch (err) {
-    console.warn("OpenCode Zen live fetch skipped or timed out, keeping active catalog:", err);
+    console.warn("OpenCode Zen live fetch skipped or timed out:", err);
   }
 
   const updatedZen = getAllProviders().find((p) => p.id === "opencode-zen");

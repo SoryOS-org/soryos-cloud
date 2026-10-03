@@ -2,17 +2,27 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ProviderStatus, ProviderDefinition } from "@/lib/credentials/manager";
+import type {
+  ProviderConnectionTestResult,
+  ProviderAITestResult,
+  ProviderDiagnosticsResult,
+} from "@/lib/ai/types";
 
-export function useCloudCredentials() {
+export function useCloudCredentials(sessionId?: string) {
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [definitions, setDefinitions] = useState<Record<string, ProviderDefinition>>({});
+  const [diagnosticsMap, setDiagnosticsMap] = useState<Record<string, ProviderDiagnosticsResult>>({});
+  const [aiTestResults, setAiTestResults] = useState<Record<string, ProviderAITestResult>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProviders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/credentials");
+      const url = sessionId
+        ? `/api/credentials?sessionId=${encodeURIComponent(sessionId)}`
+        : "/api/credentials";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Impossible de charger les identifiants cloud");
       const data = await res.json();
       if (data.providers) setProviders(data.providers);
@@ -23,13 +33,16 @@ export function useCloudCredentials() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     let isMounted = true;
     const init = async () => {
       try {
-        const res = await fetch("/api/credentials");
+        const url = sessionId
+          ? `/api/credentials?sessionId=${encodeURIComponent(sessionId)}`
+          : "/api/credentials";
+        const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
         if (!isMounted) return;
@@ -43,16 +56,19 @@ export function useCloudCredentials() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [sessionId]);
 
-  const saveCredentials = async (providerId: string, fields: Record<string, string>) => {
+  const saveCredentials = async (
+    providerId: string,
+    fields: Record<string, string>,
+  ) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save", providerId, fields }),
+        body: JSON.stringify({ action: "save", providerId, fields, sessionId }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
@@ -60,7 +76,7 @@ export function useCloudCredentials() {
       }
       if (data.status) {
         setProviders((prev) =>
-          prev.map((p) => (p.id === providerId ? data.status : p))
+          prev.map((p) => (p.id === providerId ? data.status : p)),
         );
       }
       return data.status as ProviderStatus;
@@ -73,26 +89,115 @@ export function useCloudCredentials() {
     }
   };
 
-  const testConnection = async (providerId: string) => {
+  const testConnection = async (providerId: string, modelId?: string) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "test", providerId }),
+        body: JSON.stringify({ action: "test", providerId, sessionId, modelId }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as ProviderConnectionTestResult & {
+        status?: ProviderStatus;
+      };
+
       if (data.status) {
         setProviders((prev) =>
-          prev.map((p) => (p.id === providerId ? data.status : p))
+          prev.map((p) => (p.id === providerId ? data.status! : p)),
         );
       }
-      return data as { success: boolean; message: string; status: ProviderStatus };
+      if (data.diagnostics) {
+        setDiagnosticsMap((prev) => ({
+          ...prev,
+          [providerId]: data.diagnostics,
+        }));
+      }
+
+      return data;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Erreur de test";
+      const msg = e instanceof Error ? e.message : "Erreur lors du test de connexion";
       setError(msg);
       throw e;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testAI = async (
+    providerId: string,
+    options?: { modelId?: string; prompt?: string },
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "test_ai",
+          providerId,
+          sessionId,
+          modelId: options?.modelId,
+          prompt: options?.prompt || "Réponds uniquement : OK",
+        }),
+      });
+      const data = (await res.json()) as ProviderAITestResult & {
+        status?: ProviderStatus;
+      };
+
+      if (data.status) {
+        setProviders((prev) =>
+          prev.map((p) => (p.id === providerId ? data.status! : p)),
+        );
+      }
+      if (data.diagnostics) {
+        setDiagnosticsMap((prev) => ({
+          ...prev,
+          [providerId]: data.diagnostics,
+        }));
+      }
+
+      setAiTestResults((prev) => ({
+        ...prev,
+        [providerId]: data,
+      }));
+
+      return data;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur lors du test IA";
+      setError(msg);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runAllDiagnostics = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "diagnostics", sessionId }),
+      });
+      const data = await res.json();
+      if (data.matrix) {
+        const diagMap: Record<string, ProviderDiagnosticsResult> = {};
+        for (const [pId, item] of Object.entries(
+          data.matrix as Record<string, ProviderConnectionTestResult>,
+        )) {
+          if (item.diagnostics) {
+            diagMap[pId] = item.diagnostics;
+          }
+        }
+        setDiagnosticsMap(diagMap);
+      }
+      if (data.providers) {
+        setProviders(data.providers);
+      }
+    } catch (e: unknown) {
+      console.warn("Diagnostics error:", e);
     } finally {
       setLoading(false);
     }
@@ -104,14 +209,24 @@ export function useCloudCredentials() {
       const res = await fetch("/api/credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", providerId }),
+        body: JSON.stringify({ action: "delete", providerId, sessionId }),
       });
       const data = await res.json();
       if (data.status) {
         setProviders((prev) =>
-          prev.map((p) => (p.id === providerId ? data.status : p))
+          prev.map((p) => (p.id === providerId ? data.status : p)),
         );
       }
+      setDiagnosticsMap((prev) => {
+        const next = { ...prev };
+        delete next[providerId];
+        return next;
+      });
+      setAiTestResults((prev) => {
+        const next = { ...prev };
+        delete next[providerId];
+        return next;
+      });
       return data.status as ProviderStatus;
     } finally {
       setLoading(false);
@@ -121,11 +236,15 @@ export function useCloudCredentials() {
   return {
     providers,
     definitions,
+    diagnosticsMap,
+    aiTestResults,
     loading,
     error,
     refresh: fetchProviders,
     saveCredentials,
     testConnection,
+    testAI,
+    runAllDiagnostics,
     removeCredentials,
   };
 }

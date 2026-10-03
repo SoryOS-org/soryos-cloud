@@ -21,6 +21,7 @@ import {
 import { useTheme } from "@/lib/theme/theme-context";
 import { COLOR_THEMES, ACCENT_PALETTES } from "@/lib/theme/palettes";
 import { ColorTheme, AccentColor, ThemeMode, UiDensity } from "@/lib/theme/types";
+import { ProviderDiagnosticsView } from "./provider-diagnostics-view";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -468,12 +469,17 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
                     Configuration des agents autonomes et des modèles de raisonnement.
                   </p>
                 </div>
-                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs">
+                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs mb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted-foreground)]">Modèle par défaut</span>
-                    <span className="font-mono">Gemini 2.5 Flash / OpenCode Zen</span>
+                    <span className="font-mono font-semibold text-[var(--primary)]">Gemini 3.8 Flash (Google AI Studio)</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--muted-foreground)]">Chaîne d&apos;inférence</span>
+                    <span className="text-emerald-600 font-semibold">Streaming SSE natif sans mock</span>
                   </div>
                 </div>
+                <ProviderDiagnosticsView defaultProviderId="google" />
               </div>
             )}
 
@@ -481,17 +487,12 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
             {activeCategory === "providers" && (
               <div className="space-y-6 animate-in fade-in duration-200">
                 <div className="border-b border-[var(--border)] pb-4">
-                  <h3 className="text-base font-bold">Cloud Providers & Keys</h3>
+                  <h3 className="text-base font-bold">Cloud Providers & Diagnostics</h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Gestion des clés d&apos;API pour Google Gemini, OpenRouter, DeepSeek, E2B et Vercel.
+                    Gestion des clés d&apos;API pour Google Gemini, OpenAI, Mistral, OpenRouter, OpenCode Zen, DeepSeek, E2B et Vercel.
                   </p>
                 </div>
-                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span>Google Gemini / AI Studio</span>
-                    <span className="text-emerald-500 font-bold">Connecté (Key active)</span>
-                  </div>
-                </div>
+                <ProviderDiagnosticsView defaultProviderId="google" />
               </div>
             )}
 
