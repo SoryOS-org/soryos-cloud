@@ -32,8 +32,12 @@ export interface ToolStep {
   name: string;
   input: unknown;
   output?: string;
+  error?: string;
   isError?: boolean;
-  status: "running" | "done" | "error";
+  status: "pending" | "running" | "done" | "success" | "error" | "cancelled";
+  startedAt?: string;
+  completedAt?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /** Ordered segments inside one assistant turn — text and tools interleaved. */

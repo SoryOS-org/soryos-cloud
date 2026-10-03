@@ -82,26 +82,33 @@ export async function POST(
       });
     }
 
-    // Remote GitHub Repo URL import
+    // Remote GitHub / GitLab Repo URL import
     if (repoUrl && typeof repoUrl === "string") {
       const cleanUrl = repoUrl.trim().replace(/\.git$/, "");
-      const match = cleanUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+      const githubMatch = cleanUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+      const gitlabMatch = cleanUrl.match(/gitlab\.com\/([^/]+)\/([^/]+)/);
 
-      if (!match) {
+      let zipUrls: string[] = [];
+
+      if (githubMatch) {
+        const [, owner, repo] = githubMatch;
+        zipUrls = [
+          `https://github.com/${owner}/${repo}/archive/refs/heads/main.zip`,
+          `https://github.com/${owner}/${repo}/archive/refs/heads/master.zip`,
+          `https://api.github.com/repos/${owner}/${repo}/zipball`,
+        ];
+      } else if (gitlabMatch) {
+        const [, owner, repo] = gitlabMatch;
+        zipUrls = [
+          `https://gitlab.com/${owner}/${repo}/-/archive/main/${repo}-main.zip`,
+          `https://gitlab.com/${owner}/${repo}/-/archive/master/${repo}-master.zip`,
+        ];
+      } else {
         return NextResponse.json(
-          { error: "Format d'URL GitHub invalide. Exemple: https://github.com/owner/repo" },
+          { error: "Format d'URL non supporté. Exemples: https://github.com/owner/repo ou https://gitlab.com/owner/repo" },
           { status: 400 },
         );
       }
-
-      const [, owner, repo] = match;
-
-      // Try main then master branch zipballs
-      const zipUrls = [
-        `https://github.com/${owner}/${repo}/archive/refs/heads/main.zip`,
-        `https://github.com/${owner}/${repo}/archive/refs/heads/master.zip`,
-        `https://api.github.com/repos/${owner}/${repo}/zipball`,
-      ];
 
       let zipBuffer: ArrayBuffer | null = null;
       let lastErr = "";

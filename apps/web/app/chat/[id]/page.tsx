@@ -308,6 +308,8 @@ export default function ChatPage({
           <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
             <ResizablePanel defaultSize={45} minSize={25} className="min-w-0">
               <ChatPanel
+                sessionId={sessionId}
+                filePaths={filePaths}
                 messages={messages}
                 loading={loading}
                 status={status}
@@ -341,6 +343,8 @@ export default function ChatPage({
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:hidden">
           {mobileTab === "chat" ? (
             <ChatPanel
+              sessionId={sessionId}
+              filePaths={filePaths}
               messages={messages}
               loading={loading}
               status={status}
@@ -370,6 +374,10 @@ export default function ChatPage({
         isOpen={isLiveOpen}
         onClose={() => setIsLiveOpen(false)}
         sessionId={sessionId}
+        messages={messages}
+        loading={loading}
+        status={status}
+        onSendMessage={handleSendMessage}
         onCodeGenerated={async () => {
           await refreshFiles();
         }}

@@ -157,6 +157,9 @@ async function callGemini(
       const response = await ai.models.generateContent({
         model: modelName,
         contents: fullPrompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+        },
       });
 
       if (response && response.text && response.text.trim().length > 0) {
@@ -201,29 +204,19 @@ ${agent.systemPrompt}
 CAPACITÉS & OUTILS DE L'AGENT :
 ${agent.tools.map((t) => `- Outil : ${t}`).join("\n")}
 
-IMPORTANT : Dans cet environnement de type "OpenCode Desktop", chaque bloc de code que tu génères sera DIRECTEMENT écrit dans l'éditeur de code (Monaco Editor) et dans l'arborescence des fichiers du projet !
+IMPORTANT : Dans cet environnement de type "OpenCode", **N'affiche JAMAIS de grands blocs de code source complets** dans le texte de ta réponse dans le chat.
+Les modifications de code doivent être exécutées via les outils de modification de fichiers (\`write_file\`, \`edit_file\`), qui s'affichent proprement dans les cartes de tools.
 
-Règles pour la génération de code :
-1. Pour TOUT code que tu écris (React, Python, TypeScript, CSS, HTML), indique TOUJOURS le nom et le chemin du fichier sur la balise du bloc de code, par exemple :
-\`\`\`tsx filepath=src/App.tsx
-// code complet ici
-\`\`\`
-ou pour un script Python :
-\`\`\`python filepath=main.py
-# script complet ici
-\`\`\`
-ou pour un composant ou fichier additionnel :
-\`\`\`tsx filepath=src/components/Header.tsx
-...
-\`\`\`
-2. Pour les applications web interactives :
+Règles de communication et de réponse dans le chat (Style OpenCode) :
+1. **PAS de duplication de code dans le texte du chat** : N'écris pas tout le contenu des fichiers en markdown dans le chat.
+2. **Explication fichier par fichier** : Dans ton message textuel de réponse, fournis un résumé professionnel et structuré expliquant précisément ce que tu as modifié ou implémenté **fichier par fichier** (ex: \`src/App.tsx\`, \`src/components/Navbar.tsx\`, etc.).
+3. Pour les applications web interactives :
    - Fichier principal : \`src/App.tsx\` (React 19 + TypeScript + Tailwind CSS).
    - Fichiers actuels du projet :
 ${fileSummaries || "Aucun (Nouveau projet)"}
    - Assure-toi que les composants React sont complets, interactifs, beaux et stylisés avec Tailwind CSS.
-3. Si l'agent actif est 'plan', produis des plans clairs, structurés et détaillés avec des listes de tâches précises.
-4. Si l'agent actif est 'explore', analyse et explique l'arborescence et le code sans créer de fichiers inutiles.
-5. Si l'agent actif est 'code-reviewer', audite le code, vérifie la sécurité, les types, et propose des tests.`;
+4. Si l'agent actif est 'plan', produis des plans clairs, structurés et détaillés avec des listes de tâches précises.
+5. Si l'agent actif est 'explore', analyse et explique l'arborescence et le code.`;
 
   onStatus?.(`[${agent.name}] Réflexion avec ${model.name} (${model.providerName})...`);
 
