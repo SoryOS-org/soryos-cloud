@@ -19,7 +19,7 @@ export function Terminal({ sessionId }: TerminalProps) {
   const [lines, setLines] = useState<TerminalLine[]>([
     {
       type: "output",
-      content: "Console ready. Commands run in the E2B sandbox at /home/user.",
+      content: "Cloud Sandbox Ready (Wandbox 40+ Languages: Rust, C, C++, Python, Go, Java, Bash...)\nCommands execute isolated in the cloud without using local PC CPU/RAM.\nTry typing: 'python script.py', 'rustc main.rs', 'gcc main.c', etc.",
     },
   ]);
   const [executing, setExecuting] = useState(false);
