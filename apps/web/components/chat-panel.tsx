@@ -18,10 +18,6 @@ import {
   Code2,
   Bug,
   CornerDownLeft,
-  Download,
-  FileText,
-  FileJson,
-  ChevronDown,
 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ToolStepCard } from "@/components/tool-step-card";
@@ -29,8 +25,6 @@ import { ModelSelector } from "@/components/model-selector";
 import { AgentSelector } from "@/components/agent-selector";
 import { LiveButton } from "@/components/live-button";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
-import { exportSessionAsMarkdown, exportSessionAsJSON } from "@/lib/export-session";
-
 import { SandboxSelector, EnvironmentType, ProviderId } from "@/components/sandbox-selector";
 
 interface ChatPanelProps {
@@ -104,7 +98,6 @@ export function ChatPanel({
   onOpenImport,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,62 +143,6 @@ export function ChatPanel({
               ((env, prov) => onProviderChange?.(prov))
             }
           />
-          {/* Export Session Menu */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExportMenuOpen(!exportMenuOpen)}
-              className="h-8 gap-1.5 rounded-lg border-[#e5e0d8] text-xs font-medium text-[#3d3830] hover:border-[#c6623f] hover:bg-[#faf8f5] transition"
-              title="Exporter l'historique et la session"
-            >
-              <Download className="h-3.5 w-3.5 text-[#c6623f]" />
-              <span>Exporter</span>
-              <ChevronDown className="h-3 w-3 text-gray-400" />
-            </Button>
-
-            {exportMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-xl border border-[#e5e0d8] bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExportMenuOpen(false);
-                    exportSessionAsMarkdown(sessionTitle, messages, filePaths);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[#3d3830] hover:bg-[#faf8f5] transition"
-                >
-                  <FileText className="h-4 w-4 text-[#c6623f]" />
-                  <span>Markdown (.md)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExportMenuOpen(false);
-                    exportSessionAsJSON(sessionTitle, sessionId, messages, filePaths);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[#3d3830] hover:bg-[#faf8f5] transition"
-                >
-                  <FileJson className="h-4 w-4 text-[#c6623f]" />
-                  <span>JSON (.json)</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {onOpenImport && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onOpenImport}
-              className="h-8 gap-1.5 rounded-lg border-[#e5e0d8] text-xs font-medium text-[#3d3830] hover:border-[#c6623f] hover:bg-[#faf8f5] transition"
-              title="Importer des fichiers ou un dépôt GitHub/GitLab"
-            >
-              <FolderDown className="h-3.5 w-3.5 text-[#c6623f]" />
-              <span>Importer Repo</span>
-            </Button>
-          )}
-          {onOpenLive && <LiveButton onClick={onOpenLive} />}
           {loading && onAbort && (
             <Button
               variant="outline"

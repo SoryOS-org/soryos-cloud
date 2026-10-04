@@ -26,8 +26,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
-import { MessageSquare, Code2, Menu, FolderDown, Loader2, Check, AlertCircle, Cloud, FolderTree, Terminal as TerminalIcon, Monitor } from "lucide-react";
-import { LiveButton } from "@/components/live-button";
+import { MessageSquare, Code2, Menu, Loader2, Check, AlertCircle, Cloud, FolderTree, Terminal as TerminalIcon, Monitor } from "lucide-react";
 import { Terminal } from "@/components/terminal";
 
 function formatMessages(
@@ -445,16 +444,7 @@ export default function ChatPage({
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setIsImportOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e0d8] bg-white text-[#5c5348] hover:text-[#c6623f]"
-              title="Importer un dépôt ou dossier"
-            >
-              <FolderDown className="h-4 w-4 text-[#c6623f]" />
-            </button>
-            <LiveButton onClick={() => setIsLiveOpen(true)} />
-          </div>
+          <div className="flex items-center gap-1.5" />
         </div>
 
         {/* Desktop Layout (>= lg): Split Resizable Panels */}
