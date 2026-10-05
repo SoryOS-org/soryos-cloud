@@ -1,3 +1,8 @@
+/**
+ * @soryos/sandbox
+ * Interface de base pour les providers de sandbox.
+ */
+
 import {
   ProviderId,
   ProviderType,

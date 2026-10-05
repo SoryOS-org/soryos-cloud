@@ -1,3 +1,8 @@
+/**
+ * @soryos/sandbox
+ * Gestionnaire central des sandboxes.
+ */
+
 import { SandboxProvider } from "./provider";
 import { sandboxRegistry } from "./registry";
 import {
@@ -69,7 +74,7 @@ class SandboxManager {
       this.emitEvent("sandbox.disconnected", sessionId, existing.providerId, existing.sandboxId);
     }
 
-    const provider = sandboxRegistry.get(requestedProviderId);
+    const provider = await sandboxRegistry.createProvider(requestedProviderId);
     if (!provider) {
       throw new Error(`Provider ${requestedProviderId} not found in registry.`);
     }

@@ -1,15 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createNewSession, listSessionsData } from "@/lib/agent-engine";
+import { sessionStore, workspaceManager } from "@soryos/session";
+import type { SessionData, ProviderId } from "@soryos/schema";
 
+/**
+ * Gestion des sessions (GET, POST).
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function GET() {
-  const sessions = listSessionsData();
+  const sessions = sessionStore.list();
   return NextResponse.json({ sessions });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const session = createNewSession(body.title, body.message, body.model);
+    
+    // Créer une nouvelle session via @soryos/session
+    const id = `session-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    // Créer le workspace
+    workspaceManager.getOrCreateWorkspace(id, {
+      environment: "sandbox",
+      providerId: "e2b",
+    });
+    
+    // Créer la session
+    const session: SessionData = {
+      id,
+      title: body.title || "New Session",
+      sandbox_id: `sandbox-${id}`,
+      sandbox_state: "running",
+      environment: "sandbox",
+      providerId: "e2b",
+      model: body.model || "deepseek-chat",
+      provider: "DeepSeek",
+      created_at: new Date().toISOString(),
+      messages: [],
+      files: {},
+      preview_url: null,
+      needs_run: false,
+      agent_running: false,
+      cwd: "/home/user",
+    };
+    
+    // Ajouter le message initial si fourni
+    if (body.message) {
+      session.messages.push({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: body.message,
+        created_at: new Date().toISOString(),
+      });
+    }
+    
+    sessionStore.save(session);
+    
     return NextResponse.json({
       id: session.id,
       title: session.title,

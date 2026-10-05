@@ -1,3 +1,8 @@
+/**
+ * @soryos/sandbox
+ * Types pour la gestion des sandboxes.
+ */
+
 export type ProviderId =
   | "e2b"
   | "vercel"

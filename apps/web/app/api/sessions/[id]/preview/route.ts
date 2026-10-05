@@ -1,27 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
+import { sessionStore } from "@soryos/session";
+import { sandboxManager } from "@soryos/sandbox";
+import type { SessionData } from "@soryos/schema";
 
+/**
+ * Récupère l'URL de prévisualisation pour une session.
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return NextResponse.json({
-      preview_url: null,
-      status: "no_sandbox",
-      output: "Session not found",
-    });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const preview_url = `/api/preview/${session.id}`;
-  session.preview_url = preview_url;
+  try {
+    // Get sandbox and check if dev server is running
+    const { provider } = await sandboxManager.getOrCreateSandbox(id, session.providerId || "local");
+    const envInfo = await provider.getEnvironmentInfo();
 
-  return NextResponse.json({
-    preview_url,
-    status: "ready",
-    output: null,
-  });
+    // Check for common dev server ports
+    const devPorts = [3000, 3001, 4000, 5173, 8080];
+    let previewUrl: string | null = null;
+
+    for (const port of devPorts) {
+      try {
+        // Try to fetch from the port
+        const response = await fetch(`http://localhost:${port}`, {
+          method: "HEAD",
+          connectTimeout: 1000,
+        });
+        if (response.ok) {
+          previewUrl = `http://localhost:${port}`;
+          break;
+        }
+      } catch {
+        // Port not available
+      }
+    }
+
+    if (!previewUrl) {
+      previewUrl = `/api/preview/${id}`;
+    }
+
+    return NextResponse.json({
+      preview_url: previewUrl,
+      status: "ready",
+      cwd: envInfo.cwd,
+    });
+  } catch {
+    return NextResponse.json({
+      preview_url: `/api/preview/${id}`,
+      status: "ready",
+    });
+  }
 }
