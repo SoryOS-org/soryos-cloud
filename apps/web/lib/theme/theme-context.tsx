@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { AppearancePreferences, ThemeMode, ColorTheme, AccentColor, UiDensity } from "./types";
+import React, { createContext, useContext, useEffect, useState, useCallback, useSyncExternalStore } from "react";
+import { AppearancePreferences } from "./types";
 import { COLOR_THEMES, ACCENT_PALETTES } from "./palettes";
 
 const STORAGE_KEY = "soryos_appearance_preferences";
@@ -17,6 +17,7 @@ const DEFAULT_PREFERENCES: AppearancePreferences = {
 interface ThemeContextType {
   preferences: AppearancePreferences;
   resolvedIsDark: boolean;
+  mounted: boolean;
   updatePreferences: (partial: Partial<AppearancePreferences>) => void;
   resetPreferences: () => void;
 }
@@ -24,32 +25,39 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
   preferences: DEFAULT_PREFERENCES,
   resolvedIsDark: false,
+  mounted: false,
   updatePreferences: () => {},
   resetPreferences: () => {},
 });
 
+const emptySubscribe = () => () => {};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
   const [preferences, setPreferences] = useState<AppearancePreferences>(() => {
-    if (typeof window === "undefined") return DEFAULT_PREFERENCES;
+    return DEFAULT_PREFERENCES;
+  });
+
+  const [systemIsDark, setSystemIsDark] = useState<boolean>(false);
+
+  // Initialize from localStorage and listen to system theme changes on client mount
+  useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return { ...DEFAULT_PREFERENCES, ...JSON.parse(saved) };
+        setPreferences((prev) => ({ ...prev, ...JSON.parse(saved) }));
       }
     } catch {
       // ignore
     }
-    return DEFAULT_PREFERENCES;
-  });
 
-  const [systemIsDark, setSystemIsDark] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-
-  // Listen to system theme changes
-  useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    setSystemIsDark(mediaQuery.matches);
     const handler = (e: MediaQueryListEvent) => setSystemIsDark(e.matches);
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
@@ -130,7 +138,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ preferences, resolvedIsDark, updatePreferences, resetPreferences }}>
+    <ThemeContext.Provider value={{ preferences, resolvedIsDark, mounted, updatePreferences, resetPreferences }}>
       {children}
     </ThemeContext.Provider>
   );

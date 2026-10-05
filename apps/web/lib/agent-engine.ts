@@ -342,6 +342,17 @@ export function getSessionData(id: string): SessionData {
   return session;
 }
 
+export function deleteSessionData(id: string): boolean {
+  return sessions.delete(id);
+}
+
+export function updateSessionTitle(id: string, title: string): boolean {
+  const session = sessions.get(id);
+  if (!session) return false;
+  session.title = title;
+  return true;
+}
+
 export function listSessionsData(): Array<{ id: string; title: string; created_at: string }> {
   const result: Array<{ id: string; title: string; created_at: string }> = [];
   for (const s of sessions.values()) {

@@ -1,13 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Sparkles, FolderDown, X, Layers, Settings, Cloud, Palette, MessageSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Plus,
+  Sparkles,
+  FolderDown,
+  X,
+  Layers,
+  Settings,
+  MessageSquare,
+  Search,
+  Trash2,
+  Edit2,
+  Check,
+  Moon,
+  Sun,
+  Laptop,
+  Code2,
+  FolderGit2,
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { listSessions } from "@/lib/api";
 import { ImportRepoModal } from "@/components/import-repo-modal";
 import { SettingsPanel } from "@/components/settings-panel";
 import { PWAInstallButton } from "@/components/pwa-install-button";
+import { useTheme } from "@/lib/theme/theme-context";
+
+interface SessionItem {
+  id: string;
+  title: string;
+  created_at: string;
+}
 
 interface AppSidebarProps {
   currentSessionId?: string;
@@ -15,125 +40,391 @@ interface AppSidebarProps {
   onMobileClose?: () => void;
 }
 
-export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose }: AppSidebarProps) {
-  const [sessions, setSessions] = useState<
-    Array<{ id: string; title: string; created_at: string }>
-  >([]);
+export function AppSidebar({
+  currentSessionId,
+  mobileOpen = false,
+  onMobileClose,
+}: AppSidebarProps) {
+  const router = useRouter();
+  const { preferences, resolvedIsDark, mounted, updatePreferences } = useTheme();
+
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    void listSessions()
+  // Fetch list of sessions
+  const fetchSessions = () => {
+    listSessions()
       .then((data) => {
-        if (mounted) setSessions(data || []);
+        setSessions(data || []);
       })
       .catch(() => {
-        if (mounted) setSessions([]);
+        setSessions([]);
       });
+  };
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  useEffect(() => {
+    fetchSessions();
+  }, [currentSessionId]);
+
+  // Handle 1-click Theme Toggle
+  const handleToggleTheme = () => {
+    const nextTheme = resolvedIsDark ? "light" : "dark";
+    updatePreferences({ theme: nextTheme });
+  };
+
+  // Start Editing Title
+  const handleStartEdit = (session: SessionItem, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingSessionId(session.id);
+    setEditingTitle(session.title);
+  };
+
+  // Save Title
+  const handleSaveTitle = async (sessionId: string, e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!editingTitle.trim()) return;
+
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editingTitle.trim() }),
+      });
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? { ...s, title: editingTitle.trim() } : s))
+      );
+    } catch {
+      // ignore
+    } finally {
+      setEditingSessionId(null);
+    }
+  };
+
+  // Delete Session
+  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: "DELETE",
+      });
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      if (currentSessionId === sessionId) {
+        router.push("/");
+      }
+    } catch {
+      // ignore
+    } finally {
+      setDeletingSessionId(null);
+    }
+  };
+
+  // Filter sessions by search query
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const q = searchQuery.toLowerCase();
+    return sessions.filter(
+      (s) => s.title.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+    );
+  }, [sessions, searchQuery]);
 
   const sidebarContent = (
-    <div className="flex h-full w-full flex-col bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)] border-r border-[var(--border)]">
-      {/* Mobile Header with Close button */}
-      <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3 md:hidden">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-[var(--primary)]" />
-          <span className="font-semibold text-sm text-[var(--foreground)]">Menu & Projets</span>
-        </div>
-        <button
-          onClick={onMobileClose}
-          className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
-          aria-label="Fermer le menu"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      <nav className="space-y-1 px-3 pt-4">
+    <div className="flex h-full w-full flex-col bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)] border-r border-[var(--border)] select-none">
+      {/* 1. Header: Branding & Close for Mobile */}
+      <div className="flex items-center justify-between px-3.5 py-3 border-b border-[var(--border)] bg-[var(--surface-elevated)]/50 backdrop-blur-sm">
         <Link
           href="/"
           onClick={onMobileClose}
-          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--sidebar-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:opacity-80"
+          className="flex items-center gap-2.5 group cursor-pointer"
         >
-          <Plus className="h-4 w-4 text-[var(--primary)]" />
-          <span>Nouveau projet IA</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs transition-transform group-hover:scale-105">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-xs tracking-tight text-[var(--foreground)]">
+                SoryOS-Code
+              </span>
+              <span className="text-[9px] font-mono font-bold bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.2 rounded">
+                v3.0
+              </span>
+            </div>
+            <p className="text-[10px] text-[var(--muted-foreground)] truncate">
+              Autonomous AI IDE
+            </p>
+          </div>
         </Link>
-        <button
-          onClick={() => {
-            setIsImportOpen(true);
-            onMobileClose?.();
-          }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--sidebar-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:opacity-80 cursor-pointer"
-        >
-          <FolderDown className="h-4 w-4 text-emerald-600" />
-          <span>Importer un dépôt</span>
-        </button>
-        <button
-          onClick={() => {
-            setIsSettingsOpen(true);
-            onMobileClose?.();
-          }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--sidebar-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:opacity-80 cursor-pointer"
-        >
-          <Settings className="h-4 w-4 text-purple-500" />
-          <span>Settings & Appearance</span>
-        </button>
-      </nav>
 
-      <div className="px-3 pt-5 pb-2">
-        <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-          Projets récents ({sessions.length})
-        </p>
+        <div className="flex items-center gap-1">
+          {/* 1-Click Dark/Light Theme Quick Switcher */}
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
+            title={mounted && resolvedIsDark ? "Basculer en Mode Clair" : "Basculer en Mode Sombre"}
+            aria-label="Changer de thème"
+          >
+            {mounted && resolvedIsDark ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-indigo-500" />}
+          </button>
+
+          {/* Close for mobile drawer */}
+          <button
+            onClick={onMobileClose}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] md:hidden transition cursor-pointer"
+            aria-label="Fermer le menu"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <ScrollArea className="mt-1 min-h-0 flex-1 px-3 pb-4">
-        {sessions.length ? (
-          <div className="space-y-1">
-            {sessions.map((s) => {
+      {/* 2. Primary Action: Nouveau projet */}
+      <div className="p-3 pb-2 space-y-2">
+        <Link
+          href="/"
+          onClick={onMobileClose}
+          className="flex items-center justify-between w-full rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] px-3.5 py-2.5 text-xs font-bold shadow-xs hover:opacity-95 active:scale-[0.99] transition cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            <span>Nouveau projet IA</span>
+          </div>
+          <span className="text-[10px] font-mono opacity-80 bg-black/15 px-1.5 py-0.5 rounded">
+            ⌘N
+          </span>
+        </Link>
+
+        {/* Secondary Quick Nav Items */}
+        <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              setIsImportOpen(true);
+              onMobileClose?.();
+            }}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2.5 py-2 text-[11px] font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/50 transition cursor-pointer"
+            title="Importer un dépôt GitHub ou Git"
+          >
+            <FolderDown className="h-3.5 w-3.5 text-emerald-500" />
+            <span className="truncate">Importer</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsSettingsOpen(true);
+              onMobileClose?.();
+            }}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2.5 py-2 text-[11px] font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/50 transition cursor-pointer"
+            title="Paramètres & Apparence"
+          >
+            <Settings className="h-3.5 w-3.5 text-purple-400" />
+            <span className="truncate">Settings</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Search Bar for Sessions */}
+      <div className="px-3 pt-1 pb-2">
+        <div className="relative flex items-center">
+          <Search className="absolute left-2.5 h-3.5 w-3.5 text-[var(--muted-foreground)] pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Rechercher une session..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:border-[var(--primary)] transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 4. Session History List */}
+      <div className="flex items-center justify-between px-4 pt-2 pb-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+          Sessions & Projets ({filteredSessions.length})
+        </span>
+        {sessions.length > 0 && (
+          <span className="text-[9px] font-mono text-[var(--muted-foreground)]">
+            Auto-save
+          </span>
+        )}
+      </div>
+
+      <ScrollArea className="min-h-0 flex-1 px-2.5 pb-2">
+        {filteredSessions.length > 0 ? (
+          <div className="space-y-1 py-1">
+            {filteredSessions.map((s) => {
               const isActive = s.id === currentSessionId;
+              const isEditing = editingSessionId === s.id;
+              const isDeleting = deletingSessionId === s.id;
+
+              if (isEditing) {
+                return (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-1.5 rounded-xl border border-[var(--primary)] bg-[var(--surface-hover)] p-1.5 shadow-2xs"
+                  >
+                    <input
+                      type="text"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveTitle(s.id, e);
+                        if (e.key === "Escape") setEditingSessionId(null);
+                      }}
+                      autoFocus
+                      className="flex-1 bg-transparent px-2 py-0.5 text-xs text-[var(--foreground)] font-semibold outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => handleSaveTitle(s.id, e)}
+                      className="p-1 text-emerald-500 hover:bg-emerald-500/10 rounded cursor-pointer"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingSessionId(null)}
+                      className="p-1 text-[var(--muted-foreground)] hover:bg-[var(--surface)] rounded cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              }
+
               return (
-                <Link
+                <div
                   key={s.id}
-                  href={`/chat/${s.id}`}
-                  onClick={onMobileClose}
-                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition border ${
+                  className={`group relative flex items-center justify-between rounded-xl px-2.5 py-2 text-xs transition border ${
                     isActive
-                      ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)] font-bold shadow-2xs"
+                      ? "border-[var(--primary)]/50 bg-[var(--primary)]/10 text-[var(--foreground)] font-bold shadow-2xs"
                       : "border-transparent text-[var(--sidebar-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] font-medium"
                   }`}
-                  title={s.title}
                 >
-                  <MessageSquare
-                    className={`h-4 w-4 shrink-0 ${
-                      isActive ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"
-                    }`}
-                  />
-                  <span className="block truncate flex-1">{s.title || "Session sans titre"}</span>
-                </Link>
+                  <Link
+                    href={`/chat/${s.id}`}
+                    onClick={onMobileClose}
+                    className="flex items-center gap-2.5 min-w-0 flex-1 pr-1"
+                    title={s.title}
+                  >
+                    <div
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
+                        isActive
+                          ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                          : "bg-[var(--surface)] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold leading-snug">
+                        {s.title || "Session sans titre"}
+                      </p>
+                      <p className="text-[10px] font-mono text-[var(--muted-foreground)] truncate">
+                        {s.id.startsWith("demo-") ? "Exemple" : s.id.slice(0, 8)}
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Hover Action Buttons */}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => handleStartEdit(s, e)}
+                      className="p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] rounded transition cursor-pointer"
+                      title="Renommer la session"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => setDeletingSessionId(s.id)}
+                      className="p-1 text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-500/10 rounded transition cursor-pointer"
+                      title="Supprimer la session"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* Deletion Confirm Popup Overlay */}
+                  {isDeleting && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-between bg-[var(--surface-elevated)] px-2 py-1 rounded-xl border border-red-500/40 shadow-md">
+                      <span className="text-[10px] font-bold text-red-500 truncate">
+                        Supprimer ?
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSession(s.id, e)}
+                          className="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-bold hover:bg-red-700 cursor-pointer"
+                        >
+                          Oui
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDeletingSessionId(null);
+                          }}
+                          className="px-2 py-0.5 text-[var(--muted-foreground)] hover:bg-[var(--surface)] rounded text-[10px]"
+                        >
+                          Non
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
         ) : (
-          <p className="px-3 py-2 text-xs text-[var(--muted-foreground)]">Aucune session enregistrée</p>
+          <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--surface)] text-[var(--muted-foreground)] mb-2">
+              <MessageSquare className="h-4 w-4" />
+            </div>
+            <p className="text-xs font-semibold text-[var(--foreground)]">
+              {searchQuery ? "Aucun résultat trouvé" : "Aucune session"}
+            </p>
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
+              {searchQuery
+                ? `Aucune session ne correspond à "${searchQuery}"`
+                : "Créez un nouveau projet pour commencer"}
+            </p>
+          </div>
         )}
       </ScrollArea>
 
-      {/* PWA & Footer info */}
-      <div className="border-t border-[var(--border)] p-3 space-y-2.5 bg-[var(--surface-elevated)]">
-        <PWAInstallButton className="w-full justify-center" />
+      {/* 5. Footer: System status & PWA button */}
+      <div className="border-t border-[var(--border)] p-3 space-y-2 bg-[var(--surface-elevated)]/60">
+        <PWAInstallButton className="w-full justify-center text-xs" />
 
-        <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)] pt-1">
-          <div className="flex items-center gap-2 truncate">
-            <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--primary)]" />
-            <span className="truncate font-bold text-[var(--foreground)]">SoryOS-Code</span>
+        <div className="flex items-center justify-between text-[11px] text-[var(--muted-foreground)] pt-0.5">
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-medium text-[var(--foreground)]">OpenCode Zen</span>
           </div>
-          <span className="shrink-0 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
-            v3.0
+          <span className="text-[10px] font-mono text-[var(--muted-foreground)]">
+            {mounted ? (resolvedIsDark ? "Dark Theme" : "Light Theme") : "Theme"}
           </span>
         </div>
       </div>
@@ -143,7 +434,7 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
   return (
     <>
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden md:flex h-full w-[240px] shrink-0 flex-col border-r border-[var(--border)]">
+      <aside className="hidden md:flex h-full w-[260px] shrink-0 flex-col border-r border-[var(--border)]">
         {sidebarContent}
       </aside>
 
@@ -152,7 +443,7 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
         <div className="fixed inset-0 z-50 flex md:hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in"
             onClick={onMobileClose}
           />
           {/* Drawer Panel */}
@@ -164,7 +455,10 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
 
       <ImportRepoModal
         isOpen={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
+        onClose={() => {
+          setIsImportOpen(false);
+          fetchSessions();
+        }}
       />
 
       <SettingsPanel

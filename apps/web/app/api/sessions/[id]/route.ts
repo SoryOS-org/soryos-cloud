@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
+import { getSessionData, deleteSessionData, updateSessionTitle } from "@/lib/agent-engine";
 import { sandboxManager } from "@/lib/sandbox";
 import { ProviderId } from "@/lib/sandbox/types";
 
@@ -50,6 +50,11 @@ export async function PATCH(
 
   const body = await req.json().catch(() => ({}));
 
+  if (body.title && typeof body.title === "string") {
+    session.title = body.title.trim();
+    updateSessionTitle(id, session.title);
+  }
+
   if (body.codespaceId) session.codespaceId = body.codespaceId;
   if (body.repository) session.repository = body.repository;
   if (body.branch) session.branch = body.branch;
@@ -71,12 +76,19 @@ export async function PATCH(
     session.environment = newProviderId === "local" ? "local" : "sandbox";
   }
 
-  // Switch sandbox in manager
-  const { sandboxId } = await sandboxManager.switchProvider(id, session.providerId);
-  session.sandbox_id = sandboxId;
+  // Switch sandbox in manager if needed
+  if (session.providerId) {
+    try {
+      const { sandboxId } = await sandboxManager.switchProvider(id, session.providerId);
+      session.sandbox_id = sandboxId;
+    } catch {
+      // ignore
+    }
+  }
 
   return NextResponse.json({
     id: session.id,
+    title: session.title,
     environment: session.environment,
     providerId: session.providerId,
     sandbox_id: session.sandbox_id,
@@ -86,4 +98,16 @@ export async function PATCH(
     workspaceState: session.workspaceState,
     cwd: session.cwd,
   });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const deleted = deleteSessionData(id);
+  if (!deleted) {
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+  return NextResponse.json({ success: true, id });
 }
