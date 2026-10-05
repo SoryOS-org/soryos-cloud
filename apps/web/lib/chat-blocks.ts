@@ -1,5 +1,16 @@
-import type { ChatMessage, MessageBlock, ToolStep } from "./types";
+/**
+ * @codeforge/web
+ * Chat Blocks Utilities - UI ONLY
+ * 
+ * Ce fichier contient UNIQUEMENT des utilitaires pour l'UI.
+ * Aucune logique métier.
+ */
 
+import type { ChatMessage, MessageBlock, ToolStep } from "@soryos/schema";
+
+/**
+ * Récupère les blocs d'un message assistant.
+ */
 export function assistantBlocks(msg: ChatMessage): MessageBlock[] {
   if (msg.blocks?.length) return msg.blocks;
   if (msg.role === "assistant" && msg.content.trim()) {
@@ -8,6 +19,9 @@ export function assistantBlocks(msg: ChatMessage): MessageBlock[] {
   return [];
 }
 
+/**
+ * Ajoute du texte à un message assistant.
+ */
 export function appendAssistantText(messages: ChatMessage[], delta: string): ChatMessage[] {
   const last = messages[messages.length - 1];
   if (last?.role !== "assistant") {
@@ -34,6 +48,9 @@ export function appendAssistantText(messages: ChatMessage[], delta: string): Cha
   return [...messages.slice(0, -1), { ...last, content: "", blocks }];
 }
 
+/**
+ * Ajoute un outil à un message assistant.
+ */
 export function appendAssistantTool(messages: ChatMessage[], step: ToolStep): ChatMessage[] {
   const last = messages[messages.length - 1];
   if (last?.role !== "assistant") {
@@ -59,6 +76,9 @@ export function appendAssistantTool(messages: ChatMessage[], step: ToolStep): Ch
   ];
 }
 
+/**
+ * Met à jour un outil dans un message assistant.
+ */
 export function updateAssistantTool(
   messages: ChatMessage[],
   id: string,

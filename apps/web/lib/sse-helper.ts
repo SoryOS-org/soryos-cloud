@@ -1,7 +1,25 @@
-import { SessionData } from "./agent-engine";
-import { runAgentLoop } from "./agent/agent-loop";
+/**
+ * @codeforge/web
+ * SSE Helper - WRAPPER ONLY
+ * 
+ * Ce fichier est UNIQUEMENT un wrapper qui délègue toute la logique 
+ * vers les packages officiels @soryos/*.
+ * 
+ * NE JAMAIS mettre de logique métier ici.
+ */
+
+import type { SessionData } from "@soryos/schema";
+import { agentRuntime } from "@soryos/agent";
 import type { AgentEvent } from "./types";
 
+/**
+ * Crée un stream SSE pour l'exécution d'un agent.
+ * @param session - La session à exécuter
+ * @param userMessage - Message utilisateur (optionnel)
+ * @param modelId - Modèle IA (optionnel)
+ * @param agentId - Agent à utiliser (optionnel)
+ * @returns Response avec le stream SSE
+ */
 export function createAgentStream(
   session: SessionData,
   userMessage?: string,
@@ -21,7 +39,8 @@ export function createAgentStream(
       }
 
       try {
-        await runAgentLoop({
+        // Délégation vers @soryos/agent
+        await agentRuntime.run({
           session,
           userMessage,
           modelId,

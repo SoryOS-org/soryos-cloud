@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
-import { ptyManager, TerminalInstance } from "@/lib/terminal/pty-manager";
+import { sessionStore } from "@soryos/session";
+import { ptyManager } from "@soryos/terminal";
+import type { SessionData } from "@soryos/schema";
 
+/**
+ * Gestion du terminal pour une session.
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return NextResponse.json({ error: "Session introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -59,10 +64,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return NextResponse.json({ error: "Session introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
   const body = await req.json().catch(() => ({}));
@@ -155,7 +160,7 @@ export async function POST(
       providerId: session.providerId,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Erreur d'exécution";
+    const msg = err instanceof Error ? err.message : "Execution error";
     return NextResponse.json(
       {
         output: `\x1b[31mTerminal execution error: ${msg}\x1b[0m\r\n`,
@@ -163,7 +168,7 @@ export async function POST(
         cwd: session.cwd,
         exitCode: 1,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

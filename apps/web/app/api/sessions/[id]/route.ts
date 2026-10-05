@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData, deleteSessionData, updateSessionTitle } from "@/lib/agent-engine";
-import { sandboxManager } from "@/lib/sandbox";
-import { ProviderId } from "@/lib/sandbox/types";
+import { sessionStore } from "@soryos/session";
+import { sandboxManager } from "@soryos/sandbox";
+import type { SessionData, ProviderId } from "@soryos/schema";
 
+/**
+ * Gestion des sessions (GET, PATCH, DELETE).
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
@@ -42,7 +46,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
@@ -50,9 +54,9 @@ export async function PATCH(
 
   const body = await req.json().catch(() => ({}));
 
+  // Update session properties
   if (body.title && typeof body.title === "string") {
     session.title = body.title.trim();
-    updateSessionTitle(id, session.title);
   }
 
   if (body.codespaceId) session.codespaceId = body.codespaceId;
@@ -76,7 +80,7 @@ export async function PATCH(
     session.environment = newProviderId === "local" ? "local" : "sandbox";
   }
 
-  // Switch sandbox in manager if needed
+  // Switch sandbox provider if needed
   if (session.providerId) {
     try {
       const { sandboxId } = await sandboxManager.switchProvider(id, session.providerId);
@@ -85,6 +89,9 @@ export async function PATCH(
       // ignore
     }
   }
+
+  // Save session
+  sessionStore.save(session);
 
   return NextResponse.json({
     id: session.id,
@@ -105,7 +112,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const deleted = deleteSessionData(id);
+  const deleted = sessionStore.delete(id);
   if (!deleted) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }

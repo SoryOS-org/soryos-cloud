@@ -1,63 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
-import { gitSyncManager } from "@/lib/sandbox/git-sync-manager";
-import { ProviderId } from "@/lib/sandbox/types";
+import { sessionStore } from "@soryos/session";
+import { sandboxManager } from "@soryos/sandbox";
+import { gitSyncManager } from "@soryos/sandbox";
+import type { SessionData, ProviderId } from "@soryos/schema";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const session = getSessionData(id);
-
-  if (!session) {
-    return NextResponse.json({ error: "Session not found" }, { status: 404 });
-  }
-
-  const providerId = session.providerId || "e2b";
-  const gitStatus = await gitSyncManager.getGitStatus(id, providerId);
-
-  return NextResponse.json({
-    sessionId: id,
-    environment: session.environment || (providerId === "local" ? "local" : "sandbox"),
-    providerId,
-    gitStatus,
-  });
-}
-
+/**
+ * Synchronisation Git pour une session.
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const action = body.action as "commit_and_push" | "sync_cloud" | "check_status";
-  const targetProviderId = (body.providerId as ProviderId) || session.providerId || "e2b";
+  try {
+    const body = await req.json().catch(() => ({}));
+    const action = body.action || "sync";
 
-  if (action === "commit_and_push") {
-    const result = await gitSyncManager.commitAndPush(
-      id,
-      targetProviderId,
-      body.commitMessage || `soryos-code: save session checkpoint`
+    // Get sandbox
+    const { provider } = await sandboxManager.getOrCreateSandbox(id, session.providerId as ProviderId);
+
+    if (action === "sync") {
+      // Full sync
+      const result = await gitSyncManager.sync(id, provider, session);
+      return NextResponse.json(result);
+    }
+
+    if (action === "status") {
+      const status = await gitSyncManager.getStatus(id, provider);
+      return NextResponse.json(status);
+    }
+
+    if (action === "pull") {
+      const result = await gitSyncManager.pull(id, provider);
+      return NextResponse.json(result);
+    }
+
+    if (action === "push") {
+      const result = await gitSyncManager.push(id, provider, body.message);
+      return NextResponse.json(result);
+    }
+
+    if (action === "commit") {
+      const result = await gitSyncManager.commit(id, provider, body.message);
+      return NextResponse.json(result);
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Git sync failed" },
+      { status: 500 }
     );
-    return NextResponse.json(result);
   }
-
-  if (action === "sync_cloud") {
-    const result = await gitSyncManager.syncWorkingCopyFromGitHub(
-      id,
-      targetProviderId,
-      body.repoUrl
-    );
-    return NextResponse.json(result);
-  }
-
-  const status = await gitSyncManager.getGitStatus(id, targetProviderId);
-  return NextResponse.json({ success: true, status });
 }

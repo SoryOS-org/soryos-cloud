@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
-import { GitHubRemoteFilesystem } from "@/lib/filesystem/remote-provider";
+import { sessionStore } from "@soryos/session";
+import { GitHubRemoteFilesystem } from "@soryos/filesystem";
+import type { SessionData } from "@soryos/schema";
 
+/**
+ * Gestion des fichiers d'une session.
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
     return NextResponse.json({ paths: [] });
@@ -41,7 +46,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
@@ -61,6 +66,7 @@ export async function POST(
     if (action === "create_file" && path) {
       const cleanPath = normalize(path);
       session.files[cleanPath] = content;
+      sessionStore.save(session);
       return NextResponse.json({ success: true, path: cleanPath });
     }
 
@@ -68,6 +74,7 @@ export async function POST(
       const cleanPath = normalize(path);
       const placeholder = `${cleanPath}/.gitkeep`;
       session.files[placeholder] = "";
+      sessionStore.save(session);
       return NextResponse.json({ success: true, path: cleanPath });
     }
 
@@ -94,6 +101,7 @@ export async function POST(
         delete session.files[oldClean];
       }
 
+      sessionStore.save(session);
       return NextResponse.json({ success: true, oldPath: oldClean, newPath: newClean });
     }
 
@@ -106,12 +114,14 @@ export async function POST(
       for (const k of subtreeKeys) {
         delete session.files[k];
       }
+      sessionStore.save(session);
       return NextResponse.json({ success: true, deleted: [cleanPath, ...subtreeKeys] });
     }
 
     if (action === "save" && path) {
       const cleanPath = normalize(path);
       session.files[cleanPath] = content;
+      sessionStore.save(session);
       return NextResponse.json({ success: true, path: cleanPath });
     }
 

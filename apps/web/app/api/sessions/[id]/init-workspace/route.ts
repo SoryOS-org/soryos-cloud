@@ -1,174 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
-import { gitHubService } from "@/lib/github/service";
-import { GitHubRemoteFilesystem } from "@/lib/filesystem/remote-provider";
+import { sessionStore, workspaceManager } from "@soryos/session";
+import { sandboxManager } from "@soryos/sandbox";
+import { GitHubRemoteFilesystem } from "@soryos/filesystem";
+import type { SessionData } from "@soryos/schema";
 
+/**
+ * Initialisation du workspace pour une session.
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return NextResponse.json({ error: "Session introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const body = await req.json().catch(() => ({}));
-  const codespaceId = body.codespaceId || session.codespaceId;
-  const repository = body.repository || session.repository;
-  const branch = body.branch || session.branch || "main";
-  const providerId = body.providerId || session.providerId || "github-codespaces";
-
-  session.workspaceState = "WORKSPACE_LOADING";
-  session.workspaceError = undefined;
-  session.providerId = providerId;
-  session.environment = providerId === "local" ? "local" : "sandbox";
-  if (codespaceId) session.codespaceId = codespaceId;
-  if (repository) session.repository = repository;
-  if (branch) session.branch = branch;
-
   try {
-    // 1. GITHUB CODESPACES WORKSPACE INITIALIZATION
-    if (providerId === "github-codespaces") {
-      const token = gitHubService.getToken(id) || gitHubService.getToken("session");
-      if (!token) {
-        throw new Error("Authentification GitHub manquante. Veuillez vous connecter à GitHub.");
-      }
+    const body = await req.json().catch(() => ({}));
+    const overrides = {
+      codespaceId: body.codespaceId,
+      repository: body.repository,
+      branch: body.branch,
+      providerId: body.providerId,
+    };
 
-      const repoFullName = repository || (codespaceId ? codespaceId.split("-").slice(0, 2).join("/") : "");
-      if (!repoFullName) {
-        throw new Error("Repository non spécifié pour le Codespace.");
-      }
+    // Initialize workspace
+    const ws = workspaceManager.getOrCreateWorkspace(id, {
+      environment: session.environment,
+      providerId: session.providerId,
+      repository: overrides.repository,
+      branch: overrides.branch,
+    });
 
-      const repoShortName = repoFullName.split("/").pop() || "project";
-      session.cwd = `/workspaces/${repoShortName}`;
+    // Initialize sandbox
+    const { sandboxId } = await sandboxManager.getOrCreateSandbox(id, ws.providerId);
+    session.sandbox_id = sandboxId;
 
-      // Check Codespace status on GitHub if codespaceId provided
-      if (codespaceId && !codespaceId.startsWith("cs-")) {
-        try {
-          const csRes = await fetch(`https://api.github.com/user/codespaces/${encodeURIComponent(codespaceId)}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/vnd.github.v3+json",
-              "User-Agent": "SoryOS-Code-IDE",
-            },
-          });
-
-          if (csRes.ok) {
-            const cs = await csRes.json();
-            // Start codespace if stopped
-            if (cs.state === "Stopped" || cs.state === "Shutdown") {
-              await fetch(`https://api.github.com/user/codespaces/${encodeURIComponent(codespaceId)}/start`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  Accept: "application/vnd.github.v3+json",
-                  "User-Agent": "SoryOS-Code-IDE",
-                },
-              }).catch(() => {});
-            }
+    // If GitHub repository, sync files
+    if (overrides.repository && (ws.providerId === "github-codespaces" || ws.providerId === "github-repository")) {
+      try {
+        const fs = new GitHubRemoteFilesystem(id, overrides.repository, overrides.branch || "main");
+        const entries = await fs.listFiles();
+        for (const entry of entries) {
+          if (entry.type === "file") {
+            const content = await fs.readFile(entry.path);
+            session.files[entry.path] = content;
           }
-        } catch (e) {
-          console.warn("Could not check codespace status, continuing with filesystem sync:", e);
         }
+      } catch (e) {
+        console.warn("GitHub file sync warning:", e);
       }
-
-      // Initialize Remote Filesystem from real repository/codespace
-      const fs = new GitHubRemoteFilesystem(id, repoFullName, branch);
-      const entries = await fs.listFiles();
-
-      // Clear old template files and populate with real files from repository
-      session.files = {};
-      const fileEntries = entries.filter((e) => e.type === "file");
-
-      // Populate file paths with empty string or placeholder until loaded
-      for (const entry of fileEntries) {
-        session.files[entry.path] = "";
-      }
-
-      // Pre-load top-level priority files immediately (README, package.json, main, config)
-      const priorityFiles = fileEntries.filter((e) => {
-        const lower = e.path.toLowerCase();
-        return (
-          !e.path.includes("/") ||
-          lower.endsWith(".json") ||
-          lower.endsWith(".md") ||
-          lower.includes("main") ||
-          lower.includes("app") ||
-          lower.includes("index")
-        );
-      }).slice(0, 15);
-
-      await Promise.all(
-        priorityFiles.map(async (f) => {
-          try {
-            const content = await fs.readFile(f.path);
-            session.files[f.path] = content;
-          } catch {
-            // Keep empty or load on-demand
-          }
-        })
-      );
-
-      session.workspaceState = "WORKSPACE_READY";
-      return NextResponse.json({
-        success: true,
-        workspaceState: session.workspaceState,
-        filesCount: fileEntries.length,
-        paths: Object.keys(session.files),
-        cwd: session.cwd,
-        repository: repoFullName,
-        branch,
-        codespaceId,
-      });
-    }
-
-    // 2. GITHUB REPOSITORY DIRECT MODE
-    if (providerId === "github-repository" && repository) {
-      const fs = new GitHubRemoteFilesystem(id, repository, branch);
-      const entries = await fs.listFiles();
-      session.files = {};
-      const fileEntries = entries.filter((e) => e.type === "file");
-      for (const entry of fileEntries) {
-        session.files[entry.path] = "";
-      }
-
-      session.workspaceState = "WORKSPACE_READY";
-      return NextResponse.json({
-        success: true,
-        workspaceState: session.workspaceState,
-        filesCount: fileEntries.length,
-        paths: Object.keys(session.files),
-        repository,
-        branch,
-      });
-    }
-
-    // 3. LOCAL ENVIRONMENT MODE
-    if (providerId === "local") {
-      session.workspaceState = "WORKSPACE_READY";
-      return NextResponse.json({
-        success: true,
-        workspaceState: session.workspaceState,
-        paths: Object.keys(session.files),
-      });
     }
 
     session.workspaceState = "WORKSPACE_READY";
+    sessionStore.save(session);
+
     return NextResponse.json({
       success: true,
-      workspaceState: session.workspaceState,
+      sandboxId,
       paths: Object.keys(session.files),
     });
-  } catch (err: unknown) {
-    const errorMsg = (err as Error)?.message || "Échec d'initialisation du Workspace";
+  } catch (err) {
     session.workspaceState = "WORKSPACE_ERROR";
-    session.workspaceError = errorMsg;
-    return NextResponse.json({
-      success: false,
-      workspaceState: session.workspaceState,
-      error: errorMsg,
-    }, { status: 500 });
+    session.workspaceError = err instanceof Error ? err.message : "Initialization failed";
+    sessionStore.save(session);
+
+    return NextResponse.json(
+      { error: session.workspaceError },
+      { status: 500 }
+    );
   }
 }

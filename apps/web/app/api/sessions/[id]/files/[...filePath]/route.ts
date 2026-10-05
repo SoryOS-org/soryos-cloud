@@ -1,55 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionData } from "@/lib/agent-engine";
-import { GitHubRemoteFilesystem } from "@/lib/filesystem/remote-provider";
+import { sessionStore } from "@soryos/session";
+import { GitHubRemoteFilesystem } from "@soryos/filesystem";
+import type { SessionData } from "@soryos/schema";
 
+/**
+ * Lecture/Écriture d'un fichier spécifique.
+ * Utilise UNIQUEMENT @soryos/* - Aucune logique métier ici.
+ */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; filePath: string[] }> },
 ) {
   const { id, filePath } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return new NextResponse("Session not found", { status: 404 });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const rawPath = Array.isArray(filePath) ? filePath.join("/") : filePath;
-  const decodedPath = decodeURIComponent(rawPath)
+  const cleanPath = filePath.join("/")
     .replace(/^\/home\/user\//, "")
     .replace(/^home\/user\//, "")
-    .replace(/^\.\//, "");
+    .replace(/^\.\//, "")
+    .replace(/^\/+/, "");
 
-  let content = session.files[decodedPath];
+  // Try session files first
+  if (session.files[cleanPath]) {
+    return new NextResponse(session.files[cleanPath], {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 
-  // If content is empty string or undefined and session is connected to a remote GitHub repo/codespace, fetch live
+  // If not found in session files but connected to GitHub, fetch from remote
   if (
-    (!content || content === "") &&
     (session.providerId === "github-codespaces" || session.providerId === "github-repository") &&
     session.repository
   ) {
     try {
       const fs = new GitHubRemoteFilesystem(id, session.repository, session.branch || "main");
-      content = await fs.readFile(decodedPath);
-      session.files[decodedPath] = content;
-    } catch (e) {
-      console.warn(`Failed to fetch ${decodedPath} live from GitHub:`, e);
-    }
-  }
-
-  if (content === undefined) {
-    // Try matching without leading slash or relative variations
-    const fallback = Object.entries(session.files).find(
-      ([k]) => k.endsWith(decodedPath) || decodedPath.endsWith(k),
-    );
-    if (fallback) {
-      return new NextResponse(fallback[1], {
+      const content = await fs.readFile(cleanPath);
+      return new NextResponse(content, {
         headers: { "Content-Type": "text/plain; charset=utf-8" },
       });
+    } catch (e) {
+      console.warn("Remote file read failed, returning session fallback:", e);
     }
-    return new NextResponse("File not found", { status: 404 });
   }
 
-  return new NextResponse(content, {
+  return new NextResponse(`// File not found: ${cleanPath}`, {
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }
@@ -59,35 +57,23 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; filePath: string[] }> },
 ) {
   const { id, filePath } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return new NextResponse("Session not found", { status: 404 });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const rawPath = Array.isArray(filePath) ? filePath.join("/") : filePath;
-  const decodedPath = decodeURIComponent(rawPath)
+  const cleanPath = filePath.join("/")
     .replace(/^\/home\/user\//, "")
     .replace(/^home\/user\//, "")
-    .replace(/^\.\//, "");
+    .replace(/^\.\//, "")
+    .replace(/^\/+/, "");
 
-  const newContent = await req.text();
-  session.files[decodedPath] = newContent;
+  const content = await req.text();
+  session.files[cleanPath] = content;
+  sessionStore.save(session);
 
-  // If remote GitHub Codespace / repository, write back to remote repository
-  if (
-    (session.providerId === "github-codespaces" || session.providerId === "github-repository") &&
-    session.repository
-  ) {
-    try {
-      const fs = new GitHubRemoteFilesystem(id, session.repository, session.branch || "main");
-      await fs.writeFile(decodedPath, newContent);
-    } catch (e) {
-      console.error(`Failed to write ${decodedPath} to GitHub:`, e);
-    }
-  }
-
-  return new NextResponse("OK", { status: 200 });
+  return NextResponse.json({ success: true, path: cleanPath });
 }
 
 export async function DELETE(
@@ -95,32 +81,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; filePath: string[] }> },
 ) {
   const { id, filePath } = await params;
-  const session = getSessionData(id);
+  const session: SessionData | undefined = sessionStore.get(id);
 
   if (!session) {
-    return new NextResponse("Session not found", { status: 404 });
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const rawPath = Array.isArray(filePath) ? filePath.join("/") : filePath;
-  const decodedPath = decodeURIComponent(rawPath)
+  const cleanPath = filePath.join("/")
     .replace(/^\/home\/user\//, "")
     .replace(/^home\/user\//, "")
-    .replace(/^\.\//, "");
+    .replace(/^\.\//, "")
+    .replace(/^\/+/, "");
 
-  delete session.files[decodedPath];
+  delete session.files[cleanPath];
+  sessionStore.save(session);
 
-  // If remote GitHub repository / codespace, attempt remote deletion
-  if (
-    (session.providerId === "github-codespaces" || session.providerId === "github-repository") &&
-    session.repository
-  ) {
-    try {
-      const fs = new GitHubRemoteFilesystem(id, session.repository, session.branch || "main");
-      await fs.deleteFile(decodedPath);
-    } catch (e) {
-      console.error(`Failed to delete ${decodedPath} on GitHub:`, e);
-    }
-  }
-
-  return new NextResponse("Deleted", { status: 200 });
+  return NextResponse.json({ success: true, path: cleanPath });
 }
