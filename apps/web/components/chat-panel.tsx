@@ -28,9 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
@@ -38,6 +35,7 @@ import { ToolStepCard } from "@/components/tool-step-card";
 import { ModelSelector } from "@/components/model-selector";
 import { AgentSelector } from "@/components/agent-selector";
 import { LiveButton } from "@/components/live-button";
+import { ContextFilesModal } from "@/components/context-files-modal";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
 import { SandboxSelector, EnvironmentType, ProviderId } from "@/components/sandbox-selector";
 
@@ -112,6 +110,7 @@ export function ChatPanel({
   onOpenImport,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
+  const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{
     name: string;
     size: number;
@@ -417,32 +416,16 @@ export function ChatPanel({
 
                     {/* 📁 Ajouter du contexte */}
                     {filePaths.length > 0 && (
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]">
-                          <FolderTree className="h-4 w-4 text-amber-600 shrink-0" />
-                          <div className="flex flex-col min-w-0 text-left">
-                            <span className="font-semibold text-xs">Ajouter du contexte</span>
-                            <span className="text-[10px] text-[#8c8275]">{filePaths.length} fichier(s) du projet</span>
-                          </div>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="w-56 max-h-60 overflow-y-auto p-1 bg-white border border-[#e5e0d8] shadow-lg rounded-xl text-xs">
-                          <DropdownMenuLabel className="px-2 py-1 text-[10px] text-[#8c8275] uppercase">
-                            Fichiers du projet
-                          </DropdownMenuLabel>
-                          {filePaths.slice(0, 10).map((path) => (
-                            <DropdownMenuItem
-                              key={path}
-                              onClick={() => {
-                                setInput((prev) => (prev ? `${prev} @${path}` : `@${path} `));
-                                textareaRef.current?.focus();
-                              }}
-                              className="flex items-center gap-2 px-2 py-1.5 truncate cursor-pointer rounded-md hover:bg-[#f5f1ea] text-xs font-mono"
-                            >
-                              <span className="truncate">{path}</span>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
+                      <DropdownMenuItem
+                        onClick={() => setIsContextModalOpen(true)}
+                        className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                      >
+                        <FolderTree className="h-4 w-4 text-amber-600 shrink-0" />
+                        <div className="flex flex-col min-w-0 text-left">
+                          <span className="font-semibold text-xs">Ajouter du contexte</span>
+                          <span className="text-[10px] text-[#8c8275]">{filePaths.length} fichier(s) du projet</span>
+                        </div>
+                      </DropdownMenuItem>
                     )}
 
                     <DropdownMenuSeparator className="bg-[#eee9e1] my-1" />
@@ -513,6 +496,17 @@ export function ChatPanel({
           </div>
         </div>
       </div>
+
+      {/* Context Files Selector Modal */}
+      <ContextFilesModal
+        isOpen={isContextModalOpen}
+        onClose={() => setIsContextModalOpen(false)}
+        filePaths={filePaths}
+        onSelectFile={(path) => {
+          setInput((prev) => (prev ? `${prev} @${path}` : `@${path} `));
+          textareaRef.current?.focus();
+        }}
+      />
     </div>
   );
 }

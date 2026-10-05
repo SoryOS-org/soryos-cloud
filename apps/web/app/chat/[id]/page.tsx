@@ -324,6 +324,7 @@ export default function ChatPage({
     <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-white">
       {/* App Sidebar with Mobile Drawer support */}
       <AppSidebar
+        currentSessionId={sessionId}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
