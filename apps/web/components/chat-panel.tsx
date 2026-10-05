@@ -383,7 +383,7 @@ export function ChatPanel({
                     align="start"
                     side="top"
                     sideOffset={8}
-                    className="w-68 p-1.5 bg-white border border-[#e5e0d8] shadow-xl rounded-xl text-xs z-50 mb-1"
+                    className="w-72 p-1.5 bg-white border border-[#e5e0d8] shadow-xl rounded-xl text-xs z-50 mb-1"
                   >
                     <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-[#8c8275] uppercase tracking-wider">
                       Ajouter
