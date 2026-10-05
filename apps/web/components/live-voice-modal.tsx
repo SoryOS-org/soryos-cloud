@@ -80,9 +80,9 @@ function extractTurnSummary(msg: ChatMessage): { text: string; tools: string[] }
   if (msg.blocks && msg.blocks.length > 0) {
     const textBlocks: string[] = [];
     for (const block of msg.blocks) {
-      if (block.type === "text") {
+      if (block.type === "text" && block.content) {
         textBlocks.push(block.content);
-      } else if (block.type === "tool") {
+      } else if (block.type === "tool" && block.step) {
         tools.push(`${block.step.name}: ${JSON.stringify(block.step.input)}`);
       }
     }

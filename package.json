@@ -2,7 +2,8 @@
   "name": "soryos-code",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@codeforge/web",

@@ -18,6 +18,7 @@ export function appendAssistantText(messages: ChatMessage[], delta: string): Cha
         role: "assistant",
         content: "",
         blocks: [{ type: "text", content: delta }],
+        created_at: new Date().toISOString(),
       },
     ];
   }
@@ -25,7 +26,7 @@ export function appendAssistantText(messages: ChatMessage[], delta: string): Cha
   const blocks = [...assistantBlocks(last)];
   const tail = blocks[blocks.length - 1];
   if (tail?.type === "text") {
-    blocks[blocks.length - 1] = { type: "text", content: tail.content + delta };
+    blocks[blocks.length - 1] = { type: "text", content: (tail.content || "") + delta };
   } else {
     blocks.push({ type: "text", content: delta });
   }
@@ -43,6 +44,7 @@ export function appendAssistantTool(messages: ChatMessage[], step: ToolStep): Ch
         role: "assistant",
         content: "",
         blocks: [{ type: "tool", step }],
+        created_at: new Date().toISOString(),
       },
     ];
   }
@@ -65,9 +67,9 @@ export function updateAssistantTool(
   const last = messages[messages.length - 1];
   if (last?.role !== "assistant") return messages;
 
-  const blocks = assistantBlocks(last).map((block) => {
-    if (block.type !== "tool" || block.step.id !== id) return block;
-    return { type: "tool" as const, step: { ...block.step, ...patch } };
+  const blocks: MessageBlock[] = assistantBlocks(last).map((block) => {
+    if (block.type !== "tool" || !block.step || block.step.id !== id) return block;
+    return { type: "tool", step: { ...block.step, ...patch } };
   });
 
   return [...messages.slice(0, -1), { ...last, blocks }];

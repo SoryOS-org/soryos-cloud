@@ -49,17 +49,17 @@ export function exportSessionAsMarkdown(
       if (msg.blocks && msg.blocks.length > 0) {
         msg.blocks.forEach((block) => {
           if (block.type === "text") {
-            md += `${block.content}\n\n`;
-          } else if (block.type === "tool") {
+            md += `${block.content || ""}\n\n`;
+          } else if (block.type === "tool" && block.step) {
             const step = block.step;
             md += `<details open>\n`;
-            md += `<summary>🛠️ <strong>Outil exécuté : <code>${step.name}</code></strong> [${step.status.toUpperCase()}]</summary>\n\n`;
+            md += `<summary>🛠️ <strong>Outil exécuté : <code>${step.name}</code></strong> [${(step.status || "DONE").toUpperCase()}]</summary>\n\n`;
             md += `**Input :**\n\`\`\`json\n${JSON.stringify(step.input, null, 2)}\n\`\`\`\n\n`;
             if (step.output) {
               md += `**Output :**\n\`\`\`\n${step.output}\n\`\`\`\n\n`;
             }
-            if (step.error) {
-              md += `**Error :**\n\`\`\`\n${step.error}\n\`\`\`\n\n`;
+            if (step.error || (step.isError && step.output)) {
+              md += `**Error :**\n\`\`\`\n${step.error || step.output}\n\`\`\`\n\n`;
             }
             md += `</details>\n\n`;
           }

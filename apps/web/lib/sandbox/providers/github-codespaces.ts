@@ -9,8 +9,8 @@ import {
   ProcessHandle,
   FileEntry,
 } from "../types";
-import { gitHubService } from "@/lib/github/service";
-import { GitHubRemoteFilesystem } from "@/lib/filesystem/remote-provider";
+import { gitHubService } from "../../github/service";
+import { GitHubRemoteFilesystem } from "../../filesystem/remote-provider";
 
 export class GitHubCodespacesProvider implements SandboxProvider {
   readonly id: ProviderId = "github-codespaces";

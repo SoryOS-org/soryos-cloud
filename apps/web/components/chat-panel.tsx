@@ -72,11 +72,11 @@ function AssistantTurn({ message }: { message: ChatMessage }) {
             key={`text-${i}`}
             className="chat-prose prose prose-sm max-w-none text-[15px] leading-relaxed text-[var(--foreground)] dark:prose-invert"
           >
-            <MarkdownRenderer content={block.content} />
+            <MarkdownRenderer content={block.content || ""} />
           </div>
-        ) : (
-          <ToolStepCard key={block.step.id} step={block.step} />
-        ),
+        ) : block.step ? (
+          <ToolStepCard key={block.step.id || `step-${i}`} step={block.step} />
+        ) : null,
       )}
     </div>
   );

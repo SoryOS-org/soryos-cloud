@@ -1,4 +1,4 @@
-import { gitHubService } from "@/lib/github/service";
+import { gitHubService } from "../github/service";
 
 export interface RemoteFileEntry {
   path: string;

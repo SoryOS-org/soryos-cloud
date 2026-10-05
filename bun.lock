@@ -55,6 +55,180 @@
         "typescript": "^5.8.3",
       },
     },
+    "packages/agent": {
+      "name": "@soryos/agent",
+      "version": "0.1.0",
+      "dependencies": {
+        "@google/genai": "^2.26.0",
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/permissions": "workspace:*",
+        "@soryos/schema": "workspace:*",
+        "@soryos/tool": "workspace:*",
+      },
+    },
+    "packages/auth": {
+      "name": "@soryos/auth",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/core": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/bus": {
+      "name": "@soryos/bus",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/cli": {
+      "name": "@soryos/cli",
+      "version": "0.1.0",
+      "bin": {
+        "soryos-code": "./src/index.ts",
+      },
+      "dependencies": {
+        "@soryos/agent": "workspace:*",
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/schema": "workspace:*",
+        "@soryos/tool": "workspace:*",
+      },
+    },
+    "packages/config": {
+      "name": "@soryos/config",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/core": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/core": {
+      "name": "@soryos/core",
+      "version": "0.1.0",
+    },
+    "packages/dev-runner": {
+      "name": "@soryos/dev-runner",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/execution": {
+      "name": "@soryos/execution",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/core": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/filesystem": {
+      "name": "@soryos/filesystem",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/git": {
+      "name": "@soryos/git",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/permissions": {
+      "name": "@soryos/permissions",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/core": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/provider": {
+      "name": "@soryos/provider",
+      "version": "0.1.0",
+      "dependencies": {
+        "@google/genai": "^2.26.0",
+        "@soryos/core": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/pty": {
+      "name": "@soryos/pty",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/schema": {
+      "name": "@soryos/schema",
+      "version": "0.1.0",
+    },
+    "packages/session": {
+      "name": "@soryos/session",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/schema": "workspace:*",
+        "@soryos/workspace": "workspace:*",
+      },
+    },
+    "packages/shared": {
+      "name": "@soryos/shared",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/auth": "workspace:*",
+        "@soryos/bus": "workspace:*",
+        "@soryos/config": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/filesystem": "workspace:*",
+        "@soryos/git": "workspace:*",
+        "@soryos/permissions": "workspace:*",
+        "@soryos/provider": "workspace:*",
+        "@soryos/pty": "workspace:*",
+        "@soryos/schema": "workspace:*",
+        "@soryos/session": "workspace:*",
+        "@soryos/tool": "workspace:*",
+        "@soryos/workspace": "workspace:*",
+      },
+    },
+    "packages/tool": {
+      "name": "@soryos/tool",
+      "version": "0.1.0",
+      "dependencies": {
+        "@google/genai": "^2.26.0",
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/permissions": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
+    "packages/workspace": {
+      "name": "@soryos/workspace",
+      "version": "0.1.0",
+      "dependencies": {
+        "@soryos/bus": "workspace:*",
+        "@soryos/core": "workspace:*",
+        "@soryos/execution": "workspace:*",
+        "@soryos/schema": "workspace:*",
+      },
+    },
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.3.0", "", {}, "sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA=="],
@@ -330,6 +504,42 @@
     "@radix-ui/rect": ["@radix-ui/rect@1.1.3", "", {}, "sha512-JtyZR+mqgBibTo8xea3B6ZRmzZiM/YeVBtUkas6zMuXjAlfIFIW2FgqeM9eLyvEaYX66vr6DJMK+4U6LV0KhNw=="],
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
+
+    "@soryos/agent": ["@soryos/agent@workspace:packages/agent"],
+
+    "@soryos/auth": ["@soryos/auth@workspace:packages/auth"],
+
+    "@soryos/bus": ["@soryos/bus@workspace:packages/bus"],
+
+    "@soryos/cli": ["@soryos/cli@workspace:packages/cli"],
+
+    "@soryos/config": ["@soryos/config@workspace:packages/config"],
+
+    "@soryos/core": ["@soryos/core@workspace:packages/core"],
+
+    "@soryos/dev-runner": ["@soryos/dev-runner@workspace:packages/dev-runner"],
+
+    "@soryos/execution": ["@soryos/execution@workspace:packages/execution"],
+
+    "@soryos/filesystem": ["@soryos/filesystem@workspace:packages/filesystem"],
+
+    "@soryos/git": ["@soryos/git@workspace:packages/git"],
+
+    "@soryos/permissions": ["@soryos/permissions@workspace:packages/permissions"],
+
+    "@soryos/provider": ["@soryos/provider@workspace:packages/provider"],
+
+    "@soryos/pty": ["@soryos/pty@workspace:packages/pty"],
+
+    "@soryos/schema": ["@soryos/schema@workspace:packages/schema"],
+
+    "@soryos/session": ["@soryos/session@workspace:packages/session"],
+
+    "@soryos/shared": ["@soryos/shared@workspace:packages/shared"],
+
+    "@soryos/tool": ["@soryos/tool@workspace:packages/tool"],
+
+    "@soryos/workspace": ["@soryos/workspace@workspace:packages/workspace"],
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
 
