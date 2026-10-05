@@ -1,16 +1,41 @@
 /**
  * @soryos/execution
  * Unified execution provider layer for real sandboxes (Local, Codespaces, E2B, Vercel, Cloud Run).
+ * Browser-safe guarded against native Node.js module bundler failures using dynamic evaluation.
  */
 
 import { CommandOptions, CommandResult, FileEntry, ProviderId } from "@soryos/schema";
 import { ExecutionError } from "@soryos/core";
-import * as fs from "fs/promises";
-import * as path from "path";
-import { exec } from "child_process";
-import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const isServer = typeof window === "undefined";
+
+declare const __non_webpack_require__: ((id: string) => unknown) | undefined;
+
+function dynamicRequire(moduleName: string): any {
+  if (!isServer) {
+    throw new ExecutionError(`Node.js native module '${moduleName}' cannot be executed in browser environment.`);
+  }
+  try {
+    const req = typeof __non_webpack_require__ === "function" ? __non_webpack_require__ : eval("require");
+    return req(moduleName);
+  } catch {
+    throw new ExecutionError(`Failed to dynamically load native Node.js module '${moduleName}'.`);
+  }
+}
+
+function getNodeFs() {
+  return dynamicRequire("fs/promises") as typeof import("fs/promises");
+}
+
+function getNodePath() {
+  return dynamicRequire("path") as typeof import("path");
+}
+
+function getNodeExecAsync() {
+  const { exec } = dynamicRequire("child_process");
+  const { promisify } = dynamicRequire("util");
+  return promisify(exec);
+}
 
 export interface ExecutionProvider {
   readonly id: ProviderId;
@@ -35,13 +60,14 @@ export class LocalExecutionProvider implements ExecutionProvider {
   private workspaceDir: string;
 
   constructor(customWorkspaceDir?: string) {
-    this.workspaceDir = customWorkspaceDir || process.cwd();
+    this.workspaceDir = customWorkspaceDir || (isServer && typeof process !== "undefined" && process.cwd ? process.cwd() : "/");
   }
 
   async init(workspacePath?: string): Promise<void> {
     if (workspacePath) {
       this.workspaceDir = workspacePath;
     }
+    const fs = getNodeFs();
     await fs.mkdir(this.workspaceDir, { recursive: true });
   }
 
@@ -50,6 +76,7 @@ export class LocalExecutionProvider implements ExecutionProvider {
   }
 
   private resolvePath(relPath: string): string {
+    const path = getNodePath();
     const clean = relPath.startsWith("/") ? relPath.slice(1) : relPath;
     return path.resolve(this.workspaceDir, clean);
   }
@@ -58,11 +85,12 @@ export class LocalExecutionProvider implements ExecutionProvider {
     const start = Date.now();
     const cwd = options?.cwd ? this.resolvePath(options.cwd) : this.workspaceDir;
     const timeoutMs = options?.timeoutMs || 60_000;
+    const execAsync = getNodeExecAsync();
 
     try {
       const { stdout, stderr } = await execAsync(command, {
         cwd,
-        env: { ...process.env, ...(options?.env || {}) },
+        env: { ...(typeof process !== "undefined" ? process.env : {}), ...(options?.env || {}) },
         timeout: timeoutMs,
       });
 
@@ -84,6 +112,7 @@ export class LocalExecutionProvider implements ExecutionProvider {
   }
 
   async readFile(filePath: string): Promise<string> {
+    const fs = getNodeFs();
     const fullPath = this.resolvePath(filePath);
     try {
       return await fs.readFile(fullPath, "utf-8");
@@ -93,6 +122,8 @@ export class LocalExecutionProvider implements ExecutionProvider {
   }
 
   async writeFile(filePath: string, content: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
     const fullPath = this.resolvePath(filePath);
     try {
       await fs.mkdir(path.dirname(fullPath), { recursive: true });
@@ -112,6 +143,7 @@ export class LocalExecutionProvider implements ExecutionProvider {
   }
 
   async deleteFile(filePath: string): Promise<void> {
+    const fs = getNodeFs();
     const fullPath = this.resolvePath(filePath);
     try {
       await fs.unlink(fullPath);
@@ -121,6 +153,8 @@ export class LocalExecutionProvider implements ExecutionProvider {
   }
 
   async listFiles(dirPath = ""): Promise<FileEntry[]> {
+    const fs = getNodeFs();
+    const path = getNodePath();
     const targetDir = this.resolvePath(dirPath);
     const results: FileEntry[] = [];
 
@@ -165,6 +199,7 @@ export class ExecutionManager {
     let provider = this.providers.get(key);
 
     if (!provider) {
+      const path = getNodePath();
       const workspaceDir = path.join("/tmp/soryos-workspaces", sessionId);
       provider = new LocalExecutionProvider(workspaceDir);
       await provider.init();

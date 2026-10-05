@@ -1,11 +1,30 @@
-import crypto from "crypto";
 import type { ChatMessage, StreamChunk } from "./types";
+
+declare const __non_webpack_require__: ((id: string) => unknown) | undefined;
 
 export function computeFingerprint(secret?: string): string {
   if (!secret || secret.trim().length === 0) return "none";
   const trimmed = secret.trim();
-  const hash = crypto.createHash("sha256").update(trimmed).digest("hex");
-  return `sha256:${hash.slice(0, 8)}...${hash.slice(-4)}`;
+  
+  if (typeof window === "undefined") {
+    // Node.js environment
+    try {
+      const req = typeof __non_webpack_require__ === "function" ? __non_webpack_require__ : eval("require");
+      const crypto = req("crypto");
+      const hash = crypto.createHash("sha256").update(trimmed).digest("hex");
+      return `sha256:${hash.slice(0, 8)}...${hash.slice(-4)}`;
+    } catch {
+      return "sha256:fallback";
+    }
+  } else {
+    // Browser environment simple hash fallback
+    let hash = 0;
+    for (let i = 0; i < trimmed.length; i++) {
+      hash = (hash << 5) - hash + trimmed.charCodeAt(i);
+      hash |= 0;
+    }
+    return `browser:${Math.abs(hash).toString(16)}`;
+  }
 }
 
 export function maskSecret(val?: string): string {
