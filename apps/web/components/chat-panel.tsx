@@ -1,24 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "@/lib/types";
 import { assistantBlocks } from "@/lib/chat-blocks";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
   ArrowUp,
   Square,
-  FolderDown,
   Sparkles,
   User,
   Wrench,
   Search,
   Code2,
   Bug,
-  CornerDownLeft,
+  Plus,
+  FolderDown,
+  Paperclip,
+  FolderTree,
+  Globe,
+  X,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ToolStepCard } from "@/components/tool-step-card";
 import { ModelSelector } from "@/components/model-selector";
@@ -98,16 +112,44 @@ export function ChatPanel({
   onOpenImport,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
+  const [attachedFile, setAttachedFile] = useState<{
+    name: string;
+    size: number;
+    previewUrl?: string;
+  } | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, loading, status]);
 
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const nextHeight = Math.min(Math.max(el.scrollHeight, 24), 160);
+    el.style.height = `${nextHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
+
   const handleSubmit = () => {
-    if (!input.trim() || loading) return;
-    onSendMessage(input);
+    if ((!input.trim() && !attachedFile) || loading) return;
+    let fullContent = input.trim();
+    if (attachedFile) {
+      fullContent = `[Fichier joint: ${attachedFile.name}]\n\n${fullContent}`;
+      setAttachedFile(null);
+    }
+    onSendMessage(fullContent);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -117,11 +159,24 @@ export function ChatPanel({
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+    setAttachedFile({
+      name: file.name,
+      size: file.size,
+      previewUrl,
+    });
+    e.target.value = "";
+    textareaRef.current?.focus();
+  };
+
   return (
     <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-white">
       <div className="app-watermark pointer-events-none absolute inset-0" />
 
-      {/* Header Bar */}
+      {/* 1. Chat Header Bar */}
       <header className="relative z-10 hidden lg:flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-white px-5 shadow-2xs">
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/" className="shrink-0 transition hover:opacity-80 flex items-center gap-2">
@@ -148,7 +203,7 @@ export function ChatPanel({
               variant="outline"
               size="sm"
               onClick={onAbort}
-              className="h-8 gap-1.5 rounded-lg border-red-200 bg-red-50 text-xs font-semibold text-red-700 hover:bg-red-100 transition"
+              className="h-8 gap-1.5 rounded-lg border-red-200 bg-red-50 text-xs font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
             >
               <Square className="h-3 w-3 fill-current" />
               Arrêter
@@ -157,9 +212,55 @@ export function ChatPanel({
         </div>
       </header>
 
-      {/* Messages Scroll Area */}
+      {/* 2. Provider + Model Selector (Prominently in the Top of Chat) */}
+      <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[#eee9e1] bg-[#faf8f5]/90 px-3 sm:px-6 py-2 backdrop-blur-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <ModelSelector
+            currentModelId={currentModelId}
+            onModelChange={onModelChange ?? (() => {})}
+          />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <AgentSelector
+            currentAgentId={currentAgentId}
+            onAgentChange={onAgentChange ?? (() => {})}
+          />
+        </div>
+      </div>
+
+      {/* 3. Messages Scroll Area */}
       <ScrollArea className="relative z-10 min-h-0 flex-1">
-        <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 py-6 pb-4">
+        <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 py-6 pb-6">
+          {/* Empty state when no messages */}
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 sm:py-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f5f1ea] text-[#c6623f] mb-3 shadow-2xs">
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <h2 className="text-base font-bold text-[#2d2a26]">Comment puis-je vous aider aujourd&apos;hui ?</h2>
+              <p className="mt-1 max-w-sm text-xs text-[#8c8275]">
+                Posez une question, créez du code, joignez un fichier ou lancez une session vocale Live.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-md">
+                {QUICK_PROMPTS.map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setInput(item.prompt)}
+                      className="flex items-center gap-1.5 rounded-full border border-[#e5e0d8] bg-white px-3 py-1.5 text-xs font-medium text-[#5c5348] hover:border-[#c6623f] hover:text-[#c6623f] hover:shadow-2xs transition cursor-pointer"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-[#c6623f]" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Messages list */}
           {messages.map((message) =>
             message.role === "user" ? (
               <div
@@ -202,103 +303,210 @@ export function ChatPanel({
         </div>
       </ScrollArea>
 
-      {/* Input Chat Section */}
-      <div className="relative z-10 shrink-0 border-t border-[#eee9e1] bg-[#faf8f5]/80 backdrop-blur-sm px-4 sm:px-6 py-4">
-        <div className="mx-auto max-w-3xl space-y-3">
-          {/* Quick Prompts Chips when input is empty */}
-          {messages.length <= 2 && !input && (
-            <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {QUICK_PROMPTS.map((item, idx) => {
-                const Icon = item.icon;
-                return (
+      {/* 4. Nouveau Composer (ChatGPT-style minimalist card) */}
+      <div className="relative z-20 shrink-0 border-t border-[#eee9e1] bg-[#faf8f5]/90 px-3 sm:px-4 md:px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="relative flex flex-col rounded-2xl border border-[#e5e0d8] bg-white shadow-xs transition-all duration-200 focus-within:border-[#c6623f] focus-within:ring-2 focus-within:ring-[#c6623f]/15">
+            {/* Attachment preview if any */}
+            {attachedFile && (
+              <div className="flex items-center gap-2 px-3.5 pt-2.5">
+                <div className="flex items-center gap-2 rounded-lg border border-[#e5e0d8] bg-[#f8f6f0] px-2.5 py-1 text-xs text-[#3d3830]">
+                  {attachedFile.previewUrl ? (
+                    <img
+                      src={attachedFile.previewUrl}
+                      alt={attachedFile.name}
+                      className="h-5 w-5 rounded object-cover"
+                    />
+                  ) : (
+                    <Paperclip className="h-3.5 w-3.5 text-[#c6623f]" />
+                  )}
+                  <span className="max-w-[200px] truncate text-[11px] font-medium font-mono">
+                    {attachedFile.name}
+                  </span>
+                  <span className="text-[10px] text-[#8c8275]">
+                    ({(attachedFile.size / 1024).toFixed(0)} KB)
+                  </span>
                   <button
-                    key={idx}
                     type="button"
-                    onClick={() => setInput(item.prompt)}
-                    className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#e5e0d8] bg-white px-3 py-1.5 text-xs font-medium text-[#5c5348] hover:border-[#c6623f] hover:bg-white hover:text-[#c6623f] hover:shadow-2xs transition"
+                    onClick={() => setAttachedFile(null)}
+                    className="ml-1 rounded-full p-0.5 text-[#8c8275] hover:bg-[#e5e0d8] hover:text-[#2d2a26] transition cursor-pointer"
+                    title="Retirer le fichier"
                   >
-                    <Icon className="h-3.5 w-3.5 text-[#c6623f]" />
-                    <span>{item.label}</span>
+                    <X className="h-3 w-3" />
                   </button>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              </div>
+            )}
 
-          {/* Main Floating Input Container */}
-          <div className="group rounded-2xl border border-[#e5e0d8] bg-white p-3 shadow-md transition-all duration-200 focus-within:border-[#c6623f] focus-within:ring-2 focus-within:ring-[#c6623f]/20">
-            <Textarea
-              placeholder="Demandez à OpenCode (ex: Crée un composant, exécute une commande, recherche sur le web...)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              className="min-h-[56px] max-h-[180px] min-w-0 flex-1 resize-none border-0 bg-transparent p-1 text-[15px] shadow-none placeholder:text-[#a39e94] focus-visible:ring-0 focus-visible:ring-offset-0 leading-relaxed"
+            {/* Auto-growing Textarea */}
+            <div className="px-3.5 pt-3 pb-1">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  adjustTextareaHeight();
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Écrivez un message…"
+                disabled={loading}
+                className="w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-relaxed text-[#2d2a26] placeholder:text-[#a39e94] focus:outline-none focus:ring-0 max-h-[160px] overflow-y-auto"
+              />
+            </div>
+
+            {/* Hidden native file input for [+] menu */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="image/*,.txt,.md,.json,.ts,.tsx,.js,.jsx,.css,.html,.py,.sh"
             />
 
-            {/* Action Bar inside Input Container */}
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2.5 border-t border-[#f5f1ea] pt-2.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <SandboxSelector
-                  sessionId={sessionId}
-                  currentEnvironment={currentEnvironment}
-                  currentProviderId={currentProviderId}
-                  onSelectEnvironmentAndProvider={
-                    onEnvironmentAndProviderChange ??
-                    ((env, prov) => onProviderChange?.(prov))
-                  }
-                />
-                <AgentSelector
-                  currentAgentId={currentAgentId}
-                  onAgentChange={onAgentChange ?? (() => {})}
-                />
-                <ModelSelector
-                  currentModelId={currentModelId}
-                  onModelChange={onModelChange ?? (() => {})}
-                />
-                {onOpenLive && <LiveButton onClick={onOpenLive} />}
-                {onOpenImport && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onOpenImport}
-                    className="h-8 gap-1.5 rounded-full border-[#e5e0d8] bg-white px-2.5 text-xs font-semibold text-[#3d3830] hover:border-[#c6623f] transition"
-                    title="Importer un projet local ou dépôt GitHub"
+            {/* Action Bar inside Composer: [ + ] on left, [ LIVE ] [ ↑ ] on right */}
+            <div className="flex items-center justify-between px-2.5 pb-2 pt-1">
+              {/* Left: [+] Button with Compact Menu */}
+              <div className="flex items-center gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a7267] hover:bg-[#f3f0e8] hover:text-[#2d2a26] transition-colors cursor-pointer active:scale-95 border border-transparent hover:border-[#e5e0d8]"
+                      aria-label="Ajouter et options"
+                      title="Ajouter (Import, image, contexte...)"
+                    >
+                      <Plus className="h-4.5 w-4.5 stroke-[2]" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    side="top"
+                    sideOffset={8}
+                    className="w-68 p-1.5 bg-white border border-[#e5e0d8] shadow-xl rounded-xl text-xs z-50 mb-1"
                   >
-                    <FolderDown className="h-3.5 w-3.5 text-[#c6623f]" />
-                    <span className="hidden sm:inline">Importer</span>
-                  </Button>
-                )}
+                    <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-[#8c8275] uppercase tracking-wider">
+                      Ajouter
+                    </DropdownMenuLabel>
+
+                    {/* 📎 Importer un projet ou fichier */}
+                    {onOpenImport && (
+                      <DropdownMenuItem
+                        onClick={onOpenImport}
+                        className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26] font-medium"
+                      >
+                        <FolderDown className="h-4 w-4 text-[#c6623f] shrink-0" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-xs">Importer un dépôt / fichier</span>
+                          <span className="text-[10px] text-[#8c8275] truncate">GitHub Codespace, dépôt Git ou projet</span>
+                        </div>
+                      </DropdownMenuItem>
+                    )}
+
+                    {/* 🖼 Ajouter une image ou fichier */}
+                    <DropdownMenuItem
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                    >
+                      <Paperclip className="h-4 w-4 text-blue-600 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-xs">Ajouter une image ou fichier</span>
+                        <span className="text-[10px] text-[#8c8275] truncate">Joindre une capture, doc ou code</span>
+                      </div>
+                    </DropdownMenuItem>
+
+                    {/* 📁 Ajouter du contexte */}
+                    {filePaths.length > 0 && (
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]">
+                          <FolderTree className="h-4 w-4 text-amber-600 shrink-0" />
+                          <div className="flex flex-col min-w-0 text-left">
+                            <span className="font-semibold text-xs">Ajouter du contexte</span>
+                            <span className="text-[10px] text-[#8c8275]">{filePaths.length} fichier(s) du projet</span>
+                          </div>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="w-56 max-h-60 overflow-y-auto p-1 bg-white border border-[#e5e0d8] shadow-lg rounded-xl text-xs">
+                          <DropdownMenuLabel className="px-2 py-1 text-[10px] text-[#8c8275] uppercase">
+                            Fichiers du projet
+                          </DropdownMenuLabel>
+                          {filePaths.slice(0, 10).map((path) => (
+                            <DropdownMenuItem
+                              key={path}
+                              onClick={() => {
+                                setInput((prev) => (prev ? `${prev} @${path}` : `@${path} `));
+                                textareaRef.current?.focus();
+                              }}
+                              className="flex items-center gap-2 px-2 py-1.5 truncate cursor-pointer rounded-md hover:bg-[#f5f1ea] text-xs font-mono"
+                            >
+                              <span className="truncate">{path}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    )}
+
+                    <DropdownMenuSeparator className="bg-[#eee9e1] my-1" />
+
+                    {/* 🔧 Outils */}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setInput((prev) => (prev ? `${prev}\n\nInspecte les fichiers du projet et exécute les tests.` : "Inspecte le projet, exécute les tests et corrige les erreurs TypeScript."));
+                        textareaRef.current?.focus();
+                      }}
+                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                    >
+                      <Wrench className="h-4 w-4 text-indigo-600 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-xs">Outils & Diagnostic</span>
+                        <span className="text-[10px] text-[#8c8275] truncate">Exécuter des commandes, inspecter</span>
+                      </div>
+                    </DropdownMenuItem>
+
+                    {/* 🌐 Web */}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setInput((prev) => (prev ? `${prev} [Recherche Web]` : "Recherche sur le web : "));
+                        textareaRef.current?.focus();
+                      }}
+                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                    >
+                      <Globe className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-xs">Recherche Web</span>
+                        <span className="text-[10px] text-[#8c8275] truncate">Recherche Google et docs à jour</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
+              {/* Right: Live Button + Send Button */}
               <div className="flex items-center gap-2">
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono text-[#a39e94]">
-                  <span>Entrée</span>
-                  <CornerDownLeft className="h-3 w-3" />
-                </span>
+                {/* Single Live Button in Composer */}
+                {onOpenLive && (
+                  <LiveButton onClick={onOpenLive} />
+                )}
 
+                {/* Send / Stop Button */}
                 {loading && onAbort ? (
-                  <Button
+                  <button
                     type="button"
                     onClick={onAbort}
-                    size="icon"
-                    className="h-9 w-9 shrink-0 rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-xs transition"
-                    title="Arrêter l'exécution"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2d2a26] text-white hover:bg-black transition shadow-xs cursor-pointer active:scale-95"
+                    title="Arrêter la réponse"
                   >
-                    <Square className="h-4 w-4 fill-current" />
-                  </Button>
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                  </button>
                 ) : (
-                  <Button
+                  <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!input.trim() || loading}
-                    size="icon"
-                    className="h-9 w-9 shrink-0 rounded-xl bg-[#c6623f] text-white hover:bg-[#b05332] disabled:opacity-30 shadow-xs transition"
-                    title="Envoyer la demande (Entrée)"
+                    disabled={(!input.trim() && !attachedFile) || loading}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[#c6623f] text-white hover:bg-[#b05332] disabled:opacity-30 disabled:cursor-not-allowed transition shadow-xs cursor-pointer active:scale-95"
+                    title="Envoyer (Entrée)"
                   >
-                    <ArrowUp className="h-4.5 w-4.5" />
-                  </Button>
+                    <ArrowUp className="h-4 w-4 stroke-[2.5]" />
+                  </button>
                 )}
               </div>
             </div>
