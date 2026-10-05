@@ -11,6 +11,9 @@ body {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -130,33 +133,36 @@ body {
 
 @layer components {
   .chat-prose {
-    @apply min-w-0 max-w-full break-words;
+    @apply min-w-0 max-w-full break-words text-[var(--foreground)];
   }
-  .chat-prose :where(h2) {
-    @apply mt-5 mb-2 text-base font-semibold text-[#2d2a26] first:mt-0;
+  .chat-prose :where(h1, h2) {
+    @apply mt-5 mb-2 text-base font-semibold text-[var(--foreground)] first:mt-0;
   }
-  .chat-prose :where(h3) {
-    @apply mt-4 mb-1.5 text-[15px] font-semibold text-[#2d2a26];
+  .chat-prose :where(h3, h4) {
+    @apply mt-4 mb-1.5 text-[15px] font-semibold text-[var(--foreground)];
   }
   .chat-prose :where(ul, ol) {
     @apply my-2.5 space-y-1.5 pl-5;
   }
   .chat-prose :where(ul > li) {
-    @apply list-disc marker:text-[#a39e94];
+    @apply list-disc marker:text-[var(--muted-foreground)];
   }
   .chat-prose :where(ol > li) {
-    @apply list-decimal marker:text-[#a39e94];
+    @apply list-decimal marker:text-[var(--muted-foreground)];
   }
   .chat-prose :where(p) {
-    @apply my-2.5 first:mt-0 last:mb-0;
+    @apply my-2.5 first:mt-0 last:mb-0 text-[var(--foreground)];
   }
   .chat-prose :where(strong) {
-    @apply font-semibold text-[#2d2a26];
+    @apply font-semibold text-[var(--foreground)];
+  }
+  .chat-prose :where(code) {
+    @apply font-mono;
   }
   .app-watermark {
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.92 0.03 240 / 0.35), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 50%, oklch(0.94 0.02 85 / 0.5), transparent);
+      radial-gradient(ellipse 80% 50% at 50% -10%, var(--primary) / 0.05, transparent),
+      radial-gradient(ellipse 60% 40% at 100% 50%, var(--accent) / 0.04, transparent);
   }
   .chat-prose :where(pre, table, img) {
     @apply max-w-full;

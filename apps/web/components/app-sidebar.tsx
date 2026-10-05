@@ -38,16 +38,16 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
   }, []);
 
   const sidebarContent = (
-    <div className="flex h-full w-full flex-col bg-[#faf8f5] text-[#2d2a26] border-r border-[#eee9e1]">
+    <div className="flex h-full w-full flex-col bg-[var(--sidebar-background)] text-[var(--sidebar-foreground)] border-r border-[var(--border)]">
       {/* Mobile Header with Close button */}
-      <div className="flex items-center justify-between border-b border-[#eee9e1] bg-white px-4 py-3 md:hidden">
+      <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-[#c6623f]" />
-          <span className="font-semibold text-sm text-[#2d2a26]">Menu & Projets</span>
+          <Layers className="h-4 w-4 text-[var(--primary)]" />
+          <span className="font-semibold text-sm text-[var(--foreground)]">Menu & Projets</span>
         </div>
         <button
           onClick={onMobileClose}
-          className="rounded-lg p-1.5 text-[#7a7267] hover:bg-[#ede8df] hover:text-[#2d2a26] transition cursor-pointer"
+          className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
           aria-label="Fermer le menu"
         >
           <X className="h-5 w-5" />
@@ -58,9 +58,9 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
         <Link
           href="/"
           onClick={onMobileClose}
-          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#3d3830] transition-colors hover:bg-[#ede8df] hover:text-[#1a1715] active:bg-[#e5e0d8]"
+          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--sidebar-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:opacity-80"
         >
-          <Plus className="h-4 w-4 text-[#c6623f]" />
+          <Plus className="h-4 w-4 text-[var(--primary)]" />
           <span>Nouveau projet IA</span>
         </Link>
         <button
@@ -68,7 +68,7 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
             setIsImportOpen(true);
             onMobileClose?.();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#3d3830] transition-colors hover:bg-[#ede8df] hover:text-[#1a1715] active:bg-[#e5e0d8] cursor-pointer"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--sidebar-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:opacity-80 cursor-pointer"
         >
           <FolderDown className="h-4 w-4 text-emerald-600" />
           <span>Importer un dépôt</span>
@@ -78,15 +78,15 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
             setIsSettingsOpen(true);
             onMobileClose?.();
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#3d3830] transition-colors hover:bg-[#ede8df] hover:text-[#1a1715] active:bg-[#e5e0d8] cursor-pointer"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--sidebar-foreground)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] active:opacity-80 cursor-pointer"
         >
-          <Settings className="h-4 w-4 text-purple-600" />
+          <Settings className="h-4 w-4 text-purple-500" />
           <span>Settings & Appearance</span>
         </button>
       </nav>
 
       <div className="px-3 pt-5 pb-2">
-        <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-[#8c8275]">
+        <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
           Projets récents ({sessions.length})
         </p>
       </div>
@@ -103,14 +103,14 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
                   onClick={onMobileClose}
                   className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition border ${
                     isActive
-                      ? "border-[#c6623f]/40 bg-[#c6623f]/10 text-[#c6623f] font-bold shadow-2xs"
-                      : "border-transparent text-[#3d3830] hover:bg-[#ede8df] hover:text-[#1a1715] font-medium"
+                      ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)] font-bold shadow-2xs"
+                      : "border-transparent text-[var(--sidebar-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] font-medium"
                   }`}
                   title={s.title}
                 >
                   <MessageSquare
                     className={`h-4 w-4 shrink-0 ${
-                      isActive ? "text-[#c6623f]" : "text-[#8c8275]"
+                      isActive ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"
                     }`}
                   />
                   <span className="block truncate flex-1">{s.title || "Session sans titre"}</span>
@@ -119,7 +119,7 @@ export function AppSidebar({ currentSessionId, mobileOpen = false, onMobileClose
             })}
           </div>
         ) : (
-          <p className="px-3 py-2 text-xs text-[#8c8275]">Aucune session enregistrée</p>
+          <p className="px-3 py-2 text-xs text-[var(--muted-foreground)]">Aucune session enregistrée</p>
         )}
       </ScrollArea>
 

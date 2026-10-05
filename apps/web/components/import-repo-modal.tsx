@@ -223,57 +223,57 @@ export function ImportRepoModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-      <div className="relative w-full max-w-lg rounded-2xl border border-[#e5e0d8] bg-white p-6 shadow-2xl">
+      <div className="relative w-full max-w-lg rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-6 shadow-2xl text-[var(--foreground)]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#eee9e1]">
+        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#c6623f]/10 text-[#c6623f]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
               <FileCode className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-[#3d3830]">
+              <h2 className="text-base font-semibold text-[var(--foreground)]">
                 Importer un dépôt ou dossier
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[var(--muted-foreground)]">
                 Extrait chaque fichier code par fichier dans l&apos;éditeur
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+            className="rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Tab Selection */}
-        <div className="mt-4 flex rounded-lg bg-[#f5f1ea] p-1 text-xs font-medium text-[#5c5348]">
+        <div className="mt-4 flex rounded-lg bg-[var(--surface)] p-1 text-xs font-medium text-[var(--muted-foreground)] border border-[var(--border)]">
           <button
             onClick={() => setTab("folder")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition ${
-              tab === "folder" ? "bg-white text-[#3d3830] shadow-sm font-semibold" : "hover:text-[#3d3830]"
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition cursor-pointer ${
+              tab === "folder" ? "bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-xs font-semibold" : "hover:text-[var(--foreground)]"
             }`}
           >
-            <FolderOpen className="h-3.5 w-3.5 text-[#c6623f]" />
+            <FolderOpen className="h-3.5 w-3.5 text-[var(--primary)]" />
             Dossier local
           </button>
           <button
             onClick={() => setTab("github")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition ${
-              tab === "github" ? "bg-white text-[#3d3830] shadow-sm font-semibold" : "hover:text-[#3d3830]"
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition cursor-pointer ${
+              tab === "github" ? "bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-xs font-semibold" : "hover:text-[var(--foreground)]"
             }`}
           >
-            <Github className="h-3.5 w-3.5 text-[#3d3830]" />
+            <Github className="h-3.5 w-3.5 text-[var(--foreground)]" />
             GitHub distant
           </button>
           <button
             onClick={() => setTab("zip")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition ${
-              tab === "zip" ? "bg-white text-[#3d3830] shadow-sm font-semibold" : "hover:text-[#3d3830]"
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 transition cursor-pointer ${
+              tab === "zip" ? "bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-xs font-semibold" : "hover:text-[var(--foreground)]"
             }`}
           >
-            <FileArchive className="h-3.5 w-3.5 text-amber-600" />
+            <FileArchive className="h-3.5 w-3.5 text-amber-500" />
             Archive ZIP
           </button>
         </div>
@@ -281,12 +281,12 @@ export function ImportRepoModal({
         {/* Tab Content */}
         <div className="mt-5 space-y-4">
           {tab === "folder" && (
-            <div className="rounded-xl border-2 border-dashed border-[#e5e0d8] bg-[#faf8f5] p-6 text-center">
-              <FolderOpen className="mx-auto h-10 w-10 text-[#c6623f]/80" />
-              <p className="mt-2 text-sm font-medium text-[#3d3830]">
+            <div className="rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+              <FolderOpen className="mx-auto h-10 w-10 text-[var(--primary)]/80" />
+              <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
                 Sélectionnez un dossier sur votre ordinateur
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Tous les fichiers de code (.ts, .tsx, .py, .css, etc.) seront scannés récursivement.
               </p>
               <input
@@ -302,7 +302,7 @@ export function ImportRepoModal({
               <Button
                 onClick={() => folderInputRef.current?.click()}
                 disabled={loading}
-                className="mt-4 gap-2 bg-[#3d3830] text-white hover:bg-[#2d2a26]"
+                className="mt-4 gap-2 bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
               >
                 <Upload className="h-4 w-4" />
                 Choisir un dossier local
@@ -312,7 +312,7 @@ export function ImportRepoModal({
 
           {tab === "github" && (
             <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[var(--muted-foreground)]">
                 Collez l&apos;adresse d&apos;un dépôt GitHub public (ex: https://github.com/facebook/react) :
               </p>
               <div className="flex gap-2">
@@ -321,12 +321,12 @@ export function ImportRepoModal({
                   placeholder="https://github.com/owner/repository"
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
-                  className="flex-1 rounded-lg border border-[#e5e0d8] bg-white px-3 py-2 text-sm text-[#3d3830] focus:border-[#c6623f] focus:outline-none"
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none placeholder:text-[var(--muted-foreground)]"
                 />
                 <Button
                   onClick={handleGithubImport}
                   disabled={!githubUrl.trim() || loading}
-                  className="bg-[#3d3830] text-white hover:bg-[#2d2a26]"
+                  className="bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Importer"}
                 </Button>
@@ -335,12 +335,12 @@ export function ImportRepoModal({
           )}
 
           {tab === "zip" && (
-            <div className="rounded-xl border-2 border-dashed border-[#e5e0d8] bg-[#faf8f5] p-6 text-center">
-              <FileArchive className="mx-auto h-10 w-10 text-amber-600/80" />
-              <p className="mt-2 text-sm font-medium text-[#3d3830]">
+            <div className="rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+              <FileArchive className="mx-auto h-10 w-10 text-amber-500/80" />
+              <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
                 Glissez ou sélectionnez un fichier .zip
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 L&apos;archive sera décompressée et les fichiers de code injectés dans l&apos;éditeur.
               </p>
               <input
@@ -353,7 +353,7 @@ export function ImportRepoModal({
               <Button
                 onClick={() => zipInputRef.current?.click()}
                 disabled={loading}
-                className="mt-4 gap-2 bg-[#3d3830] text-white hover:bg-[#2d2a26]"
+                className="mt-4 gap-2 bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
               >
                 <Upload className="h-4 w-4" />
                 Choisir une archive ZIP
@@ -363,7 +363,7 @@ export function ImportRepoModal({
 
           {/* Progress / Status */}
           {loading && (
-            <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+            <div className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-xs text-blue-600 dark:text-blue-400">
               <Loader2 className="h-4 w-4 animate-spin shrink-0" />
               <span>{statusText}</span>
             </div>
@@ -371,9 +371,9 @@ export function ImportRepoModal({
 
           {/* Success */}
           {successCount !== null && (
-            <div className="flex items-center justify-between rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">
+            <div className="flex items-center justify-between rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                 <span>
                   <strong>{successCount} fichiers</strong> extraits et chargés avec succès !
                 </span>
@@ -382,7 +382,7 @@ export function ImportRepoModal({
                 size="sm"
                 variant="outline"
                 onClick={onClose}
-                className="h-7 text-xs border-emerald-300"
+                className="h-7 text-xs border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
               >
                 Fermer
               </Button>
@@ -391,8 +391,8 @@ export function ImportRepoModal({
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-700">
-              <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+            <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-600 dark:text-red-400">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
               <span>{error}</span>
             </div>
           )}

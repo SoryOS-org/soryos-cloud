@@ -280,20 +280,20 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
 
       {/* Loading Overlay State */}
       {loading ? (
-        <div className="rounded-2xl border border-[#e5e0d8] bg-white p-8 shadow-xl text-center space-y-4 animate-in fade-in">
-          <Loader2 className="h-10 w-10 text-[#c6623f] animate-spin mx-auto" />
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--foreground)] p-8 shadow-xl text-center space-y-4 animate-in fade-in">
+          <Loader2 className="h-10 w-10 text-[var(--primary)] animate-spin mx-auto" />
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-[#3d3830]">Initialisation du Workspace...</h3>
-            <p className="text-xs font-mono text-[#8a8278]">{statusMessage}</p>
+            <h3 className="text-base font-bold text-[var(--foreground)]">Initialisation du Workspace...</h3>
+            <p className="text-xs font-mono text-[var(--muted-foreground)]">{statusMessage}</p>
           </div>
         </div>
       ) : (
         /* Workspace Environment Selection Panel */
-        <div className="rounded-2xl border border-[#e5e0d8] bg-white shadow-xl overflow-hidden">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-xl overflow-hidden">
           {/* STEP 1: INITIAL ENVIRONMENT SELECTOR (Both buttons 100% interactive, never disabled) */}
-          <div className="p-4 sm:p-5 border-b border-[#eee9e1] bg-[#faf8f5]">
+          <div className="p-4 sm:p-5 border-b border-[var(--border)] bg-[var(--surface)]">
             <div className="text-center mb-3">
-              <span className="text-[11px] font-bold text-[#5c5348] uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                 1. Sélectionner l&apos;Environnement
               </span>
             </div>

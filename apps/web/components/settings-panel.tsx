@@ -17,6 +17,10 @@ import {
   Moon,
   Laptop,
   Sliders,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Activity,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme/theme-context";
 import { COLOR_THEMES, ACCENT_PALETTES } from "@/lib/theme/palettes";
@@ -44,19 +48,60 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>(
     (defaultCategory as SettingsCategory) || "appearance"
   );
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
-  const categories: Array<{ id: SettingsCategory; label: string; icon: React.ReactNode }> = [
-    { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
-    { id: "editor", label: "Editor", icon: <Code2 className="h-4 w-4" /> },
-    { id: "terminal", label: "Terminal", icon: <TerminalIcon className="h-4 w-4" /> },
-    { id: "environment", label: "Environment", icon: <Cloud className="h-4 w-4" /> },
-    { id: "git", label: "Git & Version Control", icon: <GitBranch className="h-4 w-4" /> },
-    { id: "ai", label: "AI & Agents", icon: <Cpu className="h-4 w-4" /> },
-    { id: "providers", label: "Cloud & Sandboxes", icon: <Boxes className="h-4 w-4" /> },
-    { id: "about", label: "About SoryOS-Code", icon: <Info className="h-4 w-4" /> },
+  const categories: Array<{ id: SettingsCategory; label: string; description: string; icon: React.ReactNode }> = [
+    {
+      id: "appearance",
+      label: "Appearance",
+      description: "Thèmes, couleurs, accents, mode sombre et typographie",
+      icon: <Palette className="h-4 w-4" />,
+    },
+    {
+      id: "editor",
+      label: "Editor",
+      description: "Monaco Editor, indentation, mini-map et options",
+      icon: <Code2 className="h-4 w-4" />,
+    },
+    {
+      id: "terminal",
+      label: "Terminal",
+      description: "PTY, polices monospace et configurations du shell",
+      icon: <TerminalIcon className="h-4 w-4" />,
+    },
+    {
+      id: "environment",
+      label: "Environment",
+      description: "Codespaces, Docker, sandboxes et runtime",
+      icon: <Cloud className="h-4 w-4" />,
+    },
+    {
+      id: "git",
+      label: "Git & Version Control",
+      description: "Branches, authentification GitHub et synchronisation",
+      icon: <GitBranch className="h-4 w-4" />,
+    },
+    {
+      id: "ai",
+      label: "AI & Agents",
+      description: "Modèles d'inférence, OpenCode agents et streaming",
+      icon: <Cpu className="h-4 w-4" />,
+    },
+    {
+      id: "providers",
+      label: "Cloud & Sandboxes",
+      description: "Gestionnaires de clés API et diagnostics cloud",
+      icon: <Boxes className="h-4 w-4" />,
+    },
+    {
+      id: "about",
+      label: "About SoryOS-Code",
+      description: "Informations sur le système et versions",
+      icon: <Info className="h-4 w-4" />,
+    },
   ];
 
   const handleResetConfirm = () => {
@@ -114,32 +159,79 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
 
         {/* Body Split */}
         <div className="flex flex-1 min-h-0 flex-col sm:flex-row overflow-hidden">
-          {/* Sidebar Navigation */}
-          <div className="w-full sm:w-60 shrink-0 border-b sm:border-b-0 sm:border-r border-[var(--border)] bg-[var(--surface-elevated)] p-3 space-y-1 overflow-x-auto sm:overflow-y-auto">
+          {/* Mobile Category Card List (shown on mobile when not viewing a detail) */}
+          <div className={`flex-1 overflow-y-auto p-4 space-y-2.5 sm:hidden ${mobileDetailOpen ? "hidden" : "block"}`}>
+            <div className="px-1 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+              Rubriques de Configuration
+            </div>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  setMobileDetailOpen(true);
+                }}
+                className="flex w-full items-center justify-between p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] transition cursor-pointer active:scale-[0.99] text-left"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
+                    {cat.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-[var(--foreground)] truncate">{cat.label}</div>
+                    <div className="text-xs text-[var(--muted-foreground)] line-clamp-1">{cat.description}</div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-[var(--muted-foreground)] shrink-0 ml-2" />
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop Sidebar Navigation */}
+          <div className="hidden sm:block w-64 shrink-0 border-r border-[var(--border)] bg-[var(--surface-elevated)] p-3 space-y-1 overflow-y-auto">
             <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-              Préférences
+              Rubriques
             </div>
             {categories.map((cat) => {
               const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${
+                  onClick={() => {
+                    setActiveCategory(cat.id);
+                    setMobileDetailOpen(true);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${
                     isActive
                       ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
+                      : "text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
                   }`}
                 >
-                  {cat.icon}
-                  <span className="truncate">{cat.label}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {cat.icon}
+                    <span className="truncate">{cat.label}</span>
+                  </div>
+                  <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${isActive ? "opacity-100" : "opacity-0"}`} />
                 </button>
               );
             })}
           </div>
 
           {/* Main Content Pane */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+          <div className={`flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 ${!mobileDetailOpen ? "hidden sm:block" : "block"}`}>
+            {/* Mobile Back to Categories Header */}
+            <div className="flex items-center justify-between pb-3 mb-2 border-b border-[var(--border)] sm:hidden">
+              <button
+                onClick={() => setMobileDetailOpen(false)}
+                className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span>Retour aux rubriques</span>
+              </button>
+              <span className="text-xs font-bold text-[var(--foreground)]">
+                {categories.find((c) => c.id === activeCategory)?.label}
+              </span>
+            </div>
             {/* 1. APPEARANCE */}
             {activeCategory === "appearance" && (
               <div className="space-y-6 animate-in fade-in duration-200">
@@ -378,23 +470,55 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
                 <div className="border-b border-[var(--border)] pb-4">
                   <h3 className="text-base font-bold">Monaco Editor Configuration</h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Paramètres de l&apos;éditeur de code intégré et de la coloration syntaxique.
+                    Paramètres de l&apos;éditeur de code intégré, formatage et coloration syntaxique.
                   </p>
                 </div>
-                <div className="space-y-4 text-xs">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)]">
                     <div>
-                      <div className="font-bold">Mini-map de l&apos;éditeur</div>
-                      <div className="text-[var(--muted-foreground)] text-[11px]">Afficher la mini-carte à droite de l&apos;éditeur</div>
+                      <div className="font-bold text-xs text-[var(--foreground)]">Mini-map de l&apos;éditeur</div>
+                      <div className="text-[var(--muted-foreground)] text-[11px]">Afficher la vue d&apos;ensemble à droite</div>
                     </div>
                     <input type="checkbox" defaultChecked className="h-4 w-4 accent-[var(--primary)] cursor-pointer" />
                   </div>
+
                   <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)]">
                     <div>
-                      <div className="font-bold">Formatage automatique à la sauvegarde</div>
-                      <div className="text-[var(--muted-foreground)] text-[11px]">Utiliser Prettier lors de l&apos;enregistrement</div>
+                      <div className="font-bold text-xs text-[var(--foreground)]">Formatage à la sauvegarde</div>
+                      <div className="text-[var(--muted-foreground)] text-[11px]">Auto-formatter avec Prettier</div>
                     </div>
                     <input type="checkbox" defaultChecked className="h-4 w-4 accent-[var(--primary)] cursor-pointer" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)]">
+                    <div>
+                      <div className="font-bold text-xs text-[var(--foreground)]">Retour à la ligne (Word Wrap)</div>
+                      <div className="text-[var(--muted-foreground)] text-[11px]">Adapter le texte à la largeur</div>
+                    </div>
+                    <input type="checkbox" defaultChecked className="h-4 w-4 accent-[var(--primary)] cursor-pointer" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)]">
+                    <div>
+                      <div className="font-bold text-xs text-[var(--foreground)]">Indentation par tabulation</div>
+                      <div className="text-[var(--muted-foreground)] text-[11px]">Espaces par niveau de tabulation</div>
+                    </div>
+                    <select className="bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-xs">
+                      <option>2 espaces</option>
+                      <option>4 espaces</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Visual Editor Preview Card */}
+                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Aperçu du Thème Monaco</div>
+                  <div className="p-3 rounded-lg font-mono text-xs bg-[var(--terminal-background)] text-[var(--terminal-foreground)] border border-[var(--border)] space-y-1">
+                    <p><span className="text-purple-400">import</span> React <span className="text-purple-400">from</span> <span className="text-emerald-400">&quot;react&quot;</span>;</p>
+                    <p><span className="text-blue-400">export function</span> <span className="text-amber-400">App</span>() &#123;</p>
+                    <p className="pl-4"><span className="text-purple-400">return</span> &lt;<span className="text-red-400">div</span> <span className="text-sky-400">className</span>=<span className="text-emerald-400">&quot;workbench&quot;</span>&gt;SoryOS-Code&lt;/<span className="text-red-400">div</span>&gt;;</p>
+                    <p>&#125;</p>
                   </div>
                 </div>
               </div>
@@ -406,19 +530,42 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
                 <div className="border-b border-[var(--border)] pb-4">
                   <h3 className="text-base font-bold">Integrated Terminal Settings</h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Configuration des PTY, polices de terminal et comportement des commandes.
+                    Configuration des PTY, polices de terminal et comportement du shell interactif.
                   </p>
                 </div>
-                <div className="space-y-4 text-xs">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)]">
-                    <div>
-                      <div className="font-bold">Police Monospace du Terminal</div>
-                      <div className="text-[var(--muted-foreground)] text-[11px]">JetBrains Mono / Fira Code</div>
-                    </div>
-                    <select className="bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-2">
+                    <div className="font-bold text-xs text-[var(--foreground)]">Police Monospace du Terminal</div>
+                    <div className="text-[var(--muted-foreground)] text-[11px]">Sélectionnez la typographie du PTY</div>
+                    <select className="w-full bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs">
+                      <option>Geist Mono (Défaut)</option>
                       <option>JetBrains Mono</option>
                       <option>Fira Code</option>
                     </select>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-2">
+                    <div className="font-bold text-xs text-[var(--foreground)]">Shell par défaut</div>
+                    <div className="text-[var(--muted-foreground)] text-[11px]">Interpréteur de commandes initial</div>
+                    <select className="w-full bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs">
+                      <option>/bin/bash</option>
+                      <option>/bin/sh</option>
+                      <option>/bin/zsh</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Terminal Visual Preview */}
+                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Aperçu Visuel de l&apos;Invite</div>
+                  <div className="p-3.5 rounded-lg font-mono text-xs bg-[var(--terminal-background)] text-[var(--terminal-foreground)] border border-[var(--border)]">
+                    <span className="text-emerald-500 font-bold">user@codespace</span>
+                    <span className="text-[var(--primary)] font-bold"> ➜ </span>
+                    <span className="text-sky-500 font-bold">/workspaces/project</span>
+                    <span className="text-amber-500 font-bold"> (main*)</span>
+                    <span className="text-[var(--terminal-foreground)] font-bold"> $ </span>
+                    <span className="text-slate-400">git status</span>
                   </div>
                 </div>
               </div>
@@ -428,15 +575,29 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
             {activeCategory === "environment" && (
               <div className="space-y-6 animate-in fade-in duration-200">
                 <div className="border-b border-[var(--border)] pb-4">
-                  <h3 className="text-base font-bold">Runtime Environment</h3>
+                  <h3 className="text-base font-bold">Runtime Environment & Sandboxes</h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    État des conteneurs, sandboxes et backends d&apos;exécution actifs.
+                    État des conteneurs d&apos;exécution, micro-VMs et backends actifs.
                   </p>
                 </div>
-                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[var(--muted-foreground)]">Environnement actif</span>
-                    <span className="font-bold text-emerald-500">☁ GitHub Codespaces / Local PTY</span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-2">
+                    <span className="text-xs font-bold text-[var(--muted-foreground)] uppercase">Environnement Actif</span>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="font-bold text-sm text-[var(--foreground)]">GitHub Codespaces</span>
+                    </div>
+                    <p className="text-xs text-[var(--muted-foreground)]">Synchronisation bidirectionnelle du filesystem active</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-2">
+                    <span className="text-xs font-bold text-[var(--muted-foreground)] uppercase">Moteur de Preview</span>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                      <span className="font-bold text-sm text-[var(--foreground)]">Port 3000 Web Preview</span>
+                    </div>
+                    <p className="text-xs text-[var(--muted-foreground)]">Serveur de développement Next.js & Vite intégré</p>
                   </div>
                 </div>
               </div>
@@ -448,13 +609,22 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
                 <div className="border-b border-[var(--border)] pb-4">
                   <h3 className="text-base font-bold">Git & Version Control</h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Gestion des branches, intégration GitHub et synchronisation distante.
+                    Gestion des branches, identité de commit et synchronisation GitHub.
                   </p>
                 </div>
+
                 <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted-foreground)]">Identité Git</span>
+                    <span className="font-mono font-semibold text-[var(--foreground)]">SoryOS Developer &lt;developer@soryos.internal&gt;</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                    <span className="text-[var(--muted-foreground)]">Branche par défaut</span>
+                    <span className="font-mono font-semibold text-amber-500">main</span>
+                  </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[var(--muted-foreground)]">Utilisateur Git configuré</span>
-                    <span className="font-mono">SoryOS User &lt;user@soryos.internal&gt;</span>
+                    <span className="text-[var(--muted-foreground)]">Suivi de version</span>
+                    <span className="font-semibold text-emerald-600">Git natif (Codespaces Remote)</span>
                   </div>
                 </div>
               </div>
@@ -472,7 +642,7 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
                 <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs mb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted-foreground)]">Modèle par défaut</span>
-                    <span className="font-mono font-semibold text-[var(--primary)]">Gemini 3.8 Flash (Google AI Studio)</span>
+                    <span className="font-mono font-semibold text-[var(--primary)]">Gemini 2.5 Flash / Pro (Google AI Studio)</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--muted-foreground)]">Chaîne d&apos;inférence</span>
@@ -505,10 +675,26 @@ export function SettingsPanel({ isOpen, onClose, defaultCategory = "appearance" 
                     Informations sur la version et l&apos;architecture de l&apos;application.
                   </p>
                 </div>
-                <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[var(--muted-foreground)]">Version</span>
-                    <span className="font-bold font-mono">v2.5.0 Production</span>
+                <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] space-y-4 text-xs">
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <div>
+                      <h4 className="font-bold text-sm text-[var(--foreground)]">SoryOS-Code Workbench</h4>
+                      <p className="text-[var(--muted-foreground)] text-[11px]">Plateforme IA pour génération et exécution de code</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-600">
+                      v3.0 Production
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                      <div className="text-[10px] font-bold uppercase text-[var(--muted-foreground)]">Architecture</div>
+                      <div className="font-semibold text-xs text-[var(--foreground)] mt-0.5">Next.js 15 + React 19</div>
+                    </div>
+                    <div className="p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                      <div className="text-[10px] font-bold uppercase text-[var(--muted-foreground)]">Sandboxes</div>
+                      <div className="font-semibold text-xs text-[var(--foreground)] mt-0.5">Codespaces + E2B + PTY</div>
+                    </div>
                   </div>
                 </div>
               </div>

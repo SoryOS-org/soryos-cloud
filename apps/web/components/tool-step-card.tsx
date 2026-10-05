@@ -130,27 +130,27 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
   const outputText = step.error || step.output || "";
 
   return (
-    <div className="my-3 min-w-0 overflow-hidden rounded-xl border border-[#e5e0d8] bg-white shadow-xs transition-all">
+    <div className="my-3 min-w-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-xs transition-all">
       {/* Header bar */}
-      <div className="flex items-center justify-between gap-3 border-b border-[#eee9e1] bg-[#faf8f5] px-3.5 py-2.5">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5">
         <button
           type="button"
           onClick={() => setUserToggled(!open)}
-          className="flex min-w-0 flex-1 items-center gap-2.5 text-left text-xs font-semibold text-[#3d3830] hover:text-[#c6623f] transition"
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left text-xs font-semibold text-[var(--foreground)] hover:text-[var(--primary)] transition cursor-pointer"
         >
           <ChevronDown
             className={cn(
-              "h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200",
+              "h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] transition-transform duration-200",
               !open && "-rotate-90",
             )}
           />
           <div className={cn("flex h-6 w-6 items-center justify-center rounded-md border shrink-0", config.color)}>
             <Icon className="h-3.5 w-3.5" />
           </div>
-          <span className="truncate uppercase tracking-wide font-mono text-[11px] text-[#5c5348]">
+          <span className="truncate uppercase tracking-wide font-mono text-[11px] text-[var(--foreground)] font-bold">
             {step.name.replace(/_/g, " ")}
           </span>
-          <span className="truncate text-xs font-mono font-normal text-[#8c8275] max-w-[200px]">
+          <span className="truncate text-xs font-mono font-normal text-[var(--muted-foreground)] max-w-[200px]">
             {config.label(step.input)}
           </span>
         </button>
@@ -158,7 +158,7 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
         <div className="flex shrink-0 items-center gap-2">
           {/* Discreet Environment Badge if provided */}
           {typeof step.metadata?.providerId === "string" && (
-            <span className="hidden sm:inline-flex items-center gap-1 rounded bg-[#e2ddd5]/60 px-2 py-0.5 text-[10px] font-medium text-[#4a433a] font-mono">
+            <span className="hidden sm:inline-flex items-center gap-1 rounded bg-[var(--surface-hover)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-medium text-[var(--foreground)] font-mono">
               {step.metadata.providerId === "local"
                 ? "💻 Local"
                 : `☁️ Sandbox · ${step.metadata.providerId.toUpperCase()}`}
@@ -167,27 +167,27 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
 
           {/* Status badge */}
           {isPending ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
               <Clock className="h-3 w-3 text-amber-500" />
               <span>En attente</span>
             </span>
           ) : isRunning ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400 border border-blue-500/20">
               <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
               <span>En cours</span>
             </span>
           ) : isCancelled ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 border border-gray-200">
-              <Ban className="h-3 w-3 text-gray-500" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)] border border-[var(--border)]">
+              <Ban className="h-3 w-3 text-[var(--muted-foreground)]" />
               <span>Annulé</span>
             </span>
           ) : hasError ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-700 border border-red-200">
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400 border border-red-500/20">
               <XCircle className="h-3 w-3 text-red-500" />
               <span>Erreur</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <CheckCircle2 className="h-3 w-3 text-emerald-500" />
               <span>Succès</span>
             </span>
@@ -196,10 +196,10 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
           {showOutput && outputText && (
             <button
               onClick={() => void copyContent(outputText)}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e5e0d8] bg-white text-[#5c5348] hover:bg-[#faf8f5] hover:text-[#3d3830] transition"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
               title="Copier le résultat"
             >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
           )}
         </div>
@@ -207,24 +207,24 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
 
       {/* Body content */}
       {open && (
-        <div className="p-3.5 space-y-3 bg-white">
+        <div className="p-3.5 space-y-3 bg-[var(--surface-elevated)] text-[var(--foreground)]">
           {/* INPUT / ARGUMENTS SECTION */}
           <div className="space-y-1">
-            <div className="text-[10px] font-mono font-bold text-[#8c8275] uppercase tracking-wider">
+            <div className="text-[10px] font-mono font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
               Arguments / Input
             </div>
             {config.category === "command" ? (
-              <div className="flex items-center gap-2 rounded-lg bg-[#18181b] p-2.5 font-mono text-xs text-emerald-400 border border-gray-800">
-                <span className="text-gray-500">$</span>
+              <div className="flex items-center gap-2 rounded-lg bg-[var(--terminal-background)] p-2.5 font-mono text-xs text-emerald-400 border border-[var(--border)]">
+                <span className="text-[var(--muted-foreground)]">$</span>
                 <span className="break-all">{config.label(step.input)}</span>
               </div>
             ) : config.category === "file_edit" || config.category === "file_write" || config.category === "file_read" ? (
-              <div className="flex items-center justify-between gap-2 rounded-lg bg-[#faf8f5] px-3 py-2 text-xs font-mono border border-[#eee9e1]">
-                <span className="font-semibold text-[#3d3830]">{config.label(step.input)}</span>
-                <span className="text-[10px] text-gray-500 uppercase tracking-wide">{config.category.replace("_", " ")}</span>
+              <div className="flex items-center justify-between gap-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs font-mono border border-[var(--border)] text-[var(--foreground)]">
+                <span className="font-semibold text-[var(--foreground)]">{config.label(step.input)}</span>
+                <span className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">{config.category.replace("_", " ")}</span>
               </div>
             ) : (
-              <pre className="rounded-lg bg-[#faf8f5] p-2.5 font-mono text-xs text-[#3d3830] border border-[#eee9e1] max-h-28 overflow-auto whitespace-pre-wrap break-all">
+              <pre className="rounded-lg bg-[var(--surface)] p-2.5 font-mono text-xs text-[var(--foreground)] border border-[var(--border)] max-h-28 overflow-auto whitespace-pre-wrap break-all">
                 {typeof step.input === "object" ? JSON.stringify(step.input, null, 2) : String(step.input)}
               </pre>
             )}
@@ -232,11 +232,11 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
 
           {/* RESULT / OUTPUT SECTION */}
           {showOutput && (
-            <div className="overflow-hidden rounded-lg border border-[#e5e0d8] space-y-0">
-              <div className="bg-[#f5f1ea] px-3 py-1 font-mono text-[10px] font-bold text-[#5c5348] uppercase tracking-wider border-b border-[#e5e0d8] flex justify-between items-center">
+            <div className="overflow-hidden rounded-lg border border-[var(--border)] space-y-0">
+              <div className="bg-[var(--surface)] px-3 py-1 font-mono text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)] flex justify-between items-center">
                 <span>{hasError ? "Erreur" : "Résultat / Sortie"}</span>
                 {step.completedAt && (
-                  <span className="text-[9px] font-normal text-gray-500 lowercase">
+                  <span className="text-[9px] font-normal text-[var(--muted-foreground)] lowercase">
                     {new Date(step.completedAt).toLocaleTimeString()}
                   </span>
                 )}
@@ -244,10 +244,8 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
               <pre
                 className={`max-h-60 overflow-auto p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words ${
                   hasError
-                    ? "bg-red-50/80 text-red-950 border-l-4 border-red-500"
-                    : config.category === "command"
-                    ? "bg-[#18181b] text-gray-200 border-l-4 border-slate-600"
-                    : "bg-[#282c34] text-[#abb2bf]"
+                    ? "bg-red-500/10 text-red-500 dark:text-red-400 border-l-4 border-red-500"
+                    : "bg-[var(--terminal-background)] text-[var(--terminal-foreground)] border-l-4 border-[var(--primary)]"
                 }`}
               >
                 {outputText}

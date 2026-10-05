@@ -172,17 +172,17 @@ export function ChatPanel({
   };
 
   return (
-    <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
       <div className="app-watermark pointer-events-none absolute inset-0" />
 
       {/* 1. Chat Header Bar */}
-      <header className="relative z-10 hidden lg:flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-white px-5 shadow-2xs">
+      <header className="relative z-10 hidden lg:flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface-elevated)] px-5 shadow-2xs">
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/" className="shrink-0 transition hover:opacity-80 flex items-center gap-2">
-            <span className="font-black text-sm tracking-tight text-[#3d3830]">SoryOS-Code</span>
+            <span className="font-black text-sm tracking-tight text-[var(--foreground)]">SoryOS-Code</span>
           </Link>
-          <div className="h-4 w-px bg-[#e5e0d8]" />
-          <h1 className="truncate text-sm font-semibold text-[#3d3830]">
+          <div className="h-4 w-px bg-[var(--border)]" />
+          <h1 className="truncate text-sm font-semibold text-[var(--foreground)]">
             {sessionTitle ?? "Session"}
           </h1>
         </div>
@@ -202,7 +202,7 @@ export function ChatPanel({
               variant="outline"
               size="sm"
               onClick={onAbort}
-              className="h-8 gap-1.5 rounded-lg border-red-200 bg-red-50 text-xs font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+              className="h-8 gap-1.5 rounded-lg border-red-500/30 bg-red-500/10 text-xs font-semibold text-red-600 hover:bg-red-500/20 transition cursor-pointer"
             >
               <Square className="h-3 w-3 fill-current" />
               Arrêter
@@ -212,7 +212,7 @@ export function ChatPanel({
       </header>
 
       {/* 2. Provider + Model Selector (Prominently in the Top of Chat) */}
-      <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[#eee9e1] bg-[#faf8f5]/90 px-3 sm:px-6 py-2 backdrop-blur-xs">
+      <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)]/90 px-3 sm:px-6 py-2 backdrop-blur-xs">
         <div className="flex items-center gap-2 min-w-0">
           <ModelSelector
             currentModelId={currentModelId}
@@ -233,11 +233,11 @@ export function ChatPanel({
           {/* Empty state when no messages */}
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-10 sm:py-16 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f5f1ea] text-[#c6623f] mb-3 shadow-2xs">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] mb-3 shadow-2xs">
                 <Sparkles className="h-6 w-6" />
               </div>
-              <h2 className="text-base font-bold text-[#2d2a26]">Comment puis-je vous aider aujourd&apos;hui ?</h2>
-              <p className="mt-1 max-w-sm text-xs text-[#8c8275]">
+              <h2 className="text-base font-bold text-[var(--foreground)]">Comment puis-je vous aider aujourd&apos;hui ?</h2>
+              <p className="mt-1 max-w-sm text-xs text-[var(--muted-foreground)]">
                 Posez une question, créez du code, joignez un fichier ou lancez une session vocale Live.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-md">
@@ -248,9 +248,9 @@ export function ChatPanel({
                       key={idx}
                       type="button"
                       onClick={() => setInput(item.prompt)}
-                      className="flex items-center gap-1.5 rounded-full border border-[#e5e0d8] bg-white px-3 py-1.5 text-xs font-medium text-[#5c5348] hover:border-[#c6623f] hover:text-[#c6623f] hover:shadow-2xs transition cursor-pointer"
+                      className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:shadow-2xs transition cursor-pointer"
                     >
-                      <Icon className="h-3.5 w-3.5 text-[#c6623f]" />
+                      <Icon className="h-3.5 w-3.5 text-[var(--primary)]" />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -266,22 +266,22 @@ export function ChatPanel({
                 key={message.id}
                 className="group flex flex-col items-end gap-1"
               >
-                <div className="flex items-center gap-2 text-[11px] font-mono font-medium text-[#8c8275] px-1">
+                <div className="flex items-center gap-2 text-[11px] font-mono font-medium text-[var(--muted-foreground)] px-1">
                   <span>Vous</span>
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e8e2d8] text-[#3d3830]">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface-hover)] text-[var(--foreground)]">
                     <User className="h-3 w-3" />
                   </div>
                 </div>
-                <div className="rounded-2xl rounded-tr-xs border border-[#e8e2d8] bg-[#f3f1ec] px-4 py-3 shadow-2xs max-w-[90%]">
-                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words text-[#3d3830]">
+                <div className="rounded-2xl rounded-tr-xs border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-2xs max-w-[90%]">
+                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words text-[var(--foreground)]">
                     {message.content}
                   </p>
                 </div>
               </div>
             ) : (
               <div key={message.id} className="min-w-0 space-y-1">
-                <div className="flex items-center gap-2 text-[11px] font-mono font-medium text-[#c6623f] px-1">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#c6623f]/15 text-[#c6623f]">
+                <div className="flex items-center gap-2 text-[11px] font-mono font-medium text-[var(--primary)] px-1">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
                     <Sparkles className="h-3 w-3" />
                   </div>
                   <span>Agent OpenCode</span>
@@ -293,7 +293,7 @@ export function ChatPanel({
 
           {/* Loading status pill */}
           {loading && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-[#e88d67]/30 bg-[#faf5f2] px-4 py-2.5 text-xs text-[#c6623f] font-mono shadow-2xs animate-pulse">
+            <div className="flex items-center gap-2.5 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-4 py-2.5 text-xs text-[var(--primary)] font-mono shadow-2xs animate-pulse">
               <Wrench className="h-3.5 w-3.5 animate-spin shrink-0" />
               <span className="font-medium">{status ?? "L'agent réfléchit et exécute les outils..."}</span>
             </div>
@@ -303,13 +303,13 @@ export function ChatPanel({
       </ScrollArea>
 
       {/* 4. Nouveau Composer (ChatGPT-style minimalist card) */}
-      <div className="relative z-20 shrink-0 border-t border-[#eee9e1] bg-[#faf8f5]/90 px-3 sm:px-4 md:px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+      <div className="relative z-20 shrink-0 border-t border-[var(--border)] bg-[var(--surface)]/90 px-3 sm:px-4 md:px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
         <div className="mx-auto w-full max-w-3xl">
-          <div className="relative flex flex-col rounded-2xl border border-[#e5e0d8] bg-white shadow-xs transition-all duration-200 focus-within:border-[#c6623f] focus-within:ring-2 focus-within:ring-[#c6623f]/15">
+          <div className="relative flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-xs transition-all duration-200 focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/15">
             {/* Attachment preview if any */}
             {attachedFile && (
               <div className="flex items-center gap-2 px-3.5 pt-2.5">
-                <div className="flex items-center gap-2 rounded-lg border border-[#e5e0d8] bg-[#f8f6f0] px-2.5 py-1 text-xs text-[#3d3830]">
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--foreground)]">
                   {attachedFile.previewUrl ? (
                     <img
                       src={attachedFile.previewUrl}
@@ -317,18 +317,18 @@ export function ChatPanel({
                       className="h-5 w-5 rounded object-cover"
                     />
                   ) : (
-                    <Paperclip className="h-3.5 w-3.5 text-[#c6623f]" />
+                    <Paperclip className="h-3.5 w-3.5 text-[var(--primary)]" />
                   )}
                   <span className="max-w-[200px] truncate text-[11px] font-medium font-mono">
                     {attachedFile.name}
                   </span>
-                  <span className="text-[10px] text-[#8c8275]">
+                  <span className="text-[10px] text-[var(--muted-foreground)]">
                     ({(attachedFile.size / 1024).toFixed(0)} KB)
                   </span>
                   <button
                     type="button"
                     onClick={() => setAttachedFile(null)}
-                    className="ml-1 rounded-full p-0.5 text-[#8c8275] hover:bg-[#e5e0d8] hover:text-[#2d2a26] transition cursor-pointer"
+                    className="ml-1 rounded-full p-0.5 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
                     title="Retirer le fichier"
                   >
                     <X className="h-3 w-3" />
@@ -350,7 +350,7 @@ export function ChatPanel({
                 onKeyDown={handleKeyDown}
                 placeholder="Écrivez un message…"
                 disabled={loading}
-                className="w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-relaxed text-[#2d2a26] placeholder:text-[#a39e94] focus:outline-none focus:ring-0 max-h-[160px] overflow-y-auto"
+                className="w-full resize-none border-0 bg-transparent p-0 text-[15px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-0 max-h-[160px] overflow-y-auto"
               />
             </div>
 
@@ -371,7 +371,7 @@ export function ChatPanel({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a7267] hover:bg-[#f3f0e8] hover:text-[#2d2a26] transition-colors cursor-pointer active:scale-95 border border-transparent hover:border-[#e5e0d8]"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors cursor-pointer active:scale-95 border border-transparent hover:border-[var(--border)]"
                       aria-label="Ajouter et options"
                       title="Ajouter (Import, image, contexte...)"
                     >
@@ -382,9 +382,9 @@ export function ChatPanel({
                     align="start"
                     side="top"
                     sideOffset={8}
-                    className="w-72 p-1.5 bg-white border border-[#e5e0d8] shadow-xl rounded-xl text-xs z-50 mb-1"
+                    className="w-72 p-1.5 bg-[var(--surface-elevated)] border border-[var(--border)] shadow-xl rounded-xl text-xs z-50 mb-1 text-[var(--foreground)]"
                   >
-                    <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-[#8c8275] uppercase tracking-wider">
+                    <DropdownMenuLabel className="px-2.5 py-1 text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                       Ajouter
                     </DropdownMenuLabel>
 
@@ -392,12 +392,12 @@ export function ChatPanel({
                     {onOpenImport && (
                       <DropdownMenuItem
                         onClick={onOpenImport}
-                        className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26] font-medium"
+                        className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground)] font-medium"
                       >
-                        <FolderDown className="h-4 w-4 text-[#c6623f] shrink-0" />
+                        <FolderDown className="h-4 w-4 text-[var(--primary)] shrink-0" />
                         <div className="flex flex-col min-w-0">
                           <span className="font-semibold text-xs">Importer un dépôt / fichier</span>
-                          <span className="text-[10px] text-[#8c8275] truncate">GitHub Codespace, dépôt Git ou projet</span>
+                          <span className="text-[10px] text-[var(--muted-foreground)] truncate">GitHub Codespace, dépôt Git ou projet</span>
                         </div>
                       </DropdownMenuItem>
                     )}
@@ -405,12 +405,12 @@ export function ChatPanel({
                     {/* 🖼 Ajouter une image ou fichier */}
                     <DropdownMenuItem
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground)]"
                     >
-                      <Paperclip className="h-4 w-4 text-blue-600 shrink-0" />
+                      <Paperclip className="h-4 w-4 text-blue-500 shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-xs">Ajouter une image ou fichier</span>
-                        <span className="text-[10px] text-[#8c8275] truncate">Joindre une capture, doc ou code</span>
+                        <span className="text-[10px] text-[var(--muted-foreground)] truncate">Joindre une capture, doc ou code</span>
                       </div>
                     </DropdownMenuItem>
 
@@ -418,17 +418,17 @@ export function ChatPanel({
                     {filePaths.length > 0 && (
                       <DropdownMenuItem
                         onClick={() => setIsContextModalOpen(true)}
-                        className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                        className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground)]"
                       >
-                        <FolderTree className="h-4 w-4 text-amber-600 shrink-0" />
+                        <FolderTree className="h-4 w-4 text-amber-500 shrink-0" />
                         <div className="flex flex-col min-w-0 text-left">
                           <span className="font-semibold text-xs">Ajouter du contexte</span>
-                          <span className="text-[10px] text-[#8c8275]">{filePaths.length} fichier(s) du projet</span>
+                          <span className="text-[10px] text-[var(--muted-foreground)]">{filePaths.length} fichier(s) du projet</span>
                         </div>
                       </DropdownMenuItem>
                     )}
 
-                    <DropdownMenuSeparator className="bg-[#eee9e1] my-1" />
+                    <DropdownMenuSeparator className="bg-[var(--border)] my-1" />
 
                     {/* 🔧 Outils */}
                     <DropdownMenuItem
@@ -436,12 +436,12 @@ export function ChatPanel({
                         setInput((prev) => (prev ? `${prev}\n\nInspecte les fichiers du projet et exécute les tests.` : "Inspecte le projet, exécute les tests et corrige les erreurs TypeScript."));
                         textareaRef.current?.focus();
                       }}
-                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground)]"
                     >
-                      <Wrench className="h-4 w-4 text-indigo-600 shrink-0" />
+                      <Wrench className="h-4 w-4 text-indigo-500 shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-xs">Outils & Diagnostic</span>
-                        <span className="text-[10px] text-[#8c8275] truncate">Exécuter des commandes, inspecter</span>
+                        <span className="text-[10px] text-[var(--muted-foreground)] truncate">Exécuter des commandes, inspecter</span>
                       </div>
                     </DropdownMenuItem>
 
@@ -451,12 +451,12 @@ export function ChatPanel({
                         setInput((prev) => (prev ? `${prev} [Recherche Web]` : "Recherche sur le web : "));
                         textareaRef.current?.focus();
                       }}
-                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[#f5f1ea] text-[#2d2a26]"
+                      className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground)]"
                     >
-                      <Globe className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <Globe className="h-4 w-4 text-emerald-500 shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-xs">Recherche Web</span>
-                        <span className="text-[10px] text-[#8c8275] truncate">Recherche Google et docs à jour</span>
+                        <span className="text-[10px] text-[var(--muted-foreground)] truncate">Recherche Google et docs à jour</span>
                       </div>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -475,7 +475,7 @@ export function ChatPanel({
                   <button
                     type="button"
                     onClick={onAbort}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2d2a26] text-white hover:bg-black transition shadow-xs cursor-pointer active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition shadow-xs cursor-pointer active:scale-95"
                     title="Arrêter la réponse"
                   >
                     <Square className="h-3.5 w-3.5 fill-current" />
@@ -485,7 +485,7 @@ export function ChatPanel({
                     type="button"
                     onClick={handleSubmit}
                     disabled={(!input.trim() && !attachedFile) || loading}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[#c6623f] text-white hover:bg-[#b05332] disabled:opacity-30 disabled:cursor-not-allowed transition shadow-xs cursor-pointer active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition shadow-xs cursor-pointer active:scale-95"
                     title="Envoyer (Entrée)"
                   >
                     <ArrowUp className="h-4 w-4 stroke-[2.5]" />

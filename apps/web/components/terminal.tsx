@@ -407,16 +407,16 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
     <div
       ref={containerRef}
       onClick={handleFocus}
-      className={`flex flex-col overflow-hidden bg-[#0d1117] text-slate-200 font-mono text-xs select-text ${
+      className={`flex flex-col overflow-hidden bg-[var(--terminal-background)] text-[var(--terminal-foreground)] font-mono text-xs select-text ${
         isMaximized ? "fixed inset-0 z-50 rounded-none shadow-2xl" : "h-full min-h-0 w-full"
       }`}
     >
       {/* 1. Top VS Code Style Toolbar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-800 bg-[#161b22] px-2 py-1 text-slate-300">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[var(--foreground)]">
         {/* Left: Terminal Tab List & New Terminal Button */}
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[60%] sm:max-w-[70%]">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            <TerminalIcon className="h-3.5 w-3.5 text-[#c6623f]" />
+          <div className="flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
+            <TerminalIcon className="h-3.5 w-3.5 text-[var(--primary)]" />
             <span className="hidden sm:inline">TERMINAL</span>
           </div>
 
@@ -432,8 +432,8 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
                 }}
                 className={`group flex items-center gap-2 rounded-t-md px-3 py-1 text-xs font-medium transition cursor-pointer border-t-2 ${
                   isActive
-                    ? "bg-[#0d1117] text-white border-[#c6623f]"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#21262d] border-transparent"
+                    ? "bg-[var(--terminal-background)] text-[var(--terminal-foreground)] border-[var(--primary)]"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] border-transparent"
                 }`}
               >
                 {tab.isRunning ? (
@@ -462,7 +462,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
                 e.stopPropagation();
                 setShellDropdownOpen((v) => !v);
               }}
-              className="flex items-center gap-1 rounded px-1.5 py-1 text-slate-400 hover:bg-[#21262d] hover:text-white transition cursor-pointer"
+              className="flex items-center gap-1 rounded px-1.5 py-1 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
               title="Ouvrir un nouveau terminal"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -472,23 +472,23 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
             {shellDropdownOpen && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute left-0 top-full mt-1 z-50 w-36 rounded-lg border border-slate-700 bg-[#161b22] py-1 shadow-2xl animate-in fade-in zoom-in-95"
+                className="absolute left-0 top-full mt-1 z-50 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] py-1 shadow-2xl animate-in fade-in zoom-in-95 text-[var(--foreground)]"
               >
                 <button
                   onClick={() => handleCreateTerminal("/bin/bash")}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-200 hover:bg-[#21262d] transition"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition"
                 >
                   <span className="text-emerald-400 font-bold">$</span> bash
                 </button>
                 <button
                   onClick={() => handleCreateTerminal("/bin/sh")}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-200 hover:bg-[#21262d] transition"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition"
                 >
                   <span className="text-blue-400 font-bold">#</span> sh
                 </button>
                 <button
                   onClick={() => handleCreateTerminal("/bin/zsh")}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-200 hover:bg-[#21262d] transition"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition"
                 >
                   <span className="text-purple-400 font-bold">%</span> zsh
                 </button>
@@ -500,7 +500,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
         {/* Right: Environment Info Badges & Action Controls */}
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Environment Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-[#21262d] px-2 py-0.5 rounded text-[11px] text-slate-300">
+          <div className="hidden lg:flex items-center gap-1.5 bg-[var(--surface-elevated)] border border-[var(--border)] px-2 py-0.5 rounded text-[11px] text-[var(--foreground)]">
             {providerId === "github-codespaces" || providerId === "github-repository" ? (
               <Cloud className="h-3 w-3 text-sky-400" />
             ) : (
@@ -512,10 +512,10 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
           </div>
 
           {/* Git Branch Badge */}
-          <div className="hidden md:flex items-center gap-1 bg-[#21262d] px-2 py-0.5 rounded text-[11px] text-amber-300">
-            <GitBranch className="h-3 w-3 text-amber-400" />
+          <div className="hidden md:flex items-center gap-1 bg-[var(--surface-elevated)] border border-[var(--border)] px-2 py-0.5 rounded text-[11px] text-amber-500 dark:text-amber-300">
+            <GitBranch className="h-3 w-3 text-amber-500 dark:text-amber-400" />
             <span>{currentBranch}</span>
-            {isDirty && <span className="text-amber-400 font-bold">*</span>}
+            {isDirty && <span className="text-amber-500 dark:text-amber-400 font-bold">*</span>}
           </div>
 
           {/* Running Process Indicator / Interrupt Button */}
@@ -525,10 +525,10 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
                 e.stopPropagation();
                 void handleSendInterrupt();
               }}
-              className="flex items-center gap-1 bg-red-500/20 border border-red-500/40 text-red-300 px-2 py-0.5 rounded text-[11px] font-bold hover:bg-red-500/30 transition cursor-pointer animate-pulse"
+              className="flex items-center gap-1 bg-red-500/20 border border-red-500/40 text-red-500 dark:text-red-300 px-2 py-0.5 rounded text-[11px] font-bold hover:bg-red-500/30 transition cursor-pointer animate-pulse"
               title="Arrêter le processus en cours (Ctrl+C / SIGINT)"
             >
-              <Square className="h-3 w-3 fill-red-400 text-red-400" />
+              <Square className="h-3 w-3 fill-red-500 text-red-500 dark:fill-red-400 dark:text-red-400" />
               <span>Arrêter (Ctrl+C)</span>
             </button>
           )}
@@ -539,10 +539,10 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               e.stopPropagation();
               handleCopyBuffer();
             }}
-            className="rounded p-1 text-slate-400 hover:bg-[#21262d] hover:text-slate-200 transition cursor-pointer"
+            className="rounded p-1 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
             title="Copier la sortie du terminal"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
 
           {/* Clear Buffer */}
@@ -551,7 +551,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               e.stopPropagation();
               void handleClear();
             }}
-            className="rounded p-1 text-slate-400 hover:bg-[#21262d] hover:text-slate-200 transition cursor-pointer"
+            className="rounded p-1 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
             title="Effacer l'écran (Ctrl+L)"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -563,7 +563,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               e.stopPropagation();
               setIsMaximized((v) => !v);
             }}
-            className="rounded p-1 text-slate-400 hover:bg-[#21262d] hover:text-slate-200 transition cursor-pointer"
+            className="rounded p-1 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
             title={isMaximized ? "Réduire le terminal" : "Agrandir le terminal"}
           >
             {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
@@ -572,25 +572,25 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
       </div>
 
       {/* 2. Interactive Terminal Output Canvas */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-slate-800">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-[var(--border)]">
         {/* Render Buffer with Real ANSI formatting */}
         {activeTerminal?.buffer && renderAnsi(activeTerminal.buffer)}
 
         {/* 3. Interactive Input Prompt Line */}
-        <div className="flex items-center gap-1.5 pt-1 text-slate-100 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-1.5 pt-1 text-[var(--terminal-foreground)] flex-wrap sm:flex-nowrap">
           {/* Shell Prompt: user@codespace ➜ /workspaces/project (main) $ */}
           <div className="flex items-center gap-1.5 shrink-0 font-bold select-none text-[11px] sm:text-xs">
-            <span className="text-emerald-400">user@codespace</span>
-            <span className="text-[#c6623f]">➜</span>
-            <span className="text-sky-400 flex items-center gap-1">
-              <Folder className="h-3 w-3 inline text-sky-400" />
+            <span className="text-emerald-500 dark:text-emerald-400">user@codespace</span>
+            <span className="text-[var(--primary)]">➜</span>
+            <span className="text-sky-500 dark:text-sky-400 flex items-center gap-1">
+              <Folder className="h-3 w-3 inline text-sky-500 dark:text-sky-400" />
               {currentCwd}
             </span>
-            <span className="text-amber-300 flex items-center gap-0.5">
+            <span className="text-amber-500 dark:text-amber-300 flex items-center gap-0.5">
               ({currentBranch}
               {isDirty && "*"})
             </span>
-            <span className="text-white">$</span>
+            <span className="text-[var(--terminal-foreground)]">$</span>
           </div>
 
           {/* Input field */}
@@ -603,7 +603,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               onKeyDown={handleKeyDown}
               disabled={executing || !sessionId}
               placeholder={executing ? "Processus en cours..." : "Tapez une commande (ex: git status, ls -la, npm run dev)..."}
-              className="w-full bg-transparent font-mono text-xs text-white placeholder:text-slate-600 outline-none border-none p-0 focus:ring-0"
+              className="w-full bg-transparent font-mono text-xs text-[var(--terminal-foreground)] placeholder:text-[var(--muted-foreground)] outline-none border-none p-0 focus:ring-0"
               autoFocus
               spellCheck={false}
               autoComplete="off"
@@ -616,16 +616,16 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
       </div>
 
       {/* 4. Mobile & Quick Actions Helper Toolbar */}
-      <div className="flex shrink-0 items-center justify-between border-t border-slate-800 bg-[#161b22] px-2 py-1 text-[11px] text-slate-400 overflow-x-auto no-scrollbar gap-2">
+      <div className="flex shrink-0 items-center justify-between border-t border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[11px] text-[var(--muted-foreground)] overflow-x-auto no-scrollbar gap-2">
         <div className="flex items-center gap-1">
-          <span className="text-slate-500 uppercase text-[9px] font-bold tracking-wider">Raccourcis:</span>
+          <span className="text-[var(--muted-foreground)] uppercase text-[9px] font-bold tracking-wider">Raccourcis:</span>
           <button
             onClick={(e) => {
               e.stopPropagation();
               setInput("ls -la");
               void executeCommand("ls -la");
             }}
-            className="px-1.5 py-0.5 bg-[#21262d] hover:bg-[#30363d] text-slate-300 rounded transition cursor-pointer"
+            className="px-1.5 py-0.5 bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] text-[var(--foreground)] border border-[var(--border)] rounded transition cursor-pointer"
           >
             ls -la
           </button>
@@ -635,7 +635,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               setInput("git status");
               void executeCommand("git status");
             }}
-            className="px-1.5 py-0.5 bg-[#21262d] hover:bg-[#30363d] text-slate-300 rounded transition cursor-pointer"
+            className="px-1.5 py-0.5 bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] text-[var(--foreground)] border border-[var(--border)] rounded transition cursor-pointer"
           >
             git status
           </button>
@@ -645,7 +645,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               setInput("git branch --show-current");
               void executeCommand("git branch --show-current");
             }}
-            className="px-1.5 py-0.5 bg-[#21262d] hover:bg-[#30363d] text-slate-300 rounded transition cursor-pointer"
+            className="px-1.5 py-0.5 bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] text-[var(--foreground)] border border-[var(--border)] rounded transition cursor-pointer"
           >
             git branch
           </button>
@@ -655,7 +655,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               setInput("pwd");
               void executeCommand("pwd");
             }}
-            className="px-1.5 py-0.5 bg-[#21262d] hover:bg-[#30363d] text-slate-300 rounded transition cursor-pointer"
+            className="px-1.5 py-0.5 bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] text-[var(--foreground)] border border-[var(--border)] rounded transition cursor-pointer"
           >
             pwd
           </button>
@@ -667,7 +667,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               e.stopPropagation();
               void handleSendInterrupt();
             }}
-            className="px-1.5 py-0.5 bg-red-900/40 hover:bg-red-900/60 text-red-300 rounded transition cursor-pointer"
+            className="px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/30 text-red-500 dark:text-red-300 border border-red-500/30 rounded transition cursor-pointer"
           >
             Ctrl+C
           </button>
@@ -676,7 +676,7 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
               e.stopPropagation();
               void handleClear();
             }}
-            className="px-1.5 py-0.5 bg-[#21262d] hover:bg-[#30363d] text-slate-300 rounded transition cursor-pointer"
+            className="px-1.5 py-0.5 bg-[var(--surface-elevated)] hover:bg-[var(--surface-hover)] text-[var(--foreground)] border border-[var(--border)] rounded transition cursor-pointer"
           >
             Clear
           </button>

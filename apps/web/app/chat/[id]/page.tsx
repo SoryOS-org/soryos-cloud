@@ -321,7 +321,7 @@ export default function ChatPage({
   };
 
   return (
-    <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-white">
+    <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
       {/* App Sidebar with Mobile Drawer support */}
       <AppSidebar
         currentSessionId={sessionId}
@@ -332,33 +332,33 @@ export default function ChatPage({
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Workspace Loading Overlay */}
         {workspaceState === "WORKSPACE_LOADING" && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#faf8f5]/95 backdrop-blur-sm p-6 text-center space-y-4 animate-in fade-in">
-            <Loader2 className="h-10 w-10 text-[#c6623f] animate-spin" />
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)]/95 backdrop-blur-sm p-6 text-center space-y-4 animate-in fade-in">
+            <Loader2 className="h-10 w-10 text-[var(--primary)] animate-spin" />
             <div className="space-y-1.5 max-w-md">
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-[var(--foreground)]">
                 Connexion au GitHub Codespace & Initialisation...
               </h2>
               {workspaceDetails.repository && (
-                <p className="text-xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                <p className="text-xs font-mono text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 inline-block">
                   {workspaceDetails.repository} {workspaceDetails.branch ? `(${workspaceDetails.branch})` : ""}
                 </p>
               )}
               {workspaceDetails.codespaceId && (
-                <p className="text-[11px] text-slate-500 font-mono">
+                <p className="text-[11px] text-[var(--muted-foreground)] font-mono">
                   Machine: {workspaceDetails.codespaceId}
                 </p>
               )}
-              <div className="space-y-2 text-xs text-slate-600 pt-3 text-left bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2 text-emerald-700 font-medium">
+              <div className="space-y-2 text-xs text-[var(--muted-foreground)] pt-3 text-left bg-[var(--surface-elevated)] p-3.5 rounded-xl border border-[var(--border)] shadow-sm">
+                <div className="flex items-center gap-2 text-emerald-600 font-medium">
                   <Check className="h-3.5 w-3.5" />
                   <span>Authentification GitHub vérifiée</span>
                 </div>
-                <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                <div className="flex items-center gap-2 text-emerald-600 font-medium">
                   <Check className="h-3.5 w-3.5" />
                   <span>Codespace distant identifié</span>
                 </div>
-                <div className="flex items-center gap-2 text-slate-900 font-semibold">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#c6623f]" />
+                <div className="flex items-center gap-2 text-[var(--foreground)] font-semibold">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--primary)]" />
                   <span>Chargement du Remote Filesystem & de l&apos;arborescence...</span>
                 </div>
               </div>
@@ -368,15 +368,15 @@ export default function ChatPage({
 
         {/* Workspace Error Overlay */}
         {workspaceState === "WORKSPACE_ERROR" && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white p-6 text-center space-y-4 animate-in fade-in">
-            <div className="rounded-full bg-red-100 p-3 text-red-600">
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)] p-6 text-center space-y-4 animate-in fade-in">
+            <div className="rounded-full bg-red-500/10 p-3 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
             <div className="space-y-1 max-w-md">
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-[var(--foreground)]">
                 Impossible de connecter le Codespace
               </h2>
-              <p className="text-xs text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200 leading-relaxed">
+              <p className="text-xs text-red-600 dark:text-red-400 bg-red-500/10 p-2.5 rounded-lg border border-red-500/20 leading-relaxed">
                 {workspaceError || "Échec d'initialisation du Workspace distant."}
               </p>
             </div>
@@ -384,14 +384,14 @@ export default function ChatPage({
               <button
                 type="button"
                 onClick={() => void initWorkspace(workspaceDetails)}
-                className="py-2 px-4 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm cursor-pointer"
+                className="py-2 px-4 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-lg shadow-sm cursor-pointer"
               >
                 Réessayer la connexion
               </button>
               <button
                 type="button"
                 onClick={() => setWorkspaceState("WORKSPACE_READY")}
-                className="py-2 px-3 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                className="py-2 px-3 text-xs text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] rounded-lg cursor-pointer"
               >
                 Ignorer et continuer
               </button>
@@ -399,28 +399,28 @@ export default function ChatPage({
           </div>
         )}
         {/* Mobile / Tablet View Switcher Header (< lg) */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-[#faf8f5] px-3 lg:hidden">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-3 lg:hidden">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e5e0d8] bg-white text-[#3d3830] active:bg-[#f5f1ea]"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--foreground)] active:bg-[var(--surface-hover)]"
               aria-label="Ouvrir le menu"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <span className="max-w-[120px] truncate text-xs font-semibold text-[#3d3830]">
+            <span className="max-w-[120px] truncate text-xs font-semibold text-[var(--foreground)]">
               {sessionTitle}
             </span>
           </div>
 
           {/* Segmented Control: Chat vs Code */}
-          <div className="flex items-center rounded-lg bg-[#eee9e1] p-0.5 text-xs font-medium">
+          <div className="flex items-center rounded-lg bg-[var(--surface-hover)] p-0.5 text-xs font-medium">
             <button
               onClick={() => setMobileTab("chat")}
               className={`flex items-center gap-1 rounded-md px-2.5 py-1 transition ${
                 mobileTab === "chat"
-                  ? "bg-white text-[#3d3830] shadow-sm font-semibold"
-                  : "text-[#5c5348] hover:text-[#3d3830]"
+                  ? "bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-xs font-semibold"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               <MessageSquare className="h-3.5 w-3.5" />
@@ -430,14 +430,14 @@ export default function ChatPage({
               onClick={() => setMobileTab("preview")}
               className={`flex items-center gap-1 rounded-md px-2.5 py-1 transition ${
                 mobileTab === "preview"
-                  ? "bg-white text-[#3d3830] shadow-sm font-semibold"
-                  : "text-[#5c5348] hover:text-[#3d3830]"
+                  ? "bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-xs font-semibold"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               <Code2 className="h-3.5 w-3.5" />
               <span>Code</span>
               {filePaths.length > 0 && (
-                <span className="rounded-full bg-[#c6623f] px-1 py-0.2 text-[9px] font-bold text-white">
+                <span className="rounded-full bg-[var(--primary)] px-1 py-0.2 text-[9px] font-bold text-white">
                   {filePaths.length}
                 </span>
               )}

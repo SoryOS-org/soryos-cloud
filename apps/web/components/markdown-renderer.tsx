@@ -52,7 +52,7 @@ function MermaidRenderer({ chart }: { chart: string }) {
   return (
     <div
       ref={containerRef}
-      className="my-3 flex justify-center overflow-x-auto rounded-lg bg-white p-4 shadow-xs border border-[#eee9e1]"
+      className="my-3 flex justify-center overflow-x-auto rounded-lg bg-[var(--surface-elevated)] p-4 shadow-xs border border-[var(--border)]"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
@@ -61,7 +61,7 @@ function MermaidRenderer({ chart }: { chart: string }) {
 function CodeBlock({ language, value }: { language: string; value: string }) {
   const [copied, setCopied] = useState(false);
   const lineCount = value.split("\n").length;
-  // Automatically collapse long code blocks (> 15 lines) to avoid cluttering chat scroll
+  // Automatically collapse long code blocks (> 12 lines) to avoid cluttering chat scroll
   const [collapsed, setCollapsed] = useState(lineCount > 12);
 
   const handleCopy = () => {
@@ -75,28 +75,28 @@ function CodeBlock({ language, value }: { language: string; value: string }) {
   }
 
   return (
-    <div className="my-3 overflow-hidden rounded-xl border border-[#e5e0d8] bg-[#faf8f5] shadow-xs">
+    <div className="my-3 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-xs text-[var(--foreground)]">
       {/* Code Block Header with Language & Collapse/Expand Button */}
-      <div className="flex h-9 items-center justify-between border-b border-[#e5e0d8] bg-[#f5f1ea] px-3">
+      <div className="flex h-9 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-3">
         <div className="flex items-center gap-2">
-          <Code className="h-3.5 w-3.5 text-[#c6623f]" />
-          <span className="font-mono text-xs font-semibold text-[#3d3830] uppercase">
+          <Code className="h-3.5 w-3.5 text-[var(--primary)]" />
+          <span className="font-mono text-xs font-semibold text-[var(--foreground)] uppercase">
             {language || "code"}
           </span>
-          <span className="text-[10px] text-gray-500 font-mono">({lineCount} lignes)</span>
+          <span className="text-[10px] text-[var(--muted-foreground)] font-mono">({lineCount} lignes)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-[#5c5348] hover:bg-white hover:text-[#3d3830] transition"
+            className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
             title="Copier le code"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{copied ? "Copié" : "Copier"}</span>
           </button>
           <button
             onClick={() => setCollapsed((v) => !v)}
-            className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-semibold text-[#5c5348] hover:bg-white hover:text-[#3d3830] transition"
+            className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
             title={collapsed ? "Afficher le bloc de code" : "Réduire le bloc de code"}
           >
             {collapsed ? (
@@ -116,7 +116,7 @@ function CodeBlock({ language, value }: { language: string; value: string }) {
 
       {/* Code Body */}
       {!collapsed && (
-        <div className="max-h-96 overflow-auto p-4 bg-[#282c34] text-[#abb2bf] font-mono text-xs leading-relaxed">
+        <div className="max-h-96 overflow-auto p-4 bg-[var(--editor-background)] text-[var(--editor-foreground)] font-mono text-xs leading-relaxed">
           <pre>
             <code>{value}</code>
           </pre>
@@ -141,7 +141,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
           }
 
           return (
-            <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs text-red-600" {...props}>
+            <code className="rounded bg-[var(--surface-hover)] px-1.5 py-0.5 font-mono text-xs text-[var(--primary)] border border-[var(--border)]" {...props}>
               {children}
             </code>
           );

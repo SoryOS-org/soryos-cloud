@@ -17,24 +17,24 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen h-[100dvh] overflow-hidden bg-[#f5f1ea]">
+    <div className="flex h-screen h-[100dvh] overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
       <AppSidebar
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      <main className="relative flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-[#f5f1ea]">
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-[var(--background)] text-[var(--foreground)]">
         {/* Mobile Header Bar */}
-        <header className="relative z-10 flex h-14 shrink-0 items-center justify-between border-b border-[#eee9e1] bg-white/90 backdrop-blur-sm px-4 md:hidden">
+        <header className="relative z-10 flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface-elevated)]/90 backdrop-blur-sm px-4 md:hidden">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e5e0d8] bg-white text-[#3d3830] active:bg-[#f5f1ea]"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--foreground)] active:bg-[var(--surface-hover)]"
               aria-label="Ouvrir le menu"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="font-black text-sm tracking-tight text-[#3d3830]">SoryOS-Code</span>
+            <span className="font-black text-sm tracking-tight text-[var(--foreground)]">SoryOS-Code</span>
           </div>
 
           <div className="flex items-center gap-2">
