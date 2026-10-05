@@ -30,8 +30,10 @@ import {
   FolderDown,
   File,
   FileCode,
+  FileCode2,
   FileText,
   FileJson,
+  Globe,
   RefreshCw,
   ExternalLink,
   Terminal as TerminalIcon,
@@ -58,6 +60,7 @@ import {
 } from "lucide-react";
 import { Terminal } from "@/components/terminal";
 import { ImportRepoModal } from "@/components/import-repo-modal";
+import { FileIcon } from "@/components/file-icon";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -564,35 +567,9 @@ export function PreviewPanel({
     }
   };
 
-  // File Icon Picker
+  // File Icon Picker (OpenCode Desktop style)
   const renderFileIcon = (fileName: string, isSelected: boolean) => {
-    const ext = fileName.split(".").pop()?.toLowerCase();
-    if (ext === "tsx" || ext === "ts" || ext === "jsx" || ext === "js") {
-      return (
-        <FileCode
-          className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-[var(--primary-foreground)]" : "text-blue-400"}`}
-        />
-      );
-    }
-    if (ext === "json") {
-      return (
-        <FileJson
-          className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-[var(--primary-foreground)]" : "text-amber-400"}`}
-        />
-      );
-    }
-    if (ext === "css" || ext === "scss") {
-      return (
-        <FileText
-          className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-[var(--primary-foreground)]" : "text-purple-400"}`}
-        />
-      );
-    }
-    return (
-      <File
-        className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-[var(--primary-foreground)]" : "text-[var(--muted-foreground)]"}`}
-      />
-    );
+    return <FileIcon fileName={fileName} isSelected={isSelected} className="h-3.5 w-3.5 shrink-0" />;
   };
 
   // Recursive Tree Node Renderer
