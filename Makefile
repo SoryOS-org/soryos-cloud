@@ -1,28 +1,18 @@
-.DEFAULT_GOAL := help
+# OpenCode Build Agent - Makefile
 
-.PHONY: help dev setup install build lint typecheck
+install:
+	bun install
 
-help: ## Show available commands
-	@echo "CodeForge"
-	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+dev:
+	cd apps/web && bun run dev
 
-setup: install ## First-time setup (install deps + create .env)
-	@test -f .env || cp .env.example .env
-	@echo "Setup complete."
+build:
+	bun run build
 
-install: ## Install dependencies (npm)
-	npm install
+lint:
+	cd apps/web && bun run lint
 
-dev: ## Run web (:3000)
-	npm run dev
-
-build: ## Build apps
-	npm run build
-
-lint: ## Lint apps
-	npm run lint
-
-typecheck: ## Typecheck apps
-	npm run typecheck
+clean:
+	rm -rf node_modules
+	rm -rf apps/web/.next
+	rm -rf apps/web/node_modules
