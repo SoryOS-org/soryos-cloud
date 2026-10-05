@@ -124,19 +124,25 @@ export function useGitHubAuth(sessionId: string = "session") {
 
   // Initial load
   useEffect(() => {
-    void refreshAccount().then((acc) => {
-      if (acc.connected) {
-        void fetchRepos();
-        void fetchCodespaces();
-      }
-    });
+    const timer = setTimeout(() => {
+      void refreshAccount().then((acc) => {
+        if (acc.connected) {
+          void fetchRepos();
+          void fetchCodespaces();
+        }
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [refreshAccount, fetchRepos, fetchCodespaces]);
 
   // When selected repo changes, update branches & codespaces
   useEffect(() => {
     if (selectedRepo) {
-      void fetchBranches(selectedRepo);
-      void fetchCodespaces(selectedRepo);
+      const timer = setTimeout(() => {
+        void fetchBranches(selectedRepo);
+        void fetchCodespaces(selectedRepo);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [selectedRepo, fetchBranches, fetchCodespaces]);
 
@@ -300,8 +306,8 @@ export function useGitHubAuth(sessionId: string = "session") {
         return data.codespace;
       }
       throw new Error(data.error || "Échec de création du Codespace");
-    } catch (e: any) {
-      setError(e?.message || "Échec de création du Codespace");
+    } catch (e: unknown) {
+      setError((e as Error)?.message || "Échec de création du Codespace");
       throw e;
     } finally {
       setLoading(false);

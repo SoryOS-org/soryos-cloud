@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -56,6 +56,20 @@ export function AppSidebar({
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut (⌘K or Ctrl+K) to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Fetch list of sessions
   const fetchSessions = () => {
@@ -238,20 +252,36 @@ export function AppSidebar({
         <div className="relative flex items-center">
           <Search className="absolute left-2.5 h-3.5 w-3.5 text-[var(--muted-foreground)] pointer-events-none" />
           <input
+            ref={searchInputRef}
             type="text"
-            placeholder="Rechercher une session..."
+            placeholder="Filtrer les sessions par titre..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:border-[var(--primary)] transition"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setSearchQuery("");
+                searchInputRef.current?.blur();
+              }
+            }}
+            className="w-full pl-8 pr-12 py-1.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/30 transition"
+            aria-label="Filtrer les sessions par titre"
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button
               type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              onClick={() => {
+                setSearchQuery("");
+                searchInputRef.current?.focus();
+              }}
+              className="absolute right-2 flex h-4 w-4 items-center justify-center rounded text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
+              title="Effacer le filtre (Échap)"
             >
               <X className="h-3.5 w-3.5" />
             </button>
+          ) : (
+            <kbd className="absolute right-2 hidden sm:inline-flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface-elevated)] px-1.5 py-0.5 text-[9px] font-mono text-[var(--muted-foreground)] select-none pointer-events-none">
+              ⌘K
+            </kbd>
           )}
         </div>
       </div>
@@ -259,13 +289,25 @@ export function AppSidebar({
       {/* 4. Session History List */}
       <div className="flex items-center justify-between px-4 pt-2 pb-1">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-          Sessions & Projets ({filteredSessions.length})
+          {searchQuery.trim() ? (
+            <>Sessions ({filteredSessions.length}/{sessions.length})</>
+          ) : (
+            <>Sessions & Projets ({filteredSessions.length})</>
+          )}
         </span>
-        {sessions.length > 0 && (
+        {searchQuery.trim() ? (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="text-[9px] font-medium text-[var(--primary)] hover:underline cursor-pointer"
+          >
+            Effacer
+          </button>
+        ) : sessions.length > 0 ? (
           <span className="text-[9px] font-mono text-[var(--muted-foreground)]">
             Auto-save
           </span>
-        )}
+        ) : null}
       </div>
 
       <ScrollArea className="min-h-0 flex-1 px-2.5 pb-2">
@@ -403,13 +445,23 @@ export function AppSidebar({
               <MessageSquare className="h-4 w-4" />
             </div>
             <p className="text-xs font-semibold text-[var(--foreground)]">
-              {searchQuery ? "Aucun résultat trouvé" : "Aucune session"}
+              {searchQuery ? "Aucune session trouvée" : "Aucune session"}
             </p>
-            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5">
+            <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 max-w-[200px]">
               {searchQuery
-                ? `Aucune session ne correspond à "${searchQuery}"`
+                ? `Aucun titre ne correspond à "${searchQuery}"`
                 : "Créez un nouveau projet pour commencer"}
             </p>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="mt-3 inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+                <span>Effacer le filtre</span>
+              </button>
+            )}
           </div>
         )}
       </ScrollArea>

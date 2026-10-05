@@ -190,7 +190,6 @@ export function Terminal({ sessionId, providerId = "github-codespaces", onPortDe
   }, [sessionId, activeTabId, onPortDetected]);
 
   useEffect(() => {
-    void refreshTerminalState();
     const timer = setInterval(() => {
       void refreshTerminalState();
     }, 2500);

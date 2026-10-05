@@ -161,8 +161,8 @@ export async function POST(
       workspaceState: session.workspaceState,
       paths: Object.keys(session.files),
     });
-  } catch (err: any) {
-    const errorMsg = err?.message || "Échec d'initialisation du Workspace";
+  } catch (err: unknown) {
+    const errorMsg = (err as Error)?.message || "Échec d'initialisation du Workspace";
     session.workspaceState = "WORKSPACE_ERROR";
     session.workspaceError = errorMsg;
     return NextResponse.json({

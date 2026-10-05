@@ -30,38 +30,35 @@ const ThemeContext = createContext<ThemeContextType>({
   resetPreferences: () => {},
 });
 
-const emptySubscribe = () => () => {};
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const mounted = useSyncExternalStore(
-    emptySubscribe,
+    useCallback(() => () => {}, []),
     () => true,
-    () => false
+    () => false,
   );
-
   const [preferences, setPreferences] = useState<AppearancePreferences>(() => {
-    return DEFAULT_PREFERENCES;
-  });
-
-  const [systemIsDark, setSystemIsDark] = useState<boolean>(false);
-
-  // Initialize from localStorage and listen to system theme changes on client mount
-  useEffect(() => {
+    if (typeof window === "undefined") return DEFAULT_PREFERENCES;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setPreferences((prev) => ({ ...prev, ...JSON.parse(saved) }));
+        return { ...DEFAULT_PREFERENCES, ...JSON.parse(saved) };
       }
     } catch {
       // ignore
     }
+    return DEFAULT_PREFERENCES;
+  });
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    setSystemIsDark(mediaQuery.matches);
-    const handler = (e: MediaQueryListEvent) => setSystemIsDark(e.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
+  const systemIsDark = useSyncExternalStore(
+    useCallback((callback) => {
+      if (typeof window === "undefined") return () => {};
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      mq.addEventListener("change", callback);
+      return () => mq.removeEventListener("change", callback);
+    }, []),
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches,
+    () => false,
+  );
 
   const resolvedIsDark =
     preferences.theme === "dark" || (preferences.theme === "system" && systemIsDark);

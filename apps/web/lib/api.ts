@@ -95,6 +95,80 @@ export async function fetchFile(
   }
 }
 
+export async function saveFile(
+  sessionId: string,
+  path: string,
+  content: string,
+): Promise<boolean> {
+  const base = getApiBase();
+  const cleanPath = path
+    .replace(/^\/home\/user\//, "")
+    .replace(/^home\/user\//, "")
+    .replace(/^\.\//, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  try {
+    const res = await fetch(
+      `${base}/api/sessions/${sessionId}/files/${cleanPath}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+        body: content,
+      },
+    );
+    return res.ok;
+  } catch (err) {
+    console.error("saveFile error:", err);
+    return false;
+  }
+}
+
+export async function createProjectFile(
+  sessionId: string,
+  path: string,
+  content: string = "",
+): Promise<boolean> {
+  const base = getApiBase();
+  try {
+    const res = await fetch(`${base}/api/sessions/${sessionId}/files`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create_file", path, content }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("createProjectFile error:", err);
+    return false;
+  }
+}
+
+export async function deleteProjectFile(
+  sessionId: string,
+  path: string,
+): Promise<boolean> {
+  const base = getApiBase();
+  const cleanPath = path
+    .replace(/^\/home\/user\//, "")
+    .replace(/^home\/user\//, "")
+    .replace(/^\.\//, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  try {
+    const res = await fetch(
+      `${base}/api/sessions/${sessionId}/files/${cleanPath}`,
+      {
+        method: "DELETE",
+      },
+    );
+    return res.ok;
+  } catch (err) {
+    console.error("deleteProjectFile error:", err);
+    return false;
+  }
+}
+
 export async function ensurePreview(
   sessionId: string,
 ): Promise<{ preview_url: string | null; status: string; output?: string | null }> {

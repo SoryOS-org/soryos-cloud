@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
         success: true,
         account,
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       return NextResponse.json(
-        { error: e?.message || "Échec de l'authentification GitHub" },
+        { error: (e as Error)?.message || "Échec de l'authentification GitHub" },
         { status: 401 }
       );
     }
@@ -91,8 +91,8 @@ export async function POST(req: NextRequest) {
         hasClientId: true,
         ...data,
       });
-    } catch (e: any) {
-      return NextResponse.json({ error: e?.message || "Erreur Device Flow" }, { status: 500 });
+    } catch (e: unknown) {
+      return NextResponse.json({ error: (e as Error)?.message || "Erreur Device Flow" }, { status: 500 });
     }
   }
 
@@ -126,8 +126,8 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ status: data.error || "authorization_pending" });
-    } catch (e: any) {
-      return NextResponse.json({ error: e?.message }, { status: 500 });
+    } catch (e: unknown) {
+      return NextResponse.json({ error: (e as Error)?.message }, { status: 500 });
     }
   }
 
@@ -148,8 +148,8 @@ export async function POST(req: NextRequest) {
     try {
       const repo = await gitHubService.createRepository(sessionId, name, description, isPrivate);
       return NextResponse.json({ success: true, repo });
-    } catch (e: any) {
-      return NextResponse.json({ error: e?.message }, { status: 400 });
+    } catch (e: unknown) {
+      return NextResponse.json({ error: (e as Error)?.message }, { status: 400 });
     }
   }
 
@@ -164,8 +164,8 @@ export async function POST(req: NextRequest) {
     try {
       const codespace = await gitHubService.createCodespace(sessionId, repo, branch, machine);
       return NextResponse.json({ success: true, codespace });
-    } catch (e: any) {
-      return NextResponse.json({ error: e?.message }, { status: 400 });
+    } catch (e: unknown) {
+      return NextResponse.json({ error: (e as Error)?.message }, { status: 400 });
     }
   }
 

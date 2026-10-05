@@ -120,9 +120,9 @@ export default function ChatPage({
       if (Array.isArray(data.paths)) {
         setFilePaths(data.paths.filter(isProjectFile).map(normalizeFilePath));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setWorkspaceState("WORKSPACE_ERROR");
-      setWorkspaceError(err?.message || "Erreur de connexion au Workspace");
+      setWorkspaceError((err as Error)?.message || "Erreur de connexion au Workspace");
     }
   }, [sessionId]);
 

@@ -35,7 +35,7 @@ export default function App() {
     if (!newItem.trim()) return;
     setItems((prev) => [
       ...prev,
-      { id: Date.now().toString(), text: newItem.trim(), done: false, category: "Feature" },
+      { id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, text: newItem.trim(), done: false, category: "Feature" },
     ]);
     setNewItem("");
   };
@@ -118,9 +118,9 @@ export default function App() {
 
           {/* Items List */}
           <div className="space-y-2">
-            {items.map((it) => (
+            {items.map((it, idx) => (
               <div
-                key={it.id}
+                key={`${it.id}-${idx}`}
                 onClick={() => toggleItem(it.id)}
                 className={`flex items-center justify-between p-3 rounded-xl border transition cursor-pointer ${
                   it.done
