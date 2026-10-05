@@ -434,7 +434,7 @@ export default function ChatPage({
               }`}
             >
               <Code2 className="h-3.5 w-3.5" />
-              <span>Code & Démo</span>
+              <span>Code</span>
               {filePaths.length > 0 && (
                 <span className="rounded-full bg-[#c6623f] px-1 py-0.2 text-[9px] font-bold text-white">
                   {filePaths.length}
