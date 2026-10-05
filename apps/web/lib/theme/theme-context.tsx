@@ -69,10 +69,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const custom = preferences.colorTheme === "custom" && preferences.customColors ? preferences.customColors : null;
 
     root.style.setProperty("--background", custom?.background || tokens.background);
+    root.style.setProperty("--background-secondary", tokens.surface);
     root.style.setProperty("--surface", custom?.surface || tokens.surface);
+    root.style.setProperty("--surface-secondary", tokens.surfaceElevated);
     root.style.setProperty("--surface-elevated", tokens.surfaceElevated);
     root.style.setProperty("--surface-hover", tokens.surfaceHover);
+    root.style.setProperty("--surface-active", tokens.surfaceActive || tokens.surfaceHover);
     root.style.setProperty("--foreground", custom?.foreground || tokens.textPrimary);
+    root.style.setProperty("--foreground-secondary", tokens.textSecondary);
     root.style.setProperty("--card", tokens.surfaceElevated);
     root.style.setProperty("--card-foreground", custom?.foreground || tokens.textPrimary);
     root.style.setProperty("--popover", tokens.surfaceElevated);
@@ -81,13 +85,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty("--primary-foreground", tokens.primaryFg);
     root.style.setProperty("--secondary", tokens.surface);
     root.style.setProperty("--secondary-foreground", tokens.textSecondary);
-    root.style.setProperty("--muted", tokens.surface);
+    root.style.setProperty("--muted", tokens.surfaceElevated);
     root.style.setProperty("--muted-foreground", tokens.textMuted);
     root.style.setProperty("--accent", custom?.accent || accent.accent);
     root.style.setProperty("--accent-foreground", tokens.accentFg);
     root.style.setProperty("--destructive", tokens.error);
     root.style.setProperty("--border", custom?.border || tokens.border);
-    root.style.setProperty("--input", tokens.border);
+    root.style.setProperty("--border-subtle", tokens.borderSubtle || tokens.border);
+    root.style.setProperty("--input", tokens.inputBg || tokens.surfaceElevated);
+    root.style.setProperty("--composer-background", tokens.inputBg || tokens.surfaceElevated);
     root.style.setProperty("--ring", accent.ring);
     root.style.setProperty("--terminal-background", tokens.terminalBg);
     root.style.setProperty("--terminal-foreground", tokens.terminalFg);

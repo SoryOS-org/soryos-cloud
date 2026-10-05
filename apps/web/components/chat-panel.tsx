@@ -70,7 +70,7 @@ function AssistantTurn({ message }: { message: ChatMessage }) {
         block.type === "text" ? (
           <div
             key={`text-${i}`}
-            className="chat-prose prose prose-sm prose-stone max-w-none text-[15px] leading-relaxed text-[#3d3830]"
+            className="chat-prose prose prose-sm max-w-none text-[15px] leading-relaxed text-[var(--foreground)] dark:prose-invert"
           >
             <MarkdownRenderer content={block.content} />
           </div>

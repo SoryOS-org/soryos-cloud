@@ -146,13 +146,13 @@ export function GitHubAuthManager({
           {/* Repository Selection & Creation */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              <label className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                 Repository
               </label>
               <button
                 type="button"
                 onClick={() => setShowNewRepo(!showNewRepo)}
-                className="text-[11px] text-[#c6623f] font-semibold flex items-center gap-1 hover:underline"
+                className="text-[11px] text-[var(--primary)] font-semibold flex items-center gap-1 hover:underline cursor-pointer"
               >
                 <Plus className="h-3 w-3" />
                 <span>{showNewRepo ? "Select existing" : "Create new repo"}</span>
@@ -160,36 +160,36 @@ export function GitHubAuthManager({
             </div>
 
             {showNewRepo ? (
-              <form onSubmit={handleCreateRepo} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5">
+              <form onSubmit={handleCreateRepo} className="p-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-2.5">
                 <input
                   type="text"
                   placeholder="Repository name (e.g. my-soryos-project)"
                   value={newRepoName}
                   onChange={(e) => setNewRepoName(e.target.value)}
                   required
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg font-mono text-slate-800 outline-none focus:border-[#c6623f]"
+                  className="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded-lg font-mono text-[var(--foreground)] bg-[var(--input)] outline-none focus:border-[var(--primary)]"
                 />
                 <input
                   type="text"
                   placeholder="Description (optional)"
                   value={newRepoDesc}
                   onChange={(e) => setNewRepoDesc(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-[#c6623f]"
+                  className="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded-lg text-[var(--foreground)] bg-[var(--input)] outline-none focus:border-[var(--primary)]"
                 />
                 <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <label className="flex items-center gap-1.5 text-xs text-[var(--foreground)] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={newRepoPrivate}
                       onChange={(e) => setNewRepoPrivate(e.target.checked)}
-                      className="rounded text-[#c6623f]"
+                      className="rounded text-[var(--primary)]"
                     />
                     <span>Private repository</span>
                   </label>
                   <button
                     type="submit"
                     disabled={actionLoading || !newRepoName.trim()}
-                    className="px-3 py-1.5 text-xs font-bold text-white bg-[#c6623f] hover:bg-[#b05332] rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-lg transition flex items-center gap-1 disabled:opacity-50 cursor-pointer"
                   >
                     {actionLoading && <Loader2 className="h-3 w-3 animate-spin" />}
                     <span>Create Repository</span>
@@ -200,7 +200,7 @@ export function GitHubAuthManager({
               <select
                 value={selectedRepo}
                 onChange={(e) => setSelectedRepo(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-mono text-slate-800 outline-none focus:border-[#c6623f] shadow-2xs"
+                className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-xl bg-[var(--input)] font-mono text-[var(--foreground)] outline-none focus:border-[var(--primary)] shadow-2xs"
               >
                 {repos.map((r) => (
                   <option key={r.fullName} value={r.fullName}>
@@ -213,14 +213,14 @@ export function GitHubAuthManager({
 
           {/* Branch Selection */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-              <GitBranch className="h-3.5 w-3.5 text-[#c6623f]" />
+            <label className="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider flex items-center gap-1">
+              <GitBranch className="h-3.5 w-3.5 text-[var(--primary)]" />
               Session Branch
             </label>
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-mono text-slate-800 outline-none focus:border-[#c6623f] shadow-2xs"
+              className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-xl bg-[var(--input)] font-mono text-[var(--foreground)] outline-none focus:border-[var(--primary)] shadow-2xs"
             >
               {branches.map((b) => (
                 <option key={b.name} value={b.name}>
@@ -236,7 +236,7 @@ export function GitHubAuthManager({
               type="button"
               onClick={handleStartCodespace}
               disabled={actionLoading || !selectedRepo}
-              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#c6623f] hover:bg-[#b05332] rounded-xl shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full py-2.5 px-4 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-xl shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {actionLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

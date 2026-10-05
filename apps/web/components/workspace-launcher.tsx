@@ -266,14 +266,14 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
       {/* Header Branding */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
-          <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#3d3830]">
+          <span className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--foreground)]">
             SoryOS-Code
           </span>
-          <span className="text-xs bg-[#c6623f] text-white px-2 py-0.5 font-mono font-bold rounded">
+          <span className="text-xs bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 font-mono font-bold rounded">
             IDE Launcher
           </span>
         </div>
-        <p className="text-xs sm:text-sm text-[#8a8278] max-w-md mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm text-[var(--muted-foreground)] max-w-md mx-auto leading-relaxed">
           Choisissez ou ouvrez votre environnement de travail pour charger l&apos;IDE SoryOS-Code.
         </p>
       </div>
@@ -309,15 +309,15 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                 }}
                 className={`py-3.5 px-4 rounded-xl transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer touch-manipulation border-2 text-center active:scale-[0.99] ${
                   environmentMode === "local"
-                    ? "bg-slate-900 border-slate-900 text-white shadow-md ring-2 ring-slate-900/20"
-                    : "bg-white border-slate-300 text-slate-800 hover:border-slate-800 hover:bg-slate-50 shadow-xs"
+                    ? "bg-[var(--surface-hover)] border-[var(--primary)] text-[var(--foreground)] shadow-md ring-2 ring-[var(--primary)]/20"
+                    : "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)]/60 hover:bg-[var(--surface-hover)] shadow-xs"
                 }`}
               >
                 <div className="flex items-center gap-2 font-bold text-sm sm:text-base">
-                  <Laptop className={`h-5 w-5 ${environmentMode === "local" ? "text-white" : "text-slate-700"}`} />
+                  <Laptop className={`h-5 w-5 ${environmentMode === "local" ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`} />
                   <span>💻 Environment Local</span>
                 </div>
-                <span className={`text-[11px] leading-tight ${environmentMode === "local" ? "text-slate-300" : "text-slate-500"}`}>
+                <span className={`text-[11px] leading-tight ${environmentMode === "local" ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                   Exécution directe sur le disque local via LocalProvider
                 </span>
               </button>
@@ -334,15 +334,15 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                 }}
                 className={`py-3.5 px-4 rounded-xl transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer touch-manipulation border-2 text-center active:scale-[0.99] ${
                   environmentMode === "remote"
-                    ? "bg-emerald-800 border-emerald-800 text-white shadow-md ring-2 ring-emerald-800/20"
-                    : "bg-white border-slate-300 text-slate-800 hover:border-emerald-600 hover:bg-emerald-50/50 shadow-xs"
+                    ? "bg-[var(--surface-hover)] border-emerald-600 text-[var(--foreground)] shadow-md ring-2 ring-emerald-600/20"
+                    : "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--foreground)] hover:border-emerald-600 hover:bg-[var(--surface-hover)] shadow-xs"
                 }`}
               >
                 <div className="flex items-center gap-2 font-bold text-sm sm:text-base">
-                  <Cloud className={`h-5 w-5 ${environmentMode === "remote" ? "text-white" : "text-emerald-700"}`} />
+                  <Cloud className={`h-5 w-5 ${environmentMode === "remote" ? "text-emerald-500" : "text-[var(--muted-foreground)]"}`} />
                   <span>☁️ Environment Distant</span>
                 </div>
-                <span className={`text-[11px] leading-tight ${environmentMode === "remote" ? "text-emerald-100" : "text-slate-500"}`}>
+                <span className={`text-[11px] leading-tight ${environmentMode === "remote" ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                   GitHub Codespaces, E2B, Vercel ou Cloud Run
                 </span>
               </button>
@@ -354,8 +354,8 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
           {/* 2.0: NO ENVIRONMENT SELECTED YET */}
           {environmentMode === null && (
             <div className="p-8 text-center space-y-2 animate-in fade-in duration-150">
-              <p className="text-sm font-medium text-slate-600">
-                Veuillez cliquer sur <strong className="text-slate-900">💻 Environment Local</strong> pour travailler directement sur votre machine, ou sur <strong className="text-emerald-800">☁️ Environment Distant</strong> pour utiliser un environnement cloud ou Codespaces.
+              <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                Veuillez cliquer sur <strong className="text-[var(--foreground)]">💻 Environment Local</strong> pour travailler directement sur votre machine, ou sur <strong className="text-emerald-500">☁️ Environment Distant</strong> pour utiliser un environnement cloud ou Codespaces.
               </p>
             </div>
           )}
@@ -363,35 +363,35 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
           {/* 2.1: LOCAL ENVIRONMENT PANEL */}
           {environmentMode === "local" && (
             <div className="p-6 space-y-5 animate-in fade-in duration-150">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-xs text-slate-700">
-                <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
-                  <Laptop className="h-4 w-4 text-slate-800" />
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-2 text-xs text-[var(--muted-foreground)]">
+                <div className="flex items-center gap-2 font-bold text-[var(--foreground)] text-sm">
+                  <Laptop className="h-4 w-4 text-[var(--primary)]" />
                   <span>Mode Local Autonome (`LocalProvider`)</span>
                 </div>
-                <p className="leading-relaxed text-slate-600">
+                <p className="leading-relaxed text-[var(--muted-foreground)]">
                   SoryOS-Code travaille directement sur votre système de fichiers local. Aucun sandbox cloud n&apos;est créé et aucun fichier n&apos;est copié en ligne sans votre accord. Aucune authentification GitHub ni clé API n&apos;est nécessaire.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-[#5c5348] uppercase tracking-wider">
+                <label className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                   Chemin du Dossier Local (Workspace)
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
-                    <FolderOpen className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <FolderOpen className="absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
                     <input
                       type="text"
                       value={localFolderPath}
                       onChange={(e) => setLocalFolderPath(e.target.value)}
                       placeholder="/home/sory/projects/my-project"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs font-mono border border-[#e5e0d8] rounded-xl outline-none focus:border-[#c6623f] bg-white text-[#3d3830]"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs font-mono border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] bg-[var(--input)] text-[var(--foreground)]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleOpenLocalFolder}
-                    className="py-2.5 px-5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-[0.98]"
+                    className="py-2.5 px-5 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-[0.98]"
                   >
                     <span>Open Local Folder</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -405,10 +405,10 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
           {environmentMode === "remote" && (
             <div className="p-6 space-y-6 animate-in fade-in duration-150">
               <div className="space-y-1">
-                <span className="text-xs font-bold text-[#5c5348] uppercase tracking-wider">
+                <span className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                   2. Environment Distant — Choisissez votre provider :
                 </span>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[var(--muted-foreground)]">
                   GitHub Codespaces utilise votre vrai compte GitHub. Les autres providers fonctionnent comme sandboxes cloud.
                 </p>
               </div>
@@ -421,23 +421,23 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                   onClick={() => setRemoteProvider("github-codespaces")}
                   className={`p-4 rounded-xl border-2 text-left transition flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
                     remoteProvider === "github-codespaces"
-                      ? "bg-emerald-50/80 border-emerald-600 shadow-xs"
-                      : "bg-white border-slate-200 hover:border-slate-400"
+                      ? "bg-[var(--surface-hover)] border-emerald-600 shadow-xs"
+                      : "bg-[var(--surface-elevated)] border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--surface-hover)]"
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                        <Github className="h-4 w-4" />
+                      <span className="font-bold text-sm text-[var(--foreground)] flex items-center gap-1.5">
+                        <Github className="h-4 w-4 text-[var(--primary)]" />
                         GitHub Codespaces
                       </span>
                       {account.connected && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                           @{account.username}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 leading-snug">
+                    <p className="text-xs text-[var(--muted-foreground)] leading-snug">
                       Machine distante GitHub Codespaces (vrai compte GitHub).
                     </p>
                   </div>
@@ -449,21 +449,21 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                   onClick={() => setRemoteProvider("e2b")}
                   className={`p-4 rounded-xl border-2 text-left transition flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
                     remoteProvider === "e2b"
-                      ? "bg-emerald-50/80 border-emerald-600 shadow-xs"
-                      : "bg-white border-slate-200 hover:border-slate-400"
+                      ? "bg-[var(--surface-hover)] border-emerald-600 shadow-xs"
+                      : "bg-[var(--surface-elevated)] border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--surface-hover)]"
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                        <Boxes className="h-4 w-4" />
+                      <span className="font-bold text-sm text-[var(--foreground)] flex items-center gap-1.5">
+                        <Boxes className="h-4 w-4 text-[var(--primary)]" />
                         E2B
                       </span>
-                      <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                         Cloud Sandbox
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-snug">
+                    <p className="text-xs text-[var(--muted-foreground)] leading-snug">
                       Sandbox cloud complet pour terminal, fichiers et processus.
                     </p>
                   </div>
@@ -475,21 +475,21 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                   onClick={() => setRemoteProvider("vercel")}
                   className={`p-4 rounded-xl border-2 text-left transition flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
                     remoteProvider === "vercel"
-                      ? "bg-emerald-50/80 border-emerald-600 shadow-xs"
-                      : "bg-white border-slate-200 hover:border-slate-400"
+                      ? "bg-[var(--surface-hover)] border-emerald-600 shadow-xs"
+                      : "bg-[var(--surface-elevated)] border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--surface-hover)]"
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                        <Layers className="h-4 w-4" />
+                      <span className="font-bold text-sm text-[var(--foreground)] flex items-center gap-1.5">
+                        <Layers className="h-4 w-4 text-[var(--primary)]" />
                         Vercel Sandbox
                       </span>
-                      <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
                         Serverless
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-snug">
+                    <p className="text-xs text-[var(--muted-foreground)] leading-snug">
                       Environnement d&apos;exécution serverless et builds rapides.
                     </p>
                   </div>
@@ -501,21 +501,21 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                   onClick={() => setRemoteProvider("google-cloud-run")}
                   className={`p-4 rounded-xl border-2 text-left transition flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
                     remoteProvider === "google-cloud-run"
-                      ? "bg-emerald-50/80 border-emerald-600 shadow-xs"
-                      : "bg-white border-slate-200 hover:border-slate-400"
+                      ? "bg-[var(--surface-hover)] border-emerald-600 shadow-xs"
+                      : "bg-[var(--surface-elevated)] border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--surface-hover)]"
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                        <Terminal className="h-4 w-4" />
+                      <span className="font-bold text-sm text-[var(--foreground)] flex items-center gap-1.5">
+                        <Terminal className="h-4 w-4 text-[var(--primary)]" />
                         Google Cloud Run
                       </span>
-                      <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
                         Heavy Jobs
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-snug">
+                    <p className="text-xs text-[var(--muted-foreground)] leading-snug">
                       Build / Job / Exécution de compilations lourdes.
                     </p>
                   </div>
@@ -526,28 +526,28 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
 
               {/* A. GITHUB CODESPACES: REAL GITHUB AUTHENTICATION */}
               {remoteProvider === "github-codespaces" && (
-                <div className="border-t border-[#eee9e1] pt-5 space-y-4">
+                <div className="border-t border-[var(--border)] pt-5 space-y-4">
                   {!account.connected ? (
                     /* Step 2A: Unauthenticated - User connects their real GitHub account */
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 space-y-4">
+                    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 space-y-4">
                       <div className="text-center space-y-1">
-                        <Github className="h-9 w-9 text-slate-900 mx-auto" />
-                        <h4 className="text-sm font-bold text-slate-900">
+                        <Github className="h-9 w-9 text-[var(--foreground)] mx-auto" />
+                        <h4 className="text-sm font-bold text-[var(--foreground)]">
                           Connexion à votre vrai compte GitHub
                         </h4>
-                        <p className="text-xs text-slate-600 max-w-md mx-auto">
+                        <p className="text-xs text-[var(--muted-foreground)] max-w-md mx-auto">
                           Connectez votre compte GitHub réel pour afficher vos véritables repositories et créer vos Codespaces. Aucun compte fictif n&apos;est utilisé.
                         </p>
                       </div>
 
                       {/* Device Flow in progress */}
                       {deviceFlow && (
-                        <div className="p-4 bg-white border border-emerald-300 rounded-xl space-y-3 text-center animate-in fade-in">
-                          <span className="text-xs text-slate-600">Code d&apos;autorisation GitHub :</span>
-                          <div className="text-2xl font-mono font-black text-slate-900 tracking-wider">
+                        <div className="p-4 bg-[var(--surface-elevated)] border border-emerald-500/30 rounded-xl space-y-3 text-center animate-in fade-in">
+                          <span className="text-xs text-[var(--muted-foreground)]">Code d&apos;autorisation GitHub :</span>
+                          <div className="text-2xl font-mono font-black text-[var(--foreground)] tracking-wider">
                             {deviceFlow.userCode}
                           </div>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-[var(--muted-foreground)]">
                             Ouvrez la page de validation GitHub et saisissez ce code pour valider votre connexion :
                           </p>
                           <div className="flex justify-center gap-2">
@@ -555,7 +555,7 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                               href={deviceFlow.verificationUri}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="py-2 px-4 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg inline-flex items-center gap-1.5"
+                              className="py-2 px-4 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-lg inline-flex items-center gap-1.5"
                             >
                               <span>Ouvrir {deviceFlow.verificationUri}</span>
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -563,12 +563,12 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                             <button
                               type="button"
                               onClick={cancelDeviceFlow}
-                              className="py-2 px-3 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                              className="py-2 px-3 text-xs text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] rounded-lg"
                             >
                               Annuler
                             </button>
                           </div>
-                          <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-700">
+                          <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-500">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             <span>En attente de votre autorisation sur GitHub...</span>
                           </div>
@@ -577,17 +577,17 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
 
                       {/* Token connection form */}
                       {!deviceFlow && (
-                        <form onSubmit={handleConnectRealGithub} className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                        <form onSubmit={handleConnectRealGithub} className="p-4 bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                              <Key className="h-3.5 w-3.5 text-slate-700" />
+                            <label className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                              <Key className="h-3.5 w-3.5 text-[var(--primary)]" />
                               <span>Personal Access Token GitHub (Classic ou Fine-grained)</span>
                             </label>
                             <a
                               href="https://github.com/settings/tokens/new?scopes=repo,codespace,read:user&description=SoryOS-Code-IDE"
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                              className="text-[11px] font-semibold text-[var(--primary)] hover:underline flex items-center gap-1"
                             >
                               <span>Générer un token sur GitHub</span>
                               <ExternalLink className="h-3 w-3" />
@@ -600,18 +600,18 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                             value={githubTokenInput}
                             onChange={(e) => setGithubTokenInput(e.target.value)}
                             required
-                            className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg outline-none focus:border-slate-800 text-slate-900"
+                            className="w-full px-3 py-2 text-xs font-mono border border-[var(--border)] rounded-lg outline-none focus:border-[var(--primary)] bg-[var(--input)] text-[var(--foreground)]"
                           />
 
-                          <p className="text-[11px] text-slate-500">
-                            Permissions requises pour Codespaces : <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800">repo</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800">codespace</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800">read:user</code>.
+                          <p className="text-[11px] text-[var(--muted-foreground)]">
+                            Permissions requises pour Codespaces : <code className="bg-[var(--surface-hover)] px-1 py-0.5 rounded text-[var(--foreground)]">repo</code>, <code className="bg-[var(--surface-hover)] px-1 py-0.5 rounded text-[var(--foreground)]">codespace</code>, <code className="bg-[var(--surface-hover)] px-1 py-0.5 rounded text-[var(--foreground)]">read:user</code>.
                           </p>
 
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                             <button
                               type="submit"
                               disabled={githubLoading || !githubTokenInput.trim()}
-                              className="py-2 px-5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                              className="py-2 px-5 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                             >
                               {githubLoading ? (
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -625,7 +625,7 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                               type="button"
                               onClick={() => void startDeviceFlow()}
                               disabled={githubLoading}
-                              className="py-2 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                              className="py-2 px-3 text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] rounded-lg transition"
                               title="Connexion interactive Device Flow"
                             >
                               Utiliser Device Flow
@@ -635,14 +635,14 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                       )}
 
                       {githubAuthError && (
-                        <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
                           <span>{githubAuthError}</span>
                         </div>
                       )}
 
-                      <div className="flex items-center justify-center gap-1 text-[11px] text-slate-500 pt-1">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      <div className="flex items-center justify-center gap-1 text-[11px] text-[var(--muted-foreground)] pt-1">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
                         <span>Votre clé est validée directement sur l&apos;API officielle de GitHub et conservée côté serveur.</span>
                       </div>
                     </div>
@@ -650,28 +650,28 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                     /* Step 2B: Authenticated with Real User Account */
                     <div className="space-y-5">
                       {/* GitHub Account Header */}
-                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-900">
+                      <div className="flex items-center justify-between bg-[var(--surface)] border border-[var(--border)] p-3 rounded-xl text-xs text-[var(--foreground)]">
                         <div className="flex items-center gap-2.5">
                           {account.avatarUrl ? (
                             <img
                               src={account.avatarUrl}
                               alt={account.username}
-                              className="h-7 w-7 rounded-full border border-emerald-300"
+                              className="h-7 w-7 rounded-full border border-emerald-500/30"
                             />
                           ) : (
                             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                           )}
                           <div>
-                            <div className="font-bold text-slate-900">
+                            <div className="font-bold text-[var(--foreground)]">
                               Connecté en tant que @{account.username} {account.name && `(${account.name})`}
                             </div>
-                            <div className="text-[10px] text-emerald-700">Compte réel vérifié sur api.github.com</div>
+                            <div className="text-[10px] text-emerald-500">Compte réel vérifié sur api.github.com</div>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => void disconnectGithub()}
-                          className="text-xs font-semibold text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
+                          className="text-xs font-semibold text-red-500 hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <LogOut className="h-3.5 w-3.5" />
                           <span>Déconnecter</span>
@@ -682,10 +682,10 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                       {codespaces.length > 0 && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-[#5c5348] uppercase tracking-wider">
+                            <label className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                               Codespaces Existants
                             </label>
-                            <span className="text-[11px] text-slate-500 font-mono">
+                            <span className="text-[11px] text-[var(--muted-foreground)] font-mono">
                               {codespaces.length} disponible(s)
                             </span>
                           </div>
@@ -694,23 +694,23 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                             {codespaces.map((cs) => (
                               <div
                                 key={cs.id}
-                                className="rounded-xl border border-slate-200 bg-white p-3 space-y-2 hover:border-emerald-500 transition shadow-2xs"
+                                className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-3 space-y-2 hover:border-[var(--primary)] transition shadow-2xs"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-bold text-slate-900 truncate">
+                                  <span className="text-xs font-bold text-[var(--foreground)] truncate">
                                     {cs.name}
                                   </span>
-                                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded">
                                     ● {cs.state}
                                   </span>
                                 </div>
-                                <p className="text-[11px] font-mono text-slate-500 truncate">
+                                <p className="text-[11px] font-mono text-[var(--muted-foreground)] truncate">
                                   {cs.repositoryName} · {cs.branch}
                                 </p>
                                 <button
                                   type="button"
                                   onClick={() => handleOpenExistingCodespace(cs.id, cs.repositoryName, cs.branch)}
-                                  className="w-full py-1.5 px-3 text-xs font-bold text-white bg-[#3d3830] hover:bg-[#2d2a26] rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                  className="w-full py-1.5 px-3 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
                                   <FolderGit2 className="h-3.5 w-3.5" />
                                   <span>Open Codespace</span>
@@ -722,15 +722,15 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                       )}
 
                       {/* Repositories & New Codespace Form */}
-                      <div className="border-t border-[#eee9e1] pt-4 space-y-3">
+                      <div className="border-t border-[var(--border)] pt-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-[#5c5348] uppercase tracking-wider">
+                          <label className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                             Vos Repositories GitHub & Création de Codespace
                           </label>
                           <button
                             type="button"
                             onClick={() => setShowNewCodespaceForm(!showNewCodespaceForm)}
-                            className="text-xs font-semibold text-[#c6623f] hover:underline flex items-center gap-1 cursor-pointer"
+                            className="text-xs font-semibold text-[var(--primary)] hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <Plus className="h-3.5 w-3.5" />
                             <span>{showNewCodespaceForm ? "Masquer" : "Nouveau Codespace"}</span>
@@ -739,23 +739,23 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
 
                         {/* Search Repositories Bar */}
                         <div className="relative">
-                          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[var(--muted-foreground)]" />
                           <input
                             type="text"
                             placeholder="Rechercher parmi vos dépôts GitHub..."
                             value={repoSearch}
                             onChange={(e) => setRepoSearch(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-slate-800"
+                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-[var(--border)] rounded-lg outline-none focus:border-[var(--primary)] bg-[var(--input)] text-[var(--foreground)]"
                           />
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-600 uppercase">Repository</label>
+                            <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Repository</label>
                             <select
                               value={selectedRepo}
                               onChange={(e) => setSelectedRepo(e.target.value)}
-                              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-mono text-slate-800 outline-none"
+                              className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-xl bg-[var(--input)] font-mono text-[var(--foreground)] outline-none"
                             >
                               {filteredRepos.length === 0 ? (
                                 <option value="">Aucun dépôt trouvé</option>
@@ -770,11 +770,11 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-600 uppercase">Branche</label>
+                            <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Branche</label>
                             <select
                               value={selectedBranch}
                               onChange={(e) => setSelectedBranch(e.target.value)}
-                              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white font-mono text-slate-800 outline-none"
+                              className="w-full px-3 py-2 text-xs border border-[var(--border)] rounded-xl bg-[var(--input)] font-mono text-[var(--foreground)] outline-none"
                             >
                               {branches.length === 0 ? (
                                 <option value="main">main</option>
@@ -790,11 +790,11 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-slate-600 uppercase">Configuration Machine</label>
+                          <label className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Configuration Machine</label>
                           <select
                             value={selectedMachine}
                             onChange={(e) => setSelectedMachine(e.target.value)}
-                            className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white font-mono text-slate-800 outline-none"
+                            className="w-full px-3 py-1.5 text-xs border border-[var(--border)] rounded-xl bg-[var(--input)] font-mono text-[var(--foreground)] outline-none"
                           >
                             <option value="standardLinux32gb">Standard Linux (2 cores, 8GB RAM, 32GB Storage)</option>
                             <option value="premiumLinux64gb">Performance Linux (4 cores, 16GB RAM, 64GB Storage)</option>
@@ -805,7 +805,7 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                           type="button"
                           onClick={handleCreateNewCodespace}
                           disabled={!selectedRepo || githubLoading}
-                          className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#c6623f] hover:bg-[#b05332] rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                          className="w-full py-2.5 px-4 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-90 rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
                         >
                           {githubLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -822,28 +822,28 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
 
               {/* B. CLOUD PROVIDERS (E2B / VERCEL / CLOUD RUN): DIRECT LAUNCH WITH OPTIONAL API KEY */}
               {remoteProvider && remoteProvider !== "github-codespaces" && (
-                <div className="border-t border-[#eee9e1] pt-5 space-y-4">
+                <div className="border-t border-[var(--border)] pt-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Key className="h-4 w-4 text-slate-700" />
-                      <h4 className="text-sm font-bold text-slate-900">
+                      <Key className="h-4 w-4 text-[var(--primary)]" />
+                      <h4 className="text-sm font-bold text-[var(--foreground)]">
                         {PROVIDER_METADATA[remoteProvider].name}
                       </h4>
                     </div>
 
-                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                       Disponible
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
                     {PROVIDER_METADATA[remoteProvider].description}
                   </p>
 
-                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+                  <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">
+                      <label className="text-xs font-bold text-[var(--foreground)]">
                         Clé API / Token (Optionnel si configuré sur le serveur) :
                       </label>
                       <input
@@ -851,14 +851,14 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
                         placeholder="Collez votre clé API ici si nécessaire..."
                         value={cloudApiKey}
                         onChange={(e) => setCloudApiKey(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-mono border border-slate-200 rounded-lg outline-none focus:border-slate-800 bg-white"
+                        className="w-full px-3 py-2 text-xs font-mono border border-[var(--border)] rounded-lg outline-none focus:border-[var(--primary)] bg-[var(--input)] text-[var(--foreground)]"
                       />
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleOpenRemoteSandbox(remoteProvider)}
-                      className="w-full py-2.5 px-4 text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                      className="w-full py-2.5 px-4 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                     >
                       <span>Créer Sandbox dans {PROVIDER_METADATA[remoteProvider].name}</span>
                       <ArrowRight className="h-4 w-4" />
@@ -872,7 +872,7 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
       )}
 
       {errorMessage && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl text-center">
+        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs rounded-xl text-center">
           {errorMessage}
         </div>
       )}

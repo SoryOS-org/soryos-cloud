@@ -44,6 +44,8 @@ export interface ThemeTokens {
   surface: string;
   surfaceElevated: string;
   surfaceHover: string;
+  surfaceActive?: string;
+  inputBg?: string;
   border: string;
   borderSubtle: string;
   textPrimary: string;
