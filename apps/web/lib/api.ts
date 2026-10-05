@@ -279,3 +279,65 @@ export async function sendMessage(
     onEvent,
   );
 }
+
+// Workspace File Operations (used by PreviewPanel / File Explorer)
+export async function saveWorkspaceFile(
+  sessionId: string,
+  path: string,
+  content: string,
+): Promise<boolean> {
+  return saveFile(sessionId, path, content);
+}
+
+export async function createWorkspaceFile(
+  sessionId: string,
+  path: string,
+  content: string = "",
+): Promise<boolean> {
+  return createProjectFile(sessionId, path, content);
+}
+
+export async function createWorkspaceFolder(
+  sessionId: string,
+  path: string,
+): Promise<boolean> {
+  const base = getApiBase();
+  try {
+    const res = await fetch(`${base}/api/sessions/${sessionId}/files`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create_folder", path }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("createWorkspaceFolder error:", err);
+    return false;
+  }
+}
+
+export async function renameWorkspacePath(
+  sessionId: string,
+  oldPath: string,
+  newPath: string,
+): Promise<boolean> {
+  const base = getApiBase();
+  try {
+    const res = await fetch(`${base}/api/sessions/${sessionId}/files`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "rename", oldPath, newPath }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("renameWorkspacePath error:", err);
+    return false;
+  }
+}
+
+export async function deleteWorkspacePath(
+  sessionId: string,
+  path: string,
+): Promise<boolean> {
+  return deleteProjectFile(sessionId, path);
+}
+

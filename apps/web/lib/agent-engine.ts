@@ -381,17 +381,29 @@ export function createNewSession(
     title: sessionTitle,
     sandbox_id: `sbx-${id.slice(0, 8)}`,
     sandbox_state: "running",
-    environment: "sandbox",
-    providerId: "e2b",
+    environment: "local",
+    providerId: "local",
     model: selectedModel.id,
     provider: selectedModel.providerName,
     created_at: now,
     messages: [],
-    files: {},
+    files: {
+      "package.json": JSON.stringify(
+        {
+          name: "soryos-workspace",
+          version: "1.0.0",
+          private: true,
+          dependencies: { react: "^19.0.0", "react-dom": "^19.0.0" },
+        },
+        null,
+        2
+      ),
+      "src/App.tsx": `"use client";\n\nimport React from "react";\n\nexport default function App() {\n  return (\n    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-8">\n      <div className="text-center space-y-4">\n        <h1 className="text-3xl font-black">Workspace Actif</h1>\n        <p className="text-slate-400 text-sm">Session ID: ${id}</p>\n      </div>\n    </div>\n  );\n}`,
+    },
     preview_url: `/api/preview/${id}`,
     needs_run: false,
     agent_running: false,
-    cwd: "/home/user/project",
+    cwd: `/tmp/soryos-workspaces/${id}`,
   };
 
   if (message) {

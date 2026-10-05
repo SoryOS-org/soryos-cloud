@@ -1,16 +1,16 @@
 # OpenCode Build Agent - Makefile
 
 install:
-	bun install
+	npm install
 
 dev:
-	cd apps/web && bun run dev
+	npm run dev
 
 build:
-	bun run build
+	npm run build
 
 lint:
-	cd apps/web && bun run lint
+	npm run lint
 
 clean:
 	rm -rf node_modules
