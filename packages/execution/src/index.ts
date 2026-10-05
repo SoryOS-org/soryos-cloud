@@ -68,7 +68,42 @@ export class LocalExecutionProvider implements ExecutionProvider {
       this.workspaceDir = workspacePath;
     }
     const fs = getNodeFs();
+    const path = getNodePath();
     await fs.mkdir(this.workspaceDir, { recursive: true });
+
+    // Seed empty workspace directory with project codebase if different from root project dir
+    const rootDir = typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet";
+    if (this.workspaceDir !== rootDir) {
+      try {
+        const files = await fs.readdir(this.workspaceDir);
+        if (files.length === 0) {
+          const copyDir = async (src: string, dest: string) => {
+            await fs.mkdir(dest, { recursive: true });
+            const entries = await fs.readdir(src, { withFileTypes: true });
+            for (const entry of entries) {
+              if (
+                entry.name === "node_modules" ||
+                entry.name === ".git" ||
+                entry.name === ".next" ||
+                entry.name === "dist"
+              ) {
+                continue;
+              }
+              const srcPath = path.join(src, entry.name);
+              const destPath = path.join(dest, entry.name);
+              if (entry.isDirectory()) {
+                await copyDir(srcPath, destPath);
+              } else {
+                await fs.copyFile(srcPath, destPath);
+              }
+            }
+          };
+          await copyDir(rootDir, this.workspaceDir);
+        }
+      } catch {
+        // ignore seed errors
+      }
+    }
   }
 
   getWorkspacePath(): string {
@@ -200,7 +235,11 @@ export class ExecutionManager {
 
     if (!provider) {
       const path = getNodePath();
-      const workspaceDir = path.join("/tmp/soryos-workspaces", sessionId);
+      const rootDir = typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet";
+      const workspaceDir = (providerId === "local" || providerId === "github-repository")
+        ? rootDir
+        : path.join("/tmp/soryos-workspaces", sessionId);
+
       provider = new LocalExecutionProvider(workspaceDir);
       await provider.init();
       this.providers.set(key, provider);

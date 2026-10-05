@@ -1,5 +1,6 @@
 {
   "name": "soryos-code",
+  "version": "1.0.0",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -7,23 +8,9 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@codeforge/web",
-    "dev:web": "npm run dev --workspace=@codeforge/web",
-    "build": "npm run build --workspace=@codeforge/web",
     "start": "npm run start --workspace=@codeforge/web",
+    "build": "npm run build --workspace=@codeforge/web",
     "typecheck": "npm run typecheck --workspace=@codeforge/web",
-    "lint": "npm run lint --workspace=@codeforge/web"
-  },
-  "devDependencies": {
-    "@types/jszip": "^3.4.1",
-    "turbo": "^2.5.4",
-    "typescript": "^5.8.3"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "dependencies": {
-    "@google/genai": "^2.26.0",
-    "jszip": "^3.10.2",
-    "mermaid": "^12.1.0"
+    "test:engine": "npx tsx apps/web/lib/agent/__tests__/engine-verification.ts"
   }
 }

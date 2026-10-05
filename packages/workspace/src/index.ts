@@ -25,14 +25,18 @@ export class WorkspaceManager {
     let ws = this.workspaces.get(sessionId);
 
     if (!ws) {
+      const rootDir = typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet";
+      const env = options?.environment || "local";
+      const providerId = options?.providerId || "local";
+
       ws = {
         id: `ws-${sessionId}`,
         projectId: options?.projectId || "default-project",
         sessionId,
         title: "Workspace Actif",
-        environment: options?.environment || "sandbox",
-        providerId: options?.providerId || "github-codespaces",
-        workspacePath: options?.workspacePath || `/tmp/soryos-workspaces/${sessionId}`,
+        environment: env,
+        providerId: providerId,
+        workspacePath: options?.workspacePath || (providerId === "local" ? rootDir : `/tmp/soryos-workspaces/${sessionId}`),
         repository: options?.repository,
         branch: options?.branch || "main",
         status: "WORKSPACE_READY",

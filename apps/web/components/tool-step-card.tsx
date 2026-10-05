@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Check,
   CheckCircle2,
-  ChevronDown,
+  ChevronRight,
   Copy,
   Loader2,
   XCircle,
@@ -15,113 +15,151 @@ import {
   Wrench,
   Search,
   Globe,
-  Clock,
   Ban,
   FileDiff,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ToolStep } from "@/lib/types";
 
+// Category configuration for compact tool card headers
 const TOOL_CONFIG: Record<
   string,
-  { label: (i: unknown) => string; icon: typeof FileText; color: string; category: "command" | "file_edit" | "file_write" | "file_read" | "search" | "web" | "system" }
+  {
+    compactTitle: string;
+    getSummary: (input: any) => string;
+    icon: typeof FileText;
+    colorClass: string;
+    badgeBg: string;
+  }
 > = {
-  websearch: {
-    label: (i) => (i as { query?: string }).query ? `Recherche : "${(i as { query?: string }).query}"` : "Recherche web",
-    icon: Globe,
-    color: "text-amber-700 bg-amber-50 border-amber-200",
-    category: "web",
-  },
-  web_search: {
-    label: (i) => (i as { query?: string }).query ? `Recherche : "${(i as { query?: string }).query}"` : "Recherche web",
-    icon: Globe,
-    color: "text-amber-700 bg-amber-50 border-amber-200",
-    category: "web",
-  },
-  search_web: {
-    label: (i) => (i as { query?: string }).query ? `Recherche : "${(i as { query?: string }).query}"` : "Recherche web",
-    icon: Globe,
-    color: "text-amber-700 bg-amber-50 border-amber-200",
-    category: "web",
-  },
-  webfetch: {
-    label: (i) => (i as { url?: string }).url ? `Fetch : ${(i as { url?: string }).url}` : "Extraction web",
-    icon: Globe,
-    color: "text-emerald-700 bg-emerald-50 border-emerald-200",
-    category: "web",
-  },
-  write_file: {
-    label: (i) => (i as { path?: string; filePath?: string }).path ?? (i as { filePath?: string }).filePath ?? "Nouveau fichier",
-    icon: FileCode,
-    color: "text-amber-600 bg-amber-50 border-amber-200",
-    category: "file_write",
-  },
-  edit_file: {
-    label: (i) => (i as { path?: string; filePath?: string }).path ?? (i as { filePath?: string }).filePath ?? "Fichier modifié",
-    icon: FileDiff,
-    color: "text-blue-600 bg-blue-50 border-blue-200",
-    category: "file_edit",
-  },
-  read_file: {
-    label: (i) => (i as { path?: string; filePath?: string }).path ?? (i as { filePath?: string }).filePath ?? "Fichier lu",
-    icon: FileText,
-    color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    category: "file_read",
-  },
-  list_files: {
-    label: (i) => (i as { pattern?: string; dir?: string }).pattern ?? (i as { dir?: string }).dir ?? "Exploration des fichiers",
-    icon: Search,
-    color: "text-purple-600 bg-purple-50 border-purple-200",
-    category: "search",
+  shell_command: {
+    compactTitle: "Shell command",
+    getSummary: (i) => {
+      const cmd = typeof i === "string" ? i : i?.command ?? i?.CommandLine ?? "Executing command";
+      // Trim long commands for compact single line display
+      return cmd.length > 60 ? `${cmd.slice(0, 57)}...` : cmd;
+    },
+    icon: Terminal,
+    colorClass: "text-amber-500 dark:text-amber-400",
+    badgeBg: "bg-amber-500/10 border-amber-500/20",
   },
   run_command: {
-    label: (i) => (i as { command?: string; CommandLine?: string }).command ?? (i as { CommandLine?: string }).CommandLine ?? "Commande shell",
+    compactTitle: "Shell command",
+    getSummary: (i) => {
+      const cmd = typeof i === "string" ? i : i?.command ?? i?.CommandLine ?? "Executing command";
+      return cmd.length > 60 ? `${cmd.slice(0, 57)}...` : cmd;
+    },
     icon: Terminal,
-    color: "text-slate-800 bg-slate-100 border-slate-300",
-    category: "command",
+    colorClass: "text-amber-500 dark:text-amber-400",
+    badgeBg: "bg-amber-500/10 border-amber-500/20",
+  },
+  write_file: {
+    compactTitle: "File created",
+    getSummary: (i) => i?.path ?? i?.filePath ?? "Target file",
+    icon: FileCode,
+    colorClass: "text-emerald-500 dark:text-emerald-400",
+    badgeBg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  edit_file: {
+    compactTitle: "File edited",
+    getSummary: (i) => i?.path ?? i?.filePath ?? "Target file",
+    icon: FileDiff,
+    colorClass: "text-blue-500 dark:text-blue-400",
+    badgeBg: "bg-blue-500/10 border-blue-500/20",
+  },
+  read_file: {
+    compactTitle: "File read",
+    getSummary: (i) => i?.path ?? i?.filePath ?? "Target file",
+    icon: FileText,
+    colorClass: "text-indigo-500 dark:text-indigo-400",
+    badgeBg: "bg-indigo-500/10 border-indigo-500/20",
+  },
+  list_files: {
+    compactTitle: "Inspect files",
+    getSummary: (i) => i?.dir ?? i?.path ?? "Scanning directory",
+    icon: Search,
+    colorClass: "text-purple-500 dark:text-purple-400",
+    badgeBg: "bg-purple-500/10 border-purple-500/20",
+  },
+  glob_files: {
+    compactTitle: "Glob search",
+    getSummary: (i) => i?.pattern ?? "Matching pattern",
+    icon: Search,
+    colorClass: "text-purple-500 dark:text-purple-400",
+    badgeBg: "bg-purple-500/10 border-purple-500/20",
+  },
+  grep_search: {
+    compactTitle: "Grep search",
+    getSummary: (i) => i?.query ?? i?.pattern ?? "Searching text",
+    icon: Search,
+    colorClass: "text-purple-500 dark:text-purple-400",
+    badgeBg: "bg-purple-500/10 border-purple-500/20",
+  },
+  web_search: {
+    compactTitle: "Web search",
+    getSummary: (i) => i?.query ?? "Web query",
+    icon: Globe,
+    colorClass: "text-sky-500 dark:text-sky-400",
+    badgeBg: "bg-sky-500/10 border-sky-500/20",
   },
   start_dev_server: {
-    label: () => "Démarrage du serveur de développement",
+    compactTitle: "Dev Server",
+    getSummary: () => "Starting dev server process",
     icon: Server,
-    color: "text-indigo-600 bg-indigo-50 border-indigo-200",
-    category: "system",
-  },
-  get_dev_server_logs: {
-    label: () => "Consultation des logs du serveur",
-    icon: Terminal,
-    color: "text-teal-600 bg-teal-50 border-teal-200",
-    category: "system",
-  },
-  check_project: {
-    label: () => "Vérification TypeScript & ESLint",
-    icon: Wrench,
-    color: "text-rose-600 bg-rose-50 border-rose-200",
-    category: "system",
+    colorClass: "text-emerald-500 dark:text-emerald-400",
+    badgeBg: "bg-emerald-500/10 border-emerald-500/20",
   },
 };
 
 function getToolConfig(name: string) {
-  return TOOL_CONFIG[name] ?? {
-    label: (i: unknown) => typeof i === "string" ? i : JSON.stringify(i) || name,
-    icon: Wrench,
-    color: "text-gray-600 bg-gray-50 border-gray-200",
-    category: "system" as const,
-  };
+  return (
+    TOOL_CONFIG[name] ?? {
+      compactTitle: name.replace(/_/g, " "),
+      getSummary: (i: any) =>
+        typeof i === "string"
+          ? i
+          : i?.path ?? i?.command ?? i?.query ?? name,
+      icon: Wrench,
+      colorClass: "text-slate-500 dark:text-slate-400",
+      badgeBg: "bg-slate-500/10 border-slate-500/20",
+    }
+  );
+}
+
+// Helper to identify minor internal inspection commands that should render ultra-compact
+function isInternalInspectionCommand(name: string, input: any): boolean {
+  if (name === "list_files" || name === "glob_files" || name === "grep_search") return true;
+  if (name === "shell_command" || name === "run_command") {
+    const cmd = String(typeof input === "string" ? input : input?.command ?? input?.CommandLine ?? "").trim();
+    return (
+      cmd === "pwd" ||
+      cmd === "ls" ||
+      cmd.startsWith("ls ") ||
+      cmd === "git status" ||
+      cmd.startsWith("git branch") ||
+      cmd.startsWith("test -f") ||
+      cmd.startsWith("which ")
+    );
+  }
+  return false;
 }
 
 export function ToolStepCard({ step }: { step: ToolStep }) {
   const [copied, setCopied] = useState(false);
-  const [userToggled, setUserToggled] = useState<boolean | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+
   const isRunning = step.status === "running";
   const isPending = step.status === "pending";
   const isCancelled = step.status === "cancelled";
-  const open = userToggled !== null ? userToggled : (isRunning || isPending);
   const hasError = Boolean(step.isError || step.status === "error" || step.error);
-  const showOutput = Boolean((step.output || step.error) && !isRunning && !isPending);
+
   const config = getToolConfig(step.name);
   const Icon = config.icon;
+  const summaryText = config.getSummary(step.input);
+  const isInspection = isInternalInspectionCommand(step.name, step.input);
 
-  const copyContent = async (text: string) => {
+  const copyOutput = async (text: string) => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -130,123 +168,147 @@ export function ToolStepCard({ step }: { step: ToolStep }) {
   const outputText = step.error || step.output || "";
 
   return (
-    <div className="my-3 min-w-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-xs transition-all">
-      {/* Header bar */}
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5">
-        <button
-          type="button"
-          onClick={() => setUserToggled(!open)}
-          className="flex min-w-0 flex-1 items-center gap-2.5 text-left text-xs font-semibold text-[var(--foreground)] hover:text-[var(--primary)] transition cursor-pointer"
-        >
-          <ChevronDown
+    <div
+      className={cn(
+        "my-1.5 min-w-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] transition-all text-xs font-sans shadow-2xs",
+        isInspection && "opacity-90 hover:opacity-100"
+      )}
+    >
+      {/* Sleek Compact Header Bar */}
+      <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-[var(--surface)]">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {/* Tool Icon */}
+          <div
             className={cn(
-              "h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] transition-transform duration-200",
-              !open && "-rotate-90",
+              "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+              config.badgeBg
             )}
-          />
-          <div className={cn("flex h-6 w-6 items-center justify-center rounded-md border shrink-0", config.color)}>
-            <Icon className="h-3.5 w-3.5" />
+          >
+            <Icon className={cn("h-3 w-3", config.colorClass)} />
           </div>
-          <span className="truncate uppercase tracking-wide font-mono text-[11px] text-[var(--foreground)] font-bold">
-            {step.name.replace(/_/g, " ")}
-          </span>
-          <span className="truncate text-xs font-mono font-normal text-[var(--muted-foreground)] max-w-[200px]">
-            {config.label(step.input)}
-          </span>
-        </button>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {/* Discreet Environment Badge if provided */}
-          {typeof step.metadata?.providerId === "string" && (
-            <span className="hidden sm:inline-flex items-center gap-1 rounded bg-[var(--surface-hover)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-medium text-[var(--foreground)] font-mono">
-              {step.metadata.providerId === "local"
-                ? "💻 Local"
-                : `☁️ Sandbox · ${step.metadata.providerId.toUpperCase()}`}
+          {/* Compact Label & Summary */}
+          <div className="flex items-center gap-1.5 min-w-0 font-mono text-[11px] truncate">
+            <span className="font-semibold text-[var(--foreground)] shrink-0">
+              {config.compactTitle}
             </span>
-          )}
+            <span className="text-[var(--muted-foreground)] shrink-0">·</span>
+            <span className="truncate font-normal text-[var(--muted-foreground)]">
+              {summaryText}
+            </span>
+          </div>
+        </div>
 
-          {/* Status badge */}
+        {/* Status Badge & Details Toggle */}
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Status Indicator */}
           {isPending ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              <Clock className="h-3 w-3 text-amber-500" />
-              <span>En attente</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span>Pending</span>
             </span>
           ) : isRunning ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-blue-500 font-semibold">
               <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-              <span>En cours</span>
+              <span>Running</span>
             </span>
           ) : isCancelled ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)] border border-[var(--border)]">
-              <Ban className="h-3 w-3 text-[var(--muted-foreground)]" />
-              <span>Annulé</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[var(--muted-foreground)]">
+              <Ban className="h-3 w-3" />
+              <span>Cancelled</span>
             </span>
           ) : hasError ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400 border border-red-500/20">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-red-500 font-semibold">
               <XCircle className="h-3 w-3 text-red-500" />
-              <span>Erreur</span>
+              <span>Failed</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-500 font-semibold">
               <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-              <span>Succès</span>
+              <span>Done</span>
             </span>
           )}
 
-          {showOutput && outputText && (
-            <button
-              onClick={() => void copyContent(outputText)}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition cursor-pointer"
-              title="Copier le résultat"
-            >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-            </button>
-          )}
+          {/* Details Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition cursor-pointer"
+          >
+            <ChevronRight
+              className={cn(
+                "h-3 w-3 transition-transform duration-150",
+                showDetails && "rotate-90"
+              )}
+            />
+            <span>Details</span>
+          </button>
         </div>
       </div>
 
-      {/* Body content */}
-      {open && (
-        <div className="p-3.5 space-y-3 bg-[var(--surface-elevated)] text-[var(--foreground)]">
-          {/* INPUT / ARGUMENTS SECTION */}
-          <div className="space-y-1">
-            <div className="text-[10px] font-mono font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
-              Arguments / Input
+      {/* Collapsible Technical Details (Hidden by default) */}
+      {showDetails && (
+        <div className="border-t border-[var(--border)] bg-[var(--surface-elevated)] p-3 space-y-2.5 text-[11px] font-mono">
+          {/* Metadata Row */}
+          <div className="flex flex-wrap items-center gap-3 text-[10px] text-[var(--muted-foreground)] border-b border-[var(--border)] pb-2">
+            <div>
+              <span className="font-semibold text-[var(--foreground)]">Tool:</span> {step.name}
             </div>
-            {config.category === "command" ? (
-              <div className="flex items-center gap-2 rounded-lg bg-[var(--terminal-background)] p-2.5 font-mono text-xs text-emerald-400 border border-[var(--border)]">
-                <span className="text-[var(--muted-foreground)]">$</span>
-                <span className="break-all">{config.label(step.input)}</span>
+            {step.startedAt && (
+              <div>
+                <span className="font-semibold text-[var(--foreground)]">Started:</span>{" "}
+                {new Date(step.startedAt).toLocaleTimeString()}
               </div>
-            ) : config.category === "file_edit" || config.category === "file_write" || config.category === "file_read" ? (
-              <div className="flex items-center justify-between gap-2 rounded-lg bg-[var(--surface)] px-3 py-2 text-xs font-mono border border-[var(--border)] text-[var(--foreground)]">
-                <span className="font-semibold text-[var(--foreground)]">{config.label(step.input)}</span>
-                <span className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wide">{config.category.replace("_", " ")}</span>
+            )}
+            {step.completedAt && (
+              <div>
+                <span className="font-semibold text-[var(--foreground)]">Completed:</span>{" "}
+                {new Date(step.completedAt).toLocaleTimeString()}
               </div>
-            ) : (
-              <pre className="rounded-lg bg-[var(--surface)] p-2.5 font-mono text-xs text-[var(--foreground)] border border-[var(--border)] max-h-28 overflow-auto whitespace-pre-wrap break-all">
-                {typeof step.input === "object" ? JSON.stringify(step.input, null, 2) : String(step.input)}
-              </pre>
+            )}
+            {typeof step.metadata?.providerId === "string" && (
+              <div>
+                <span className="font-semibold text-[var(--foreground)]">Environment:</span>{" "}
+                {step.metadata.providerId}
+              </div>
             )}
           </div>
 
-          {/* RESULT / OUTPUT SECTION */}
-          {showOutput && (
-            <div className="overflow-hidden rounded-lg border border-[var(--border)] space-y-0">
-              <div className="bg-[var(--surface)] px-3 py-1 font-mono text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)] flex justify-between items-center">
-                <span>{hasError ? "Erreur" : "Résultat / Sortie"}</span>
-                {step.completedAt && (
-                  <span className="text-[9px] font-normal text-[var(--muted-foreground)] lowercase">
-                    {new Date(step.completedAt).toLocaleTimeString()}
-                  </span>
-                )}
+          {/* Raw Arguments Section */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+              <span>Command / Input</span>
+            </div>
+            <pre className="rounded bg-[var(--surface)] p-2 font-mono text-[11px] text-[var(--foreground)] border border-[var(--border)] overflow-x-auto whitespace-pre-wrap break-all">
+              {typeof step.input === "object" ? JSON.stringify(step.input, null, 2) : String(step.input)}
+            </pre>
+          </div>
+
+          {/* Output / Result Section */}
+          {outputText && (
+            <div className="space-y-1">
+              <div className="flex justify-between items-center text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+                <span>{hasError ? "Error Output" : "Execution Output"}</span>
+                <button
+                  type="button"
+                  onClick={() => void copyOutput(outputText)}
+                  className="flex items-center gap-1 text-[10px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition cursor-pointer"
+                >
+                  {copied ? (
+                    <Check className="h-3 w-3 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                  <span>{copied ? "Copied" : "Copy"}</span>
+                </button>
               </div>
               <pre
-                className={`max-h-60 overflow-auto p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words ${
+                className={cn(
+                  "max-h-52 overflow-auto rounded p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all border",
                   hasError
-                    ? "bg-red-500/10 text-red-500 dark:text-red-400 border-l-4 border-red-500"
-                    : "bg-[var(--terminal-background)] text-[var(--terminal-foreground)] border-l-4 border-[var(--primary)]"
-                }`}
+                    ? "bg-red-500/10 text-red-500 dark:text-red-400 border-red-500/30"
+                    : "bg-[var(--terminal-background)] text-[var(--terminal-foreground)] border-[var(--border)]"
+                )}
               >
                 {outputText}
               </pre>

@@ -4,7 +4,7 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import { AgentDefinition, AgentRoleMode, MessageBlock, SessionData, ToolStep } from "@soryos/schema";
+import { AgentDefinition, MessageBlock, SessionData, ToolStep } from "@soryos/schema";
 import { ExecutionProvider, executionManager } from "@soryos/execution";
 import { toolRegistry, toolExecutor, ToolExecutionResult } from "@soryos/tool";
 import { globalEventBus } from "@soryos/bus";
@@ -148,30 +148,46 @@ export class AgentRuntime {
         // none
       }
 
-      const initialFiles = Object.keys(session.files || {}).join(", ") || "(dossier workspace)";
+      const workspacePath = provider.getWorkspacePath();
+
+      const envContext = `
+CONTEXTE ET ENVIRONNEMENT DU PROJET :
+- Projet : SoryOS-Code
+- Session ID : ${session.id}
+- Environnement : ${session.environment || "local"}
+- Execution Provider : ${session.providerId || "local"}
+- Workspace Path : ${workspacePath}
+- Modèle IA : ${modelId}
+- Rôle Agent : ${agent.name} (${agent.role})
+`;
+
       const systemPrompt = `Tu es SoryOS-Code (${agent.name}), le moteur autonome d'ingénierie logicielle.
-Rôle : **${agent.role}** [${agent.badge}].
-Modèle : **${modelId}**. Mode : ${agent.id}.
+${envContext}
 
-MISSION ET PROTOCOLE D'EXÉCUTION :
-Tu as accès aux outils physiques réels :
-- \`read_file\` : lire un fichier avec numéros de lignes
-- \`write_file\` : créer/écrire un fichier (vérification sur disque)
-- \`edit_file\` : remplacer précisément un extrait de code
-- \`apply_patch\` : appliquer des diffs unifiés
-- \`list_files\` / \`glob_files\` : explorer les fichiers par motifs
-- \`shell_command\` : exécuter des commandes bash réelles (npm, cargo, python, git...)
-- \`grep_search\` : chercher un mot-clé ou symbole dans les fichiers
-- \`todowrite\` / \`todoread\` : gérer la roadmap de tâches ([x], [ ])
+PROTOCOLE ET RÈGLES D'AUTONOMIE (Style OpenCode / Codex / Gemini CLI) :
 
-RÈGLE CARDINALE : "NO REAL ACTION, NO SUCCESS"
-1. Ne prétends JAMAIS qu'une action est effectuée sans avoir appelé l'outil correspondant.
-2. Pour créer ou modifier du code : appelle \`write_file\`, \`edit_file\` ou \`apply_patch\`.
-3. Pour tester ou compiler : appelle \`shell_command\`.
-4. Si un outil retourne une erreur (exitCode != 0), analyse le message exact, corrige le code et réessaie.
-5. Fichiers du projet : ${initialFiles}.
+1. COMPRÉHENSION DE L'ENVIRONNEMENT :
+   - Le workspace est déjà initialisé dans '${workspacePath}'.
+   - Ne demande JAMAIS si l'utilisateur veut cloner le dépôt alors qu'il s'agit du workspace actif du projet.
+
+2. DÉTECTION ET INSPECTION AUTOMATIQUE DU SYSTÈME DE BUILD :
+   - Avant toute installation ou compilation, inspecte le workspace (fichiers \`package.json\`, \`bun.lock\`, \`pnpm-lock.yaml\`, \`Cargo.toml\`, \`pyproject.toml\`).
+   - Si \`bun.lock\` est présent -> utilise \`bun install\`.
+   - Si \`pnpm-lock.yaml\` est présent -> utilise \`pnpm install\`.
+   - Si \`Cargo.toml\` est présent -> utilise \`cargo check\` / \`cargo build\`.
+   - Si \`package.json\` avec \`npm\` -> utilise \`npm install\`.
+
+3. BOUCLE DE DIAGNOSTIC ET AUTO-CORRECTION (RECOVERY LOOP) :
+   - Si une commande ou un outil échoue (exitCode != 0, erreur de type TypeScript, dépendance manquante) :
+     ERREUR -> ANALYSE DU MESSAGE -> DIAGNOSTIC -> ACTION CORRECTIVE (ex: installer le package manquant, appliquer un correctif) -> RETRY -> VÉRIFICATION.
+   - Ne t'arrête PAS au premier problème et ne demande pas d'abandonner si l'erreur est diagnostiquable et corrigeable.
+
+4. RÈGLE CARDINALE : "NO REAL ACTION, NO SUCCESS"
+   - Effectue toujours de vraies actions physiques sur le disque et vérifie les résultats.
+   - Pour modifier : \`write_file\`, \`edit_file\` ou \`apply_patch\`.
+   - Pour exécuter/tester : \`shell_command\`.
 ${projectRules ? `\nRÈGLES DU PROJET (AGENTS.md) :\n${projectRules}\n` : ""}
-6. Réponds avec précision et concision.`;
+`;
 
       const ai = new GoogleGenAI({
         apiKey,
