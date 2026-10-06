@@ -1,5 +1,5 @@
 /**
- * @codeforge/web
+ * @soryos/web
  * Agent Engine Adapter - WRAPPER ONLY
  * 
  * Ce fichier est UNIQUEMENT un wrapper qui délègue toute la logique 

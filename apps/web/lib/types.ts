@@ -1,5 +1,5 @@
 /**
- * @codeforge/web
+ * @soryos/web
  * Types spécifiques pour l'application web.
  * 
  * Ce fichier contient UNIQUEMENT des types pour l'UI.

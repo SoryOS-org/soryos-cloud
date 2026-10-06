@@ -7,10 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@codeforge/web",
-    "start": "npm run start --workspace=@codeforge/web",
-    "build": "npm run build --workspace=@codeforge/web",
-    "typecheck": "npm run typecheck --workspace=@codeforge/web",
+    "dev": "npm run dev --workspace=@soryos/web",
+    "start": "npm run start --workspace=@soryos/web",
+    "build": "npm run build --workspace=@soryos/web",
+    "typecheck": "npm run typecheck --workspace=@soryos/web",
     "test:engine": "npx tsx apps/web/lib/agent/__tests__/engine-verification.ts"
   }
 }

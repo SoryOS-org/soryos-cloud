@@ -1,5 +1,5 @@
 /**
- * @codeforge/web
+ * @soryos/web
  * Chat Blocks Utilities - UI ONLY
  * 
  * Ce fichier contient UNIQUEMENT des utilitaires pour l'UI.

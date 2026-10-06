@@ -65,7 +65,7 @@ SoryOS-Code abstracts code execution behind a unified `SandboxProvider` contract
 **Prerequisites:** Node 20+, Python 3.9+, [pnpm](https://pnpm.io/), [E2B](https://e2b.dev/) and [DeepSeek](https://platform.deepseek.com/) API keys.
 
 ```bash
-git clone <repo-url> codeforge && cd codeforge
+git clone <repo-url> soryos-code && cd soryos-code
 make setup        # install deps + copy .env.example → .env
 ```
 
@@ -113,14 +113,14 @@ SSE events: `status`, `text`, `tool_start`, `tool_end`, `preview`, `files_change
 ## Project structure
 
 ```
-codeforge/
+soryos-code/
 ├── apps/
 │   ├── web/                 Next.js frontend
 │   │   ├── app/             Landing + /chat/[id]
 │   │   ├── components/      Chat, preview, terminal, sidebar
 │   │   └── lib/             API client, chat blocks, types
 │   └── api/                 FastAPI backend
-│       └── src/codeforge/
+│       └── src/soryos-code/
 │           ├── agent/       LangGraph graph, tools, prompts
 │           ├── agent_runtime.py
 │           ├── sandbox.py   E2B integration
@@ -145,5 +145,5 @@ make typecheck    # tsc
 Agent self-check:
 
 ```bash
-cd apps/api/src && PYTHONPATH=. ../venv/bin/python -m codeforge.agent.self_check
+cd apps/api/src && PYTHONPATH=. ../venv/bin/python -m soryos-code.agent.self_check
 ```
