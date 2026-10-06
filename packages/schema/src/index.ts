@@ -164,7 +164,18 @@ export interface AgentEventPayload {
   data: Record<string, unknown>;
 }
 
-// 6. Agent Mode & Permissions
+// 6. SSE Event Types (for streaming)
+export type AgentEvent =
+  | { type: "text"; delta: string }
+  | { type: "tool_start"; id: string; name: string; input: unknown }
+  | { type: "tool_end"; id: string; output: string; isError: boolean }
+  | { type: "preview"; url: string }
+  | { type: "files_changed"; paths: string[] }
+  | { type: "status"; message: string }
+  | { type: "done"; usage?: { input: number; output: number; cacheRead: number; cacheMiss: number } }
+  | { type: "error"; message: string };
+
+// 7. Agent Mode & Permissions
 export type AgentRoleMode = "build" | "plan" | "explore" | "code-reviewer" | "web-researcher" | "live-voice" | "custom";
 
 export interface AgentDefinition {
@@ -181,3 +192,6 @@ export interface AgentDefinition {
   whenToUse: string;
   capabilities: string[];
 }
+
+// 8. Environment Types
+export type EnvironmentType = "sandbox" | "local";

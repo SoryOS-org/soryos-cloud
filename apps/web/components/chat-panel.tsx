@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChatMessage } from "@/lib/types";
+import type { ChatMessage } from "@soryos/schema";
 import { assistantBlocks } from "@/lib/chat-blocks";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";

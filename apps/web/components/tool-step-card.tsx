@@ -20,7 +20,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ToolStep } from "@/lib/types";
+import type { ToolStep } from "@soryos/schema";
 
 // Category configuration for compact tool card headers
 const TOOL_CONFIG: Record<

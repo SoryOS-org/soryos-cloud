@@ -14,7 +14,8 @@ import {
   appendAssistantTool,
   updateAssistantTool,
 } from "@/lib/chat-blocks";
-import type { AgentEvent, ChatMessage, GetSessionResponse } from "@/lib/types";
+import type { AgentEvent, ChatMessage } from "@soryos/schema";
+import type { GetSessionResponse } from "@/lib/types";
 import { ChatPanel } from "@/components/chat-panel";
 import { PreviewPanel } from "@/components/preview-panel";
 import { LiveVoiceModal } from "@/components/live-voice-modal";

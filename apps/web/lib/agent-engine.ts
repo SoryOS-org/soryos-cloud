@@ -43,6 +43,8 @@ import type {
   ToolStep,
   ProviderId,
   AgentEventType,
+  AgentEvent,
+  EnvironmentType,
 } from "@soryos/schema";
 export type {
   SessionData,
@@ -51,6 +53,8 @@ export type {
   ToolStep,
   ProviderId,
   AgentEventType,
+  AgentEvent,
+  EnvironmentType,
 };
 
 // 5. Execution (from @soryos/execution)

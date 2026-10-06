@@ -10,17 +10,7 @@
 export * from "@soryos/schema";
 
 // Types spécifiques à l'application web
-import type { MessageBlock, ToolStep } from "@soryos/schema";
-
-export type AgentEvent =
-  | { type: "text"; delta: string }
-  | { type: "tool_start"; id: string; name: string; input: unknown }
-  | { type: "tool_end"; id: string; output: string; isError: boolean }
-  | { type: "preview"; url: string }
-  | { type: "files_changed"; paths: string[] }
-  | { type: "status"; message: string }
-  | { type: "done"; usage?: { input: number; output: number; cacheRead: number; cacheMiss: number } }
-  | { type: "error"; message: string };
+import type { MessageBlock, ToolStep, AgentEvent, EnvironmentType, ProviderId } from "@soryos/schema";
 
 export interface GitHubSessionContext {
   username?: string;
@@ -60,7 +50,7 @@ export interface GetSessionResponse {
 }
 
 // Types pour l'UI
-export interface ChatMessage {
+export interface ChatMessageUI {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -69,5 +59,6 @@ export interface ChatMessage {
 }
 
 // Types pour les composants UI
-export type EnvironmentType = "sandbox" | "local";
-export type ProviderId = "e2b" | "vercel" | "google-cloud-run" | "github-codespaces" | "github-repository" | "local";
+// Ces types sont déjà exportés depuis @soryos/schema
+// export type EnvironmentType = "sandbox" | "local";
+// export type ProviderId = "e2b" | "vercel" | "google-cloud-run" | "github-codespaces" | "github-repository" | "local";

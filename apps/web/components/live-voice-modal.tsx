@@ -15,7 +15,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ChatMessage } from "@/lib/types";
+import type { ChatMessage } from "@soryos/schema";
 
 interface LiveVoiceModalProps {
   isOpen: boolean;
