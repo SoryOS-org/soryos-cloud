@@ -1,5 +1,5 @@
 {
-  "name": "@soryos/sandbox",
+  "name": "@soryos/jobs",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -7,8 +7,9 @@
   "dependencies": {
     "@soryos/core": "workspace:*",
     "@soryos/schema": "workspace:*",
-    "@soryos/execution": "workspace:*",
+    "@soryos/sandbox": "workspace:*",
+    "@soryos/session": "workspace:*",
     "@soryos/bus": "workspace:*",
-    "@e2b/code-interpreter": "^1.0.0"
+    "inngest": "^3.0.0"
   }
 }

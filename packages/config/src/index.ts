@@ -30,3 +30,7 @@ export class ConfigManager {
 }
 
 export const configManager = new ConfigManager();
+
+// Re-export template system
+export * from './templates';
+
