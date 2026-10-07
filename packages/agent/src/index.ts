@@ -10,6 +10,7 @@ export * from "./types";
 export * from "./config";
 export * from "./runtime";
 export * from "./providers";
+export * from "./error-handler";
 
 // For backward compatibility, keep the original exports
 import { AgentRuntime } from "./runtime";

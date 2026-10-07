@@ -16,6 +16,7 @@ import { agentProviderRegistry } from './providers';
 import { GlobalEventBus } from '@soryos/bus';
 import { ToolExecutor, ToolRegistry } from '@soryos/tool';
 import { SessionStore, MessageStore } from '@soryos/session';
+import { ErrorRecoveryManager, getErrorRecoveryManager, classifyError, ClassifiedError } from './error-handler';
 
 /**
  * Agent Runtime
@@ -32,10 +33,41 @@ export class AgentRuntime {
   private streamingContent: string = '';
   private lastAssistantMessageId: string | null = null;
   private messageCounter: number = 0;
+  private errorRecoveryManager: ErrorRecoveryManager | null = null;
 
   constructor() {
     // Initialize tool registry
     this.initializeTools();
+    
+    // Initialize error recovery manager (lazy initialization)
+    this.initializeErrorRecovery();
+  }
+
+  /**
+   * Initialize error recovery manager
+   */
+  private async initializeErrorRecovery(): Promise<void> {
+    try {
+      // Create a minimal session store for error recovery
+      // In production, this should use the real session store
+      const sessionStore = {
+        get: async (id: string) => ({ id, errors: [] }),
+        save: async (session: any) => {},
+        delete: async (id: string) => {}
+      } as any;
+      
+      this.errorRecoveryManager = getErrorRecoveryManager(sessionStore);
+      console.log('[Agent] Error recovery manager initialized');
+    } catch (error) {
+      console.error('[Agent] Failed to initialize error recovery:', error);
+    }
+  }
+
+  /**
+   * Set error recovery manager with real session store
+   */
+  setErrorRecoveryManager(manager: ErrorRecoveryManager): void {
+    this.errorRecoveryManager = manager;
   }
 
   /**
@@ -84,36 +116,82 @@ export class AgentRuntime {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorObj = error instanceof Error ? error : new Error(errorMessage);
       
-      // Emit error event
-      GlobalEventBus.emit('agent.error', { 
-        sessionId, 
-        error: errorMessage,
-        input: options.input 
-      });
+      // Use error recovery manager if available
+      if (this.errorRecoveryManager) {
+        const classification = await this.errorRecoveryManager.handleError(errorObj, {
+          sessionId,
+          action: 'agent.run',
+          retryable: true
+        });
+        
+        // Emit classified error event
+        GlobalEventBus.emit('agent.error', { 
+          sessionId, 
+          error: classification.error,
+          input: options.input 
+        });
 
-      // Set error state
-      this.state = {
-        ...this.state,
-        isRunning: false,
-        lastError: error instanceof Error ? error : new Error(errorMessage)
-      };
+        // Set error state with classification
+        this.state = {
+          ...this.state,
+          isRunning: false,
+          lastError: errorObj,
+          lastErrorClassification: classification.error
+        };
 
-      // Return error result
-      return {
-        id: `run-${Date.now()}`,
-        sessionId,
-        input: options.input,
-        output: '',
-        steps: [],
-        exitCode: 1,
-        stdout: '',
-        stderr: errorMessage,
-        durationMs: Date.now() - startTime,
-        model: options.model || DEFAULT_AGENT_CONFIG.defaultModel,
-        provider: options.provider || DEFAULT_AGENT_CONFIG.defaultProvider,
-        timestamp: Date.now()
-      };
+        // Return error result with classification
+        return {
+          id: `run-${Date.now()}`,
+          sessionId,
+          input: options.input,
+          output: '',
+          steps: [],
+          exitCode: 1,
+          stdout: '',
+          stderr: classification.error.userMessage,
+          errorType: classification.error.type,
+          errorCode: classification.error.code,
+          isRetryable: classification.error.isRetryable,
+          recoverySuggestions: classification.error.recoverySuggestions,
+          durationMs: Date.now() - startTime,
+          model: options.model || DEFAULT_AGENT_CONFIG.defaultModel,
+          provider: options.provider || DEFAULT_AGENT_CONFIG.defaultProvider,
+          timestamp: Date.now()
+        };
+      } else {
+        // Fallback to basic error handling
+        // Emit error event
+        GlobalEventBus.emit('agent.error', { 
+          sessionId, 
+          error: errorMessage,
+          input: options.input 
+        });
+
+        // Set error state
+        this.state = {
+          ...this.state,
+          isRunning: false,
+          lastError: errorObj
+        };
+
+        // Return error result
+        return {
+          id: `run-${Date.now()}`,
+          sessionId,
+          input: options.input,
+          output: '',
+          steps: [],
+          exitCode: 1,
+          stdout: '',
+          stderr: errorMessage,
+          durationMs: Date.now() - startTime,
+          model: options.model || DEFAULT_AGENT_CONFIG.defaultModel,
+          provider: options.provider || DEFAULT_AGENT_CONFIG.defaultProvider,
+          timestamp: Date.now()
+        };
+      }
 
     } finally {
       // Reset streaming state

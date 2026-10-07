@@ -57,6 +57,11 @@ export interface AgentRunResult {
   inputTokens?: number;
   outputTokens?: number;
   timestamp: number;
+  // Error classification fields
+  errorType?: string;
+  errorCode?: string;
+  isRetryable?: boolean;
+  recoverySuggestions?: string[];
 }
 
 /**
@@ -168,4 +173,5 @@ export interface AgentState {
   currentMessageId?: string;
   isStreaming: boolean;
   lastError?: Error;
+  lastErrorClassification?: any; // ClassifiedError from error-handler
 }
