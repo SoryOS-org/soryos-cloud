@@ -1,248 +1,459 @@
 /**
  * @soryos/jobs
- * Inngest function: create-session
+ * Create Session Function - REAL IMPLEMENTATION
  * 
- * Creates a new E2B sandbox and starts the development server.
- * This is the first step in the agent execution pipeline.
+ * Based on Vibra Code's create-session Inngest function
+ * Creates a new E2B sandbox and starts the development environment
  */
 
-import { getInngest } from '../client';
-import { updateSessionStatus, addMessage, getSessionData } from '../middleware';
-import { CreateSessionJobData, JobResult } from '../types';
-import { sandboxRegistry } from '@soryos/sandbox';
-import { SessionStore } from '@soryos/session';
+import { inngest } from '../inngest';
+import { E2BProvider } from '@soryos/sandbox';
+import { Id } from 'convex/_generated/dataModel';
+
+// Define the template type
+export interface Template {
+  id: string;
+  name: string;
+  description: string;
+  repository: string;
+  logos: string[];
+  image?: string;
+  startCommands: {
+    command: string;
+    status: "INSTALLING_DEPENDENCIES" | "STARTING_DEV_SERVER";
+    background?: boolean;
+  }[];
+  secrets?: Record<string, string>;
+  systemPrompt: string;
+}
+
+// Default templates for SoryOS-Cloud
+const defaultTemplates: Template[] = [
+  {
+    id: "expo",
+    name: "Expo React Native",
+    description: "Build cross-platform mobile apps with Expo SDK, TypeScript, and NativeWind styling.",
+    repository: "https://github.com/sa4hnd/expo-template",
+    logos: ["expo.svg"],
+    image: process.env.E2B_TEMPLATE_ID || "code-interpreter-v1",
+    startCommands: [
+      {
+        command: "echo fs.inotify.max_user_watches=524288 >> /etc/sysctl.conf && sysctl -p && npx expo start --tunnel --port 3000",
+        status: "STARTING_DEV_SERVER",
+        background: true,
+      },
+    ],
+    systemPrompt: "You are an AI assistant helping to build a React Native mobile app with Expo. The Expo dev server is running on port 3000.",
+  },
+  {
+    id: "nextjs",
+    name: "Next.js",
+    description: "Build scalable web applications with server-side rendering, static site generation, and API routes",
+    repository: "https://github.com/superagent-ai/e2b-nextjs",
+    logos: ["nextjs.svg"],
+    startCommands: [
+      {
+        command: "npm i",
+        status: "INSTALLING_DEPENDENCIES",
+      },
+      {
+        command: "npm run dev",
+        status: "STARTING_DEV_SERVER",
+        background: true,
+      },
+    ],
+    systemPrompt: "You are an AI assistant helping to build a Next.js web application. The Next.js dev server is running on port 3000.",
+  },
+  {
+    id: "fastapi-nextjs",
+    name: "FastAPI + Next.js",
+    description: "Build modern full-stack apps with FastAPI backend and Next.js frontend.",
+    repository: "tiangolo/full-stack-fastapi-template",
+    logos: ["nextjs.svg", "fastapi.jpg"],
+    startCommands: [
+      {
+        command: "npm i",
+        status: "INSTALLING_DEPENDENCIES",
+      },
+      {
+        command: "npm run dev",
+        status: "STARTING_DEV_SERVER",
+        background: true,
+      },
+    ],
+    systemPrompt: "You are an AI assistant helping to build a FastAPI and Next.js full-stack application. The Next.js dev server is running on port 3000 and the FastAPI server on port 8000.",
+  },
+];
 
 /**
- * Generate a session title from the first message
+ * Get templates - can be extended with custom templates
+ */
+export function getTemplates(): Template[] {
+  // Try to get templates from environment
+  try {
+    const customTemplates = process.env.SORYOS_TEMPLATES;
+    if (customTemplates) {
+      return [...defaultTemplates, ...JSON.parse(customTemplates)];
+    }
+  } catch (error) {
+    console.warn('Failed to parse custom templates from environment:', error);
+  }
+  return defaultTemplates;
+}
+
+/**
+ * Get template by ID
+ */
+export function getTemplateById(templateId: string): Template | undefined {
+  return getTemplates().find((t) => t.id === templateId);
+}
+
+/**
+ * Generate a session title from the user's message
  */
 async function generateSessionTitle(message: string): Promise<string> {
-  // Simple title generation based on first few words
-  const words = message.split(/\s+/).filter(w => w.length > 0);
-  const title = words.slice(0, 5).join(' ') || 'New Session';
-  
-  // Capitalize first letter
-  return title.charAt(0).toUpperCase() + title.slice(1);
+  // Simple title generation based on the first few words
+  const words = message.split(/\s+/).slice(0, 5);
+  return words.join(' ') + (words.length < 5 ? '' : '...');
 }
 
 /**
- * Get template configuration
+ * Create Session Inngest Function
+ * 
+ * This function:
+ * 1. Creates a new E2B sandbox
+ * 2. Triggers the agent immediately (if message provided)
+ * 3. Starts the dev server in parallel
+ * 4. Updates the session with tunnel URL
  */
-async function getTemplateConfig(templateId?: string): Promise<{
-  image?: string;
-  startCommands: Array<{ command: string; status: string; background?: boolean }>;
-  secrets?: Record<string, string>;
-  systemPrompt?: string;
-}> {
-  // Import template configuration
-  const { getTemplateById, getDefaultTemplate } = await import('@soryos/config');
-  
-  const template = templateId ? getTemplateById(templateId) : getDefaultTemplate();
-  
-  if (!template) {
-    // Fallback to default Expo template
-    return {
-      image: process.env.E2B_DEFAULT_TEMPLATE_ID || process.env.E2B_TEMPLATE_ID,
-      startCommands: [
-        {
-          command: 'echo fs.inotify.max_user_watches=524288 >> /etc/sysctl.conf && sysctl -p',
-          status: 'CONFIGURING_ENVIRONMENT'
-        },
-        {
-          command: 'npx expo start --tunnel --port 3000',
-          status: 'STARTING_DEV_SERVER',
-          background: true
-        }
-      ],
-      secrets: {},
-      systemPrompt: '# You are building a React Native Expo app...'
-    };
-  }
-  
-  return {
-    image: template.image,
-    startCommands: template.startCommands || [],
-    secrets: template.secrets || {},
-    systemPrompt: template.systemPrompt
-  };
-}
-
-/**
- * Create session job function
- */
-export const createSession = getInngest().createFunction(
+export const createSession = inngest.createFunction(
   {
-    id: 'soryos/create.session',
-    retries: 0,
-    concurrency: 25,
-    onFailure: async ({ error, event }) => {
-      const { sessionId, id } = event.data as CreateSessionJobData;
-      console.error('[Jobs] Create session failure:', error);
-      
-      try {
-        await updateSessionStatus(id || sessionId, 'error', 'Failed to create session');
-        await addMessage(id || sessionId, 
-          `⚠️ **Session Creation Failed**\n\n${error instanceof Error ? error.message : String(error)}`,
-          'assistant');
-      } catch (failureError) {
-        console.error('[Jobs] Failed to handle create session failure:', failureError);
-      }
-    }
+    id: "soryos/create.session",
+    retries: 0, // No retries to avoid duplicate sandboxes
+    concurrency: 25, // Limit concurrent session creations
+    timeout: '15m', // 15 minutes timeout for session creation
   },
-  { event: 'soryos/create.session' },
+  { event: "soryos/create.session" },
   async ({ event, step }) => {
     const {
-      sessionId,
-      id,
+      sessionId: id,
       message,
       repository,
       token,
-      template,
-      providerId
-    } = event.data as CreateSessionJobData;
+      template: templateParam,
+      userId,
+      sandboxProvider = 'e2b',
+    }: {
+      sessionId: Id<"sessions">;
+      message: string;
+      repository: string;
+      token: string;
+      template: Template;
+      userId: string;
+      sandboxProvider: string;
+    } = event.data;
 
-    console.log('[Jobs] Create session started:', { sessionId, id, message: message?.substring(0, 50) });
+    console.log(`[Inngest:createSession] Starting session creation for user ${userId}`);
+    console.log(`[Inngest:createSession] Template: ${templateParam?.id || 'default'}`);
+    console.log(`[Inngest:createSession] Repository: ${repository || 'none'}`);
 
-    const actualId = id || sessionId;
+    // Resolve template
+    let template: Template;
+    if (templateParam) {
+      template = templateParam;
+    } else {
+      // Default to expo template
+      template = getTemplates().find((t) => t.id === 'expo') || defaultTemplates[0];
+    }
 
-    try {
-      // Step 1: Create sandbox and trigger agent immediately
-      const sandboxData = await step.run('create sandbox', async () => {
-        // Generate session title
-        const title = message ? await generateSessionTitle(message) : 'New Session';
+    // Step 1: Create sandbox and trigger agent immediately
+    const sandboxData = await step.run("create sandbox", async () => {
+      console.log(`[Inngest:createSession] Creating sandbox with template: ${template.id}`);
 
-        // Update session status
-        await updateSessionStatus(actualId, 'IN_PROGRESS', 'Creating sandbox...');
-
-        // Get template configuration
-        const templateConfig = await getTemplateConfig(template);
-
-        // Create the sandbox
-        const providerIdToUse = providerId || 'e2b';
-        const provider = await sandboxRegistry.createProvider(providerIdToUse, sessionId);
-        
-        const sandboxId = await provider.create({
-          sessionId,
-          envVars: templateConfig.secrets
+      // Initialize the appropriate sandbox provider
+      let sandbox: E2BProvider | null = null;
+      
+      if (sandboxProvider === 'e2b') {
+        sandbox = new E2BProvider({
+          templateId: template.image,
+          envVars: template.secrets || {},
         });
+      } else {
+        // For now, only E2B is fully implemented
+        // Other providers can be added later
+        console.warn(`[Inngest:createSession] Sandbox provider ${sandboxProvider} not yet fully implemented, using E2B`);
+        sandbox = new E2BProvider({
+          templateId: template.image,
+          envVars: template.secrets || {},
+        });
+      }
 
-        // Update session with sandbox ID
-        await updateSessionStatus(actualId, 'CLONING_REPO', 'Sandbox created', undefined, sandboxId);
+      if (!sandbox) {
+        throw new Error(`Unsupported sandbox provider: ${sandboxProvider}`);
+      }
 
-        return {
-          sandboxId,
-          title,
-          templateConfig,
-          providerId: providerIdToUse
-        };
+      // Generate session title
+      const title = await generateSessionTitle(message);
+
+      // Create the sandbox
+      const sandboxId = await sandbox.create({
+        sessionId: id,
       });
 
-      // Step 2: Start dev server in parallel
-      const data = await step.run('start dev server', async () => {
-        // Get provider and connect
-        const providerIdToUse = sandboxData.providerId || 'e2b';
-        const provider = await sandboxRegistry.createProvider(providerIdToUse, sessionId);
-        await provider.connect(sandboxData.sandboxId);
+      return {
+        sandboxId,
+        title,
+        sandbox,
+      };
+    });
 
-        // If repository is provided, clone it
-        if (repository && token) {
-          await updateSessionStatus(actualId, 'CLONING_REPO', 'Cloning repository...');
-          await provider.executeCommand(
-            `git clone https://${token}@github.com/${repository}.git .`,
-            { cwd: sandboxData.templateConfig.startCommands?.[0]?.command.includes('/vibe0') ? '/vibe0' : undefined }
-          );
-        }
+    // Step 2: Trigger agent IMMEDIATELY after sandbox creation (don't wait for dev server)
+    if (message) {
+      await step.run("run agent early", async () => {
+        console.log(`[Inngest:createSession] Triggering agent immediately after sandbox creation`);
+        
+        await inngest.send({
+          name: "soryos/run.agent",
+          data: {
+            sessionId: sandboxData.sandboxId,
+            id,
+            message,
+            template,
+            repository: repository || null,
+            token,
+            userId,
+            sandboxProvider,
+          },
+        });
+      });
+    }
 
-        await updateSessionStatus(actualId, 'INSTALLING_DEPENDENCIES');
+    // Step 3: Start dev server in parallel (Agent is already working)
+    const data = await step.run("start dev server", async () => {
+      console.log(`[Inngest:createSession] Starting dev server`);
+      
+      // Reconnect to sandbox for dev server setup
+      const sandbox = sandboxData.sandbox as E2BProvider;
+      await sandbox.connect(sandboxData.sandboxId);
 
-        // Execute start commands
-        for (const cmd of sandboxData.templateConfig.startCommands || []) {
-          await updateSessionStatus(actualId, cmd.status, undefined, undefined, sandboxData.sandboxId);
-          await provider.executeCommand(cmd.command, {
-            background: cmd.background,
-            cwd: cmd.command.includes('expo') ? '/vibe0' : undefined
+      if (!repository && template) {
+        // For custom templates, everything is pre-configured
+        console.log(`[Inngest:createSession] Starting dev server for template: ${template.id}`);
+
+        // Start the dev server (dependencies are already installed)
+        for (const command of template.startCommands) {
+          console.log(`[Inngest:createSession] Running command: ${command.command.substring(0, 50)}...`);
+          await sandbox.executeCommand(command.command, {
+            background: command.background,
           });
         }
 
-        // Wait for dev server to start and get tunnel URL
-        await updateSessionStatus(actualId, 'CREATING_TUNNEL');
+        // Get tunnel URL
+        const host = await sandbox.getHost(3000);
 
-        // Try to get host for common ports
-        const ports = [3000, 8080, 8000, 5173];
-        let tunnelUrl: string | null = null;
-        
-        for (const port of ports) {
+        return {
+          sandboxId: sandboxData.sandboxId,
+          tunnelUrl: host,
+          repository: null,
+        };
+      } else {
+        // Clone repo if provided
+        if (repository) {
+          console.log(`[Inngest:createSession] Cloning repository: ${repository}`);
+          await sandbox.executeCommand(
+            `git clone https://${token}@github.com/${repository}.git .`
+          );
+        }
+
+        console.log(`[Inngest:createSession] Starting dev server for custom repo`);
+
+        // Start expo dev server (dependencies are pre-baked, skip npm i)
+        await sandbox.executeCommand(
+          "echo fs.inotify.max_user_watches=524288 >> /etc/sysctl.conf && sysctl -p && npx expo start --tunnel --port 3000",
+          {
+            background: true,
+          }
+        );
+
+        // Wait for tunnel
+        let host: string;
+        let attempts = 0;
+        const maxAttempts = 30;
+        const delayMs = 2000;
+
+        while (attempts < maxAttempts) {
           try {
-            tunnelUrl = await (provider as any).getHost(port);
-            if (tunnelUrl) {
-              console.log(`[Jobs] Tunnel URL found on port ${port}: ${tunnelUrl}`);
+            host = await sandbox.getHost(3000);
+            if (host) {
               break;
             }
           } catch {
-            // Port not available
+            // Tunnel not ready yet
           }
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          }
+        }
+
+        if (attempts >= maxAttempts) {
+          throw new Error('Failed to get tunnel URL after maximum attempts');
         }
 
         return {
           sandboxId: sandboxData.sandboxId,
-          tunnelUrl: tunnelUrl || '',
+          tunnelUrl: host,
           repository: repository,
-          title: sandboxData.title
         };
-      });
-
-      // Step 3: Update session with tunnel URL
-      await step.run('update session', async () => {
-        await updateSessionStatus(actualId, 'RUNNING', 'Session ready', data.tunnelUrl, data.sandboxId);
-        
-        // Also update session name if we generated one
-        if (data.title) {
-          await SessionStore.update(actualId, { name: data.title });
-        }
-      });
-
-      // Step 4: Trigger agent if there's a message
-      if (message) {
-        await step.run('trigger agent', async () => {
-          console.log('[Jobs] Triggering agent for first message');
-          
-          // Send event to run agent
-          const { sendEvent } = await import('../client');
-          await sendEvent('soryos/run.agent', {
-            sessionId,
-            id: actualId,
-            message,
-            template,
-            repository,
-            token,
-            provider: sandboxData.providerId
-          });
-        });
       }
+    });
 
-      console.log('[Jobs] Create session completed:', { sandboxId: data.sandboxId, tunnelUrl: data.tunnelUrl });
-      return data;
+    // Step 4: Update session with tunnel URL
+    await step.run("update session", async () => {
+      console.log(`[Inngest:createSession] Updating session with tunnel URL: ${data.tunnelUrl}`);
+      
+      // Import Convex client
+      const { ConvexClient } = await import('convex/browser');
+      const convex = new ConvexClient(process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL!);
+      
+      // Update session status
+      await convex.mutation('sessions:update', {
+        id,
+        status: 'RUNNING',
+        tunnelUrl: data.tunnelUrl,
+        sessionId: data.sandboxId,
+        statusMessage: 'Session ready',
+        autoPauseEnabled: true,
+        autoPauseTimeoutMs: parseInt(process.env.AUTO_PAUSE_TIMEOUT_MS || '900000'),
+      });
+    });
 
-    } catch (error) {
-      console.error('[Jobs] Create session error:', error);
-      throw error;
-    }
+    console.log(`[Inngest:createSession] Session creation completed: ${data.sandboxId}`);
+
+    return {
+      sandboxId: data.sandboxId,
+      tunnelUrl: data.tunnelUrl,
+      sessionId: id,
+      repository: data.repository,
+    };
   }
 );
 
 /**
- * Helper function to create a session directly
+ * Resume Session Inngest Function
+ * 
+ * Resumes a paused session by reconnecting to the sandbox
  */
-export async function createSessionDirectly(data: CreateSessionJobData): Promise<JobResult> {
-  try {
-    // Send event to Inngest
-    const { sendEvent } = await import('../client');
-    await sendEvent('soryos/create.session', data);
-    return { success: true };
-  } catch (error) {
-    console.error('[Jobs] Failed to create session:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : String(error) 
+export const resumeSession = inngest.createFunction(
+  {
+    id: "soryos/resume.session",
+    retries: 3,
+    timeout: '5m',
+  },
+  { event: "soryos/resume.session" },
+  async ({ event, step }) => {
+    const { sessionId, userId, sandboxId } = event.data as {
+      sessionId: Id<"sessions">;
+      userId: string;
+      sandboxId: string;
     };
+
+    console.log(`[Inngest:resumeSession] Resuming session: ${sessionId}`);
+
+    // Step 1: Reconnect to sandbox
+    const sandbox = await step.run("reconnect sandbox", async () => {
+      const e2b = new E2BProvider();
+      const connected = await e2b.connect(sandboxId);
+      if (!connected) {
+        throw new Error(`Failed to reconnect to sandbox: ${sandboxId}`);
+      }
+      return e2b;
+    });
+
+    // Step 2: Reset timeout
+    await step.run("reset timeout", async () => {
+      await sandbox.setTimeout(parseInt(process.env.AUTO_PAUSE_TIMEOUT_MS || '900000'));
+    });
+
+    // Step 3: Update session status
+    await step.run("update session", async () => {
+      const { ConvexClient } = await import('convex/browser');
+      const convex = new ConvexClient(process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL!);
+      
+      await convex.mutation('sessions:update', {
+        id: sessionId,
+        status: 'RUNNING',
+        agentStopped: false,
+        statusMessage: 'Session resumed',
+      });
+    });
+
+    console.log(`[Inngest:resumeSession] Session resumed: ${sessionId}`);
+
+    return { success: true, sandboxId };
   }
-}
+);
+
+/**
+ * Stop Session Inngest Function
+ * 
+ * Stops a running session and pauses the sandbox
+ */
+export const stopSession = inngest.createFunction(
+  {
+    id: "soryos/stop.session",
+    retries: 3,
+    timeout: '2m',
+  },
+  { event: "soryos/stop.session" },
+  async ({ event, step }) => {
+    const { sessionId, userId, sandboxId } = event.data as {
+      sessionId: Id<"sessions">;
+      userId: string;
+      sandboxId: string;
+    };
+
+    console.log(`[Inngest:stopSession] Stopping session: ${sessionId}`);
+
+    // Step 1: Stop the sandbox
+    await step.run("stop sandbox", async () => {
+      const e2b = new E2BProvider();
+      try {
+        await e2b.connect(sandboxId);
+        await e2b.pause();
+      } catch (error) {
+        console.error(`[Inngest:stopSession] Error stopping sandbox: ${error}`);
+        // Try to kill if pause fails
+        try {
+          await e2b.destroy();
+        } catch {
+          // Ignore
+        }
+      }
+    });
+
+    // Step 2: Update session status
+    await step.run("update session", async () => {
+      const { ConvexClient } = await import('convex/browser');
+      const convex = new ConvexClient(process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL!);
+      
+      await convex.mutation('sessions:update', {
+        id: sessionId,
+        status: 'PAUSED',
+        agentStopped: true,
+        statusMessage: 'Session paused by user',
+      });
+    });
+
+    console.log(`[Inngest:stopSession] Session stopped: ${sessionId}`);
+
+    return { success: true, sandboxId };
+  }
+);
+
+// Export all functions
+export {
+  getTemplates,
+  getTemplateById,
+  generateSessionTitle,
+};
