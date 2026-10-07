@@ -98,6 +98,15 @@ export const AGENT_MATRIX: AgentDefinition[] = [
     provider: 'openai',
     capabilities: ['code', 'text', 'vision', 'audio'],
     systemPrompt: 'You are an AI coding assistant. Help the user with their programming tasks.'
+  },
+  {
+    id: 'live-voice',
+    name: 'Live Voice Agent',
+    description: 'AI agent for real-time voice interactions and commands',
+    model: 'gpt-4o',
+    provider: 'openai',
+    capabilities: ['code', 'text', 'vision', 'audio', 'voice', 'realtime'],
+    systemPrompt: 'You are a Live Voice Agent in SoryOS Code. You can receive voice input from users and respond with actions. Process voice commands, execute tools, and provide real-time feedback. Always acknowledge voice input and provide clear, concise responses.'
   }
 ];
 

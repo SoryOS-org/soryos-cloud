@@ -11,6 +11,7 @@ export * from "./config";
 export * from "./runtime";
 export * from "./providers";
 export * from "./error-handler";
+export * from "./tools";
 
 // For backward compatibility, keep the original exports
 import { AgentRuntime } from "./runtime";
