@@ -99,7 +99,7 @@ export function ModelSelector({
 
       <DropdownMenuContent
         align="start"
-        className="w-84 max-h-[460px] overflow-y-auto p-1.5 bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] shadow-xl rounded-xl text-xs z-50"
+        className="w-92 sm:w-96 max-h-[500px] overflow-y-auto p-1.5 bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] shadow-xl rounded-xl text-xs z-50"
       >
         {/* Dynamic Sync Header */}
         <div className="flex items-center justify-between px-2 py-1.5 border-b border-[var(--border)] mb-1">
@@ -171,6 +171,11 @@ export function ModelSelector({
                         {model.badge && !model.isFree && (
                           <span className="rounded bg-[var(--surface)] text-[var(--muted-foreground)] px-1 py-0.2 text-[9px] border border-[var(--border)]">
                             {model.badge}
+                          </span>
+                        )}
+                        {model.contextLength && (
+                          <span className="rounded bg-[var(--primary)]/10 text-[var(--primary)] px-1 py-0.2 text-[9px] font-medium border border-[var(--primary)]/15">
+                            {model.contextLength}
                           </span>
                         )}
                       </div>

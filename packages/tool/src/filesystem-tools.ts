@@ -594,7 +594,7 @@ export class FilesystemTools {
   /**
    * Rechercher des fichiers par pattern glob
    * 
-   * @param pattern - Pattern glob (ex: '**/*.tsx', '*.json')
+   * @param pattern - Pattern glob (ex: glob pattern comme *.tsx ou *.json)
    * @param directoryPath - Répertoire de base (optionnel)
    * @param caseSensitive - Sensible à la casse (optionnel)
    * @returns Fichiers correspondants

@@ -1516,4 +1516,8 @@ export function getSupportedProjectTypes(): ProjectType[] {
   return [...PROJECT_TYPES];
 }
 
+import { LocalExecutionProvider } from '@soryos/execution';
+
+export const devRunner = new DevRunner(new LocalExecutionProvider());
+
 export { PROJECT_TYPES, DEFAULT_CONFIG };

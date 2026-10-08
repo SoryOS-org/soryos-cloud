@@ -2,12 +2,14 @@ import type { ModelInfo } from "./models";
 
 export type ProviderId =
   | "google"
+  | "anthropic"
   | "openai"
   | "mistral"
   | "openrouter"
   | "opencode-zen"
   | "deepseek"
-  | "grok";
+  | "grok"
+  | "cursor";
 
 export type CredentialSource =
   | "session_override"

@@ -318,6 +318,10 @@ export class ToolRegistry {
     return result;
   }
 
+  public listTools(): RegisteredTool[] {
+    return this.getAllTools();
+  }
+
   public getGeminiDeclarations(): FunctionDeclaration[] {
     return this.getAllTools().map((t) => t.geminiDeclaration);
   }

@@ -15,7 +15,7 @@ import { getAgentDefinition, getDefaultAgent, DEFAULT_AGENT_CONFIG } from './con
 import { agentProviderRegistry } from './providers';
 import { GlobalEventBus } from '@soryos/bus';
 import { ToolExecutor, ToolRegistry } from '@soryos/tool';
-import { sessionStore, messageStore } from '@soryos/session';
+import { sessionStore, messageStore, SessionStore } from '@soryos/session';
 import { ErrorRecoveryManager, getErrorRecoveryManager, classifyError, ClassifiedError } from './error-handler';
 
 /**
@@ -48,15 +48,7 @@ export class AgentRuntime {
    */
   private async initializeErrorRecovery(): Promise<void> {
     try {
-      // Create a minimal session store for error recovery
-      // In production, this should use the real session store
-      const sessionStore = {
-        get: async (id: string) => ({ id, errors: [] }),
-        save: async (session: any) => {},
-        delete: async (id: string) => {}
-      } as any;
-      
-      this.errorRecoveryManager = getErrorRecoveryManager(sessionStore);
+      this.errorRecoveryManager = getErrorRecoveryManager(sessionStore as any);
       console.log('[Agent] Error recovery manager initialized');
     } catch (error) {
       console.error('[Agent] Failed to initialize error recovery:', error);
@@ -81,9 +73,22 @@ export class AgentRuntime {
   /**
    * Run the agent with the given options
    */
-  async run(options: AgentRunOptions): Promise<AgentRunResult> {
+  async run(options: AgentRunOptions | any): Promise<AgentRunResult> {
     const startTime = Date.now();
-    const sessionId = options.sessionId || `session-${Date.now()}`;
+    const session = options.session;
+    const sessionId = options.sessionId || session?.id || `session-${Date.now()}`;
+    const lastUserMsg = session?.messages?.slice().reverse().find((m: any) => m.role === 'user');
+    const input = options.input || lastUserMsg?.content || '';
+    const emit = options.emit;
+
+    const normalizedOptions: AgentRunOptions = {
+      ...options,
+      sessionId,
+      input,
+      streaming: options.streaming ?? true,
+      model: options.model || session?.model,
+      provider: options.provider || session?.providerId || session?.provider,
+    };
 
     // Set running state
     this.state = {
@@ -93,11 +98,60 @@ export class AgentRuntime {
     };
 
     // Emit start event
-    GlobalEventBus.emit('agent.started', { sessionId, input: options.input });
+    GlobalEventBus.emit('agent.started', { sessionId, input });
+
+    // Setup SSE bridge if emit is provided
+    const unsubscribers: Array<() => void> = [];
+    if (emit) {
+      emit({ type: "status", message: "Initialisation de l'agent..." });
+
+      const onStreamingText = (data: any) => {
+        if (data.sessionId === sessionId && data.text) {
+          emit({ type: "text", delta: data.text });
+        }
+      };
+      const onStatus = (data: any) => {
+        if (data.sessionId === sessionId && data.message) {
+          emit({ type: "status", message: data.message });
+        }
+      };
+      const onToolStart = (data: any) => {
+        if (data.sessionId === sessionId) {
+          emit({
+            type: "tool_start",
+            id: data.id || `tool-${Date.now()}`,
+            name: data.toolName || data.name || "tool",
+            input: data.input,
+          });
+        }
+      };
+      const onToolEnd = (data: any) => {
+        if (data.sessionId === sessionId) {
+          emit({
+            type: "tool_end",
+            id: data.id || `tool-${Date.now()}`,
+            output: data.output || data.result || "Succès",
+            isError: Boolean(data.error),
+          });
+        }
+      };
+
+      GlobalEventBus.on('agent.streaming.text', onStreamingText);
+      GlobalEventBus.on('agent.status', onStatus);
+      GlobalEventBus.on('agent.tool.started', onToolStart);
+      GlobalEventBus.on('agent.tool.completed', onToolEnd);
+
+      unsubscribers.push(() => {
+        GlobalEventBus.off('agent.streaming.text', onStreamingText);
+        GlobalEventBus.off('agent.status', onStatus);
+        GlobalEventBus.off('agent.tool.started', onToolStart);
+        GlobalEventBus.off('agent.tool.completed', onToolEnd);
+      });
+    }
 
     try {
       // Get agent configuration
-      const agentConfig = this.getAgentConfig(options);
+      const agentConfig = this.getAgentConfig(normalizedOptions);
       const provider = this.getProvider(agentConfig.provider);
 
       if (!provider) {
@@ -105,13 +159,13 @@ export class AgentRuntime {
       }
 
       // Initialize conversation context
-      const context = await this.buildConversationContext(sessionId, options.input);
+      const context = await this.buildConversationContext(sessionId, input);
 
       // Execute with streaming if enabled
-      if (options.streaming) {
-        return await this.runWithStreaming(options, context, provider, agentConfig);
+      if (normalizedOptions.streaming) {
+        return await this.runWithStreaming(normalizedOptions, context, provider, agentConfig);
       } else {
-        return await this.runWithoutStreaming(options, context, provider, agentConfig);
+        return await this.runWithoutStreaming(normalizedOptions, context, provider, agentConfig);
       }
 
     } catch (error) {
@@ -194,13 +248,22 @@ export class AgentRuntime {
       }
 
     } finally {
+      // Unsubscribe SSE listeners
+      unsubscribers.forEach((unsub) => {
+        try { unsub(); } catch {}
+      });
+
+      if (emit) {
+        emit({ type: "done" });
+      }
+
       // Reset streaming state
       this.jsonBuffer = '';
       this.streamingContent = '';
       this.lastAssistantMessageId = null;
 
       // Reset running state if not streaming
-      if (!options.streaming) {
+      if (!normalizedOptions.streaming) {
         this.state = {
           ...this.state,
           isRunning: false,
@@ -209,7 +272,7 @@ export class AgentRuntime {
       }
 
       // Emit end event
-      GlobalEventBus.emit('agent.ended', { sessionId, input: options.input });
+      GlobalEventBus.emit('agent.ended', { sessionId, input });
     }
   }
 
@@ -366,17 +429,38 @@ export class AgentRuntime {
     };
 
     // Execute with streaming
-    const result = await provider.streamResponse(prompt, {
-      ...options,
-      onStdout: handleStdout,
-      onStderr: handleStderr
-    });
+    let exitCode = 0;
+    try {
+      if (typeof provider.streamResponse === 'function') {
+        const result = await provider.streamResponse(prompt, {
+          ...options,
+          onStdout: handleStdout,
+          onStderr: handleStderr
+        });
+        exitCode = result?.exitCode || 0;
+      } else if (typeof provider.stream === 'function') {
+        for await (const chunk of provider.stream({ messages: [{ role: 'user', content: prompt }] })) {
+          if (chunk.delta) {
+            handleStdout(chunk.delta);
+          }
+        }
+      } else if (typeof provider.generate === 'function') {
+        const result = await provider.generate({ messages: [{ role: 'user', content: prompt }] });
+        if (result?.text) {
+          handleStdout(result.text);
+        }
+      }
+    } catch (streamErr) {
+      const errMsg = streamErr instanceof Error ? streamErr.message : String(streamErr);
+      handleStderr(errMsg);
+      exitCode = 1;
+    }
 
     // Return combined result
     return {
       stdout: stdoutChunks.join(''),
       stderr: stderrChunks.join(''),
-      exitCode: result.exitCode || 0
+      exitCode
     };
   }
 
@@ -1208,7 +1292,11 @@ export class AgentRuntime {
 
     // Add context from session
     try {
-      const session = await SessionStore.get(sessionId);
+      const session = typeof sessionStore !== 'undefined' && sessionStore?.get 
+        ? sessionStore.get(sessionId) 
+        : (typeof SessionStore !== 'undefined' && typeof SessionStore.get === 'function' 
+            ? SessionStore.get(sessionId) 
+            : undefined);
       if (session) {
         context.session = session;
       }
@@ -1242,8 +1330,8 @@ export class AgentRuntime {
     const agentDef = getAgentByModel(model) || getDefaultAgent();
 
     return {
-      model: agentDef.model,
-      provider: agentDef.provider,
+      model: options.model || agentDef?.model || DEFAULT_AGENT_CONFIG.defaultModel,
+      provider: options.provider || agentDef?.provider || DEFAULT_AGENT_CONFIG.defaultProvider,
       config: DEFAULT_AGENT_CONFIG
     };
   }

@@ -81,6 +81,43 @@ export class SessionStore {
     this.save(session);
     return fullMsg;
   }
+
+  public update(id: string, updates: Partial<SessionData>): SessionData | undefined {
+    const s = this.get(id);
+    if (!s) return undefined;
+    Object.assign(s, updates);
+    this.save(s);
+    return s;
+  }
+
+  // Static convenience methods matching direct SessionStore.get / SessionStore.update calls
+  public static get(id: string): SessionData | undefined {
+    return sessionStore.get(id);
+  }
+
+  public static getOrCreate(id: string, initialTitle?: string): SessionData {
+    return sessionStore.getOrCreate(id, initialTitle);
+  }
+
+  public static save(session: SessionData): void {
+    sessionStore.save(session);
+  }
+
+  public static delete(id: string): boolean {
+    return sessionStore.delete(id);
+  }
+
+  public static list(): Array<{ id: string; title: string; created_at: string }> {
+    return sessionStore.list();
+  }
+
+  public static addMessage(sessionId: string, message: Omit<ChatMessage, "id" | "created_at">): ChatMessage {
+    return sessionStore.addMessage(sessionId, message);
+  }
+
+  public static update(id: string, updates: Partial<SessionData>): SessionData | undefined {
+    return sessionStore.update(id, updates);
+  }
 }
 
 export const sessionStore = new SessionStore();

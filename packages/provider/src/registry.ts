@@ -17,13 +17,30 @@ export class GenericAIProvider implements AIProvider {
   }
 
   getDefaultModel(): string {
-    return SUPPORTED_AI_MODELS.find(m => m.provider === this.id)?.id || SUPPORTED_AI_MODELS[0].id;
+    return (
+      SUPPORTED_AI_MODELS.find(
+        (m) => m.providerId === this.id || (m as any).provider === this.id
+      )?.id || SUPPORTED_AI_MODELS[0].id
+    );
   }
 
   listModels(): ModelInfo[] {
-    const list = SUPPORTED_AI_MODELS.filter(m => m.provider === this.id.toLowerCase());
+    const list = SUPPORTED_AI_MODELS.filter(
+      (m) =>
+        m.providerId.toLowerCase() === this.id.toLowerCase() ||
+        (m as any).provider?.toLowerCase() === this.id.toLowerCase()
+    );
     if (list.length > 0) return list;
-    return [{ id: `${this.id}-default`, name: `${this.name} Default`, provider: this.id, category: "text" }];
+    return [
+      {
+        id: `${this.id}-default`,
+        name: `${this.name} Default`,
+        providerId: this.id,
+        providerName: this.name,
+        isFree: false,
+        description: `Modèle par défaut pour ${this.name}`,
+      },
+    ];
   }
 
   resolveCredentials(sessionId?: string): ResolvedCredential {
@@ -90,6 +107,20 @@ export class GenericAIProvider implements AIProvider {
     yield { delta: `[${this.name}] Processing request...\n`, isComplete: false };
     yield { delta: `Task completed successfully.`, isComplete: true };
   }
+
+  async streamResponse(
+    prompt: string,
+    options: { onStdout?: (data: string) => void; onStderr?: (data: string) => void; [key: string]: any }
+  ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    let stdout = "";
+    for await (const chunk of this.stream({ messages: [{ role: "user", content: prompt }] })) {
+      if (chunk.delta) {
+        stdout += chunk.delta;
+        options.onStdout?.(chunk.delta);
+      }
+    }
+    return { stdout, stderr: "", exitCode: 0 };
+  }
 }
 
 export class AIProviderRegistry {
@@ -134,8 +165,20 @@ export class AIProviderRegistry {
     if (providerId === "google") {
       return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
     }
+    if (providerId === "anthropic") {
+      return process.env.ANTHROPIC_API_KEY || "";
+    }
     if (providerId === "openai") {
       return process.env.OPENAI_API_KEY || "";
+    }
+    if (providerId === "mistral") {
+      return process.env.MISTRAL_API_KEY || "";
+    }
+    if (providerId === "deepseek") {
+      return process.env.DEEPSEEK_API_KEY || "";
+    }
+    if (providerId === "openrouter") {
+      return process.env.OPENROUTER_API_KEY || "";
     }
     return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
   }
@@ -206,7 +249,7 @@ export class AIProviderRegistry {
 
   async runFullMatrixDiagnostics(sessionId?: string): Promise<Record<string, ProviderConnectionTestResult>> {
     const matrix: Record<string, ProviderConnectionTestResult> = {};
-    const defaultProviders = ["google", "openai", "mistral", "opencode-zen"];
+    const defaultProviders = ["google", "openai", "mistral", "opencode-zen", "openrouter"];
     for (const pId of defaultProviders) {
       matrix[pId] = await this.testConnection(pId, { sessionId });
     }
@@ -243,6 +286,16 @@ export class AnthropicProvider extends GenericAIProvider {
 export class OpenAIProvider extends GenericAIProvider {
   constructor() {
     super("openai");
+  }
+}
+
+export class OpenRouterProvider extends GenericAIProvider {
+  constructor() {
+    super("openrouter");
+  }
+
+  getEndpoint(): string {
+    return "https://openrouter.ai/api/v1";
   }
 }
 

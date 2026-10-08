@@ -229,6 +229,16 @@ export class LocalExecutionProvider implements ExecutionProvider {
 export class ExecutionManager {
   private providers: Map<string, ExecutionProvider> = new Map();
 
+  public getProvider(providerId: ProviderId = "local"): ExecutionProvider {
+    const key = `default:${providerId}`;
+    let provider = this.providers.get(key);
+    if (!provider) {
+      provider = new LocalExecutionProvider();
+      this.providers.set(key, provider);
+    }
+    return provider;
+  }
+
   public async getOrCreateProvider(sessionId: string, providerId: ProviderId = "local"): Promise<ExecutionProvider> {
     const key = `${sessionId}:${providerId}`;
     let provider = this.providers.get(key);

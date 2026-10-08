@@ -27,11 +27,33 @@ export class EventBus {
     };
   }
 
-  public emit(sessionId: string, type: AgentEventType, data: Record<string, unknown> = {}): void {
+  public off(eventType: string, listener: EventListener | any): void {
+    if (eventType === "*") {
+      this.wildcardListeners.delete(listener);
+    } else {
+      this.listeners.get(eventType)?.delete(listener);
+    }
+  }
+
+  public emit(arg1: string, arg2?: any, arg3?: any): void {
+    let sessionId = "global";
+    let type: AgentEventType | string = arg1;
+    let data: Record<string, unknown> = {};
+
+    if (typeof arg2 === "string") {
+      sessionId = arg1;
+      type = arg2;
+      data = arg3 || {};
+    } else if (typeof arg2 === "object" && arg2 !== null) {
+      type = arg1;
+      data = arg2;
+      sessionId = (data.sessionId as string) || "global";
+    }
+
     const payload: AgentEventPayload = {
       sessionId,
       timestamp: new Date().toISOString(),
-      type,
+      type: type as AgentEventType,
       data,
     };
 
