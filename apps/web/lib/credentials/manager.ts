@@ -1,1 +1,1 @@
-export * from "@soryos/credentials";
+export { credentialManager } from "@soryos/credentials";

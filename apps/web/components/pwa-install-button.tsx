@@ -74,8 +74,7 @@ export function PWAInstallButton({ className = "" }: { className?: string }) {
         title="Installer l'application sur Mobile, Tablette ou Bureau"
       >
         <Download className="h-3.5 w-3.5 text-[var(--primary)]" />
-        <span className="hidden sm:inline">Installer l&apos;application</span>
-        <span className="sm:hidden">Installer</span>
+        <span>Installer l&apos;application</span>
       </Button>
 
       {/* iOS Installation Guide Modal */}

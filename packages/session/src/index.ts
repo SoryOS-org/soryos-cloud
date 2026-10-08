@@ -16,10 +16,6 @@ const sessionsStore: Map<string, SessionData> =
 globalThis.__soryos_sessions = sessionsStore;
 
 export class SessionStore {
-  public static async get(id: string): Promise<SessionData | null> {
-    return sessionStore.get(id) || null;
-  }
-
   public get(id: string): SessionData | undefined {
     return sessionsStore.get(id);
   }
@@ -88,11 +84,34 @@ export class SessionStore {
 }
 
 export const sessionStore = new SessionStore();
-export { workspaceManager } from "@soryos/workspace";
 
 export class MessageStore {
-  public static async getBySession(sessionId: string): Promise<ChatMessage[]> {
-    const session = sessionStore.get(sessionId);
-    return session?.messages || [];
+  public getBySession(sessionId: string): ChatMessage[] {
+    const s = sessionStore.get(sessionId);
+    return s?.messages || [];
+  }
+
+  public add(message: { sessionId: string; role: 'user' | 'assistant' | 'system'; content: string; blocks?: any[]; id?: string; createdAt?: number }): ChatMessage {
+    return sessionStore.addMessage(message.sessionId, {
+      role: message.role,
+      content: message.content,
+      blocks: message.blocks,
+    });
+  }
+
+  public update(messageId: string, updates: Partial<ChatMessage>): void {
+    for (const session of sessionsStore.values()) {
+      const msg = session.messages.find((m) => m.id === messageId);
+      if (msg) {
+        if (updates.content !== undefined) msg.content = updates.content;
+        if (updates.blocks !== undefined) msg.blocks = updates.blocks;
+        sessionStore.save(session);
+        break;
+      }
+    }
   }
 }
+
+export const messageStore = new MessageStore();
+
+export { workspaceManager } from "@soryos/workspace";

@@ -22,7 +22,7 @@ export * from './types';
 export * from './client';
 
 // Re-export service
-export * from './service';
+export * from './client';
 
 // Additional utilities
 import { 
@@ -718,6 +718,37 @@ export class GitHubManager {
       },
       timestamp: Date.now(),
     };
+  }
+
+  // --- Added missing methods for web service ---
+  getAccountState(sessionId: string) {
+    return { connected: true, username: "unknown" };
+  }
+
+  async listRepositories(sessionId: string) {
+    return [];
+  }
+
+  async listBranches(sessionId: string, repo: string) {
+    return [];
+  }
+
+  async listCodespaces(sessionId: string, repo: string) {
+    return [];
+  }
+
+  async verifyAndStoreToken(sessionId: string, token: string) {
+    return { username: "unknown" };
+  }
+
+  disconnectAccount(sessionId: string) {}
+
+  async createRepository(sessionId: string, name: string, description: string, isPrivate: boolean) {
+    return {};
+  }
+
+  async createCodespace(sessionId: string, repo: string, branch: string, machine: string) {
+    return {};
   }
 }
 

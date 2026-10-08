@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gitHubService } from "@/lib/github/service";
+import { getGitHubService } from "@/lib/github/service";
 
 export async function GET(req: NextRequest) {
+  const gitHubService = getGitHubService();
   const { searchParams } = new URL(req.url);
   const action = searchParams.get("action") || "account";
   const sessionId = searchParams.get("sessionId") || "session";

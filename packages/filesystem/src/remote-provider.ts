@@ -1,4 +1,4 @@
-import { gitHubService } from "@soryos/github";
+import { getGitHubManager } from "@soryos/github";
 
 export interface RemoteFileEntry {
   path: string;
@@ -26,7 +26,7 @@ export class GitHubRemoteFilesystem implements RemoteFilesystemProvider {
   ) {}
 
   private getToken(): string {
-    const token = gitHubService.getToken(this.sessionId);
+    const token = getGitHubManager().getClient().getToken(this.sessionId);
     if (!token) throw new Error("Compte GitHub non connecté");
     return token;
   }

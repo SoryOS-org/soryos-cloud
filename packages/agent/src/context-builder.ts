@@ -11,7 +11,7 @@
  */
 
 import { GlobalEventBus } from '@soryos/bus';
-import { SessionStore, MessageStore } from '@soryos/session';
+import { sessionStore, messageStore } from '@soryos/session';
 import { WorkspaceStore, ProjectStore } from '@soryos/workspace';
 import { FileSystem } from '@soryos/filesystem';
 import { GitManager } from '@soryos/git';
@@ -141,7 +141,7 @@ export class ContextBuilder {
     try {
       // 1. Obtenir les informations de base
       const [session, workspace, project] = await Promise.all([
-        SessionStore.get(sessionId),
+        sessionStore.get(sessionId),
         workspaceId ? WorkspaceStore.get(workspaceId) : Promise.resolve(null),
         projectId ? ProjectStore.get(projectId) : Promise.resolve(null)
       ]);
@@ -271,7 +271,7 @@ export class ContextBuilder {
     maxTokens: number
   ): Promise<void> {
     try {
-      const messages = await MessageStore.getBySession(sessionId);
+      const messages = await messageStore.getBySession(sessionId);
       
       // Filtrer les messages récents (limité par config)
       const recentMessages = messages.slice(-this.config.maxHistoryMessages);

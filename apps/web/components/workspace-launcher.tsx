@@ -326,7 +326,7 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
               >
                 <div className="flex items-center gap-2 font-bold text-sm sm:text-base">
                   <Laptop className={`h-5 w-5 ${environmentMode === "local" ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`} />
-                  <span>💻 Environment Local</span>
+                  <span>Environnement Local</span>
                 </div>
                 <span className={`text-[11px] leading-tight ${environmentMode === "local" ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                   Exécution directe sur le disque local via LocalProvider
@@ -351,7 +351,7 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
               >
                 <div className="flex items-center gap-2 font-bold text-sm sm:text-base">
                   <Cloud className={`h-5 w-5 ${environmentMode === "remote" ? "text-emerald-500" : "text-[var(--muted-foreground)]"}`} />
-                  <span>☁️ Environment Distant</span>
+                  <span>Environnement Distant</span>
                 </div>
                 <span className={`text-[11px] leading-tight ${environmentMode === "remote" ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                   GitHub Codespaces, E2B, Vercel ou Cloud Run

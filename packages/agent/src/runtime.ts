@@ -15,7 +15,7 @@ import { getAgentDefinition, getDefaultAgent, DEFAULT_AGENT_CONFIG } from './con
 import { agentProviderRegistry } from './providers';
 import { GlobalEventBus } from '@soryos/bus';
 import { ToolExecutor, ToolRegistry } from '@soryos/tool';
-import { SessionStore, MessageStore } from '@soryos/session';
+import { sessionStore, messageStore } from '@soryos/session';
 import { ErrorRecoveryManager, getErrorRecoveryManager, classifyError, ClassifiedError } from './error-handler';
 
 /**
@@ -1139,13 +1139,14 @@ export class AgentRuntime {
     agentConfig: any,
     options: AgentRunOptions
   ): Promise<{ stdout: string; stderr: string; exitCode: number; result?: unknown }> {
-    // For non-streaming, we'll use sendMessage
-    const result = await provider.sendMessage([
-      { role: 'user', content: prompt }
-    ], options);
-
+    // For non-streaming, we'll use generate
+    const result = await provider.generate({
+      messages: [{ role: 'user', content: prompt }],
+      ...options
+    });
+    
     return {
-      stdout: result.content || '',
+      stdout: result.text || '',
       stderr: '',
       exitCode: 0,
       result
@@ -1187,7 +1188,7 @@ export class AgentRuntime {
 
     // Get existing messages from session
     try {
-      const sessionMessages = await MessageStore.getBySession(sessionId);
+      const sessionMessages = await messageStore.getBySession(sessionId);
       
       for (const msg of sessionMessages) {
         messages.push({
@@ -1267,7 +1268,7 @@ export class AgentRuntime {
     const messageId = `msg-${sessionId}-${this.messageCounter++}-${Date.now()}`;
 
     try {
-      MessageStore.add({
+      messageStore.add({
         id: messageId,
         sessionId,
         content,
@@ -1304,7 +1305,7 @@ export class AgentRuntime {
     additionalData?: Record<string, unknown>
   ): void {
     try {
-      MessageStore.update(messageId, {
+      messageStore.update(messageId, {
         content,
         ...additionalData,
         updatedAt: timestamp

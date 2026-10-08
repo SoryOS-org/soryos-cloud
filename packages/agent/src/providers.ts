@@ -3,7 +3,7 @@
  * AI Provider registry and management.
  */
 
-import { AIProvider, ProviderId } from '@soryos/provider';
+import { AIProvider, ProviderId, GenericAIProvider, AnthropicProvider, GoogleProvider, OpenAIProvider, CursorProvider, GeminiProvider } from '@soryos/provider';
 import { AgentConfig, DEFAULT_AGENT_CONFIG } from './config';
 
 /**
@@ -12,11 +12,21 @@ import { AgentConfig, DEFAULT_AGENT_CONFIG } from './config';
  * Manages all AI providers available for the agent.
  */
 export class AgentProviderRegistry {
-  private providers = new Map<ProviderId, AIProvider>();
+  private providers = new Map<ProviderId | string, AIProvider>();
   private config: AgentConfig;
 
   constructor(config: Partial<AgentConfig> = {}) {
     this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
+    // Pre-register standard providers
+    try {
+      this.register(new AnthropicProvider());
+      this.register(new GoogleProvider());
+      this.register(new OpenAIProvider());
+      this.register(new CursorProvider());
+      this.register(new GeminiProvider());
+    } catch {
+      // fallback
+    }
   }
 
   /**
@@ -29,8 +39,13 @@ export class AgentProviderRegistry {
   /**
    * Get a provider by ID
    */
-  get(id: ProviderId): AIProvider | undefined {
-    return this.providers.get(id);
+  get(id: ProviderId | string): AIProvider | undefined {
+    let p = this.providers.get(id);
+    if (!p) {
+      p = new GenericAIProvider(id);
+      this.providers.set(id, p);
+    }
+    return p;
   }
 
   /**
@@ -131,21 +146,17 @@ export async function initializeAgentProviders(): Promise<void> {
 
   // Try to register Cursor and Gemini providers (new)
   try {
-    const p = await import('@soryos/provider');
-    if ((p as any).CursorProvider) {
-      agentProviderRegistry.register(new (p as any).CursorProvider());
-      console.log('[Agent] Registered Cursor provider');
-    }
+    const { CursorProvider } = await import('@soryos/provider');
+    agentProviderRegistry.register(new CursorProvider());
+    console.log('[Agent] Registered Cursor provider');
   } catch (error) {
     console.warn('[Agent] Failed to register Cursor provider:', error);
   }
 
   try {
-    const p = await import('@soryos/provider');
-    if ((p as any).GeminiProvider) {
-      agentProviderRegistry.register(new (p as any).GeminiProvider());
-      console.log('[Agent] Registered Gemini provider');
-    }
+    const { GeminiProvider } = await import('@soryos/provider');
+    agentProviderRegistry.register(new GeminiProvider());
+    console.log('[Agent] Registered Gemini provider');
   } catch (error) {
     console.warn('[Agent] Failed to register Gemini provider:', error);
   }

@@ -9,7 +9,7 @@ import {
   ProcessHandle,
   FileEntry,
 } from "../types";
-import { gitHubService } from "@soryos/github";
+import { getGitHubManager } from "@soryos/github";
 import { GitHubRemoteFilesystem } from "@soryos/filesystem";
 
 export class GitHubCodespacesProvider implements SandboxProvider {
@@ -42,7 +42,7 @@ export class GitHubCodespacesProvider implements SandboxProvider {
   private processes = new Map<string, ProcessHandle>();
 
   private getToken(): string | null {
-    return gitHubService.getToken(this.sessionId) || process.env.GITHUB_TOKEN || null;
+    return getGitHubManager().getClient().getToken(this.sessionId) || process.env.GITHUB_TOKEN || null;
   }
 
   async create(options?: { sessionId?: string; workspacePath?: string }): Promise<string> {

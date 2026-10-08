@@ -251,7 +251,7 @@ export function sanitizeError(errorMessage: string): string {
     /secret["\s:=]+[a-zA-Z0-9._-]+/gi,       // Generic secrets
     /password["\s:=]+[^\s,}]+/gi,           // Passwords
     /atk_[a-zA-Z0-9._-]+/gi,              // Generic tokens
-    /https?:\/\/[a-zA-Z0-9-]+\.ngrok[a-zA-Z0-9.-]*\.[a-z]+[^\s'"`]*\/gi, // Ngrok URLs
+    /https?:\/\/[a-zA-Z0-9-]+\.ngrok[a-zA-Z0-9.-]*\.[a-z]+[^\s'"]*/gi, // Ngrok URLs
     /ngrok[a-zA-Z0-9.-]*\.[a-z]+/gi,        // Ngrok domains
   ];
 
