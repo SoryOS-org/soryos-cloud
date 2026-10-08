@@ -14,7 +14,7 @@ import {
   ProcessHandle,
   FileEntry,
 } from "../types";
-import { getSessionData } from "../../agent-engine";
+import { sessionStore } from "@soryos/session";
 
 export class LocalProvider implements SandboxProvider {
   readonly id: ProviderId = "local";
@@ -88,7 +88,7 @@ export class LocalProvider implements SandboxProvider {
     // Seed disk workspace with files from session if they exist
     if (options?.sessionId) {
       try {
-        const session = getSessionData(options.sessionId);
+        const session = sessionStore.getOrCreate(options.sessionId);
         if (session && session.files && Object.keys(session.files).length > 0) {
           for (const [relPath, content] of Object.entries(session.files)) {
             const targetPath = this.resolvePath(relPath);
@@ -299,7 +299,7 @@ export class LocalProvider implements SandboxProvider {
     // Also update in-memory session store so web preview and UI update immediately
     if (this.sessionId) {
       try {
-        const session = getSessionData(this.sessionId);
+        const session = sessionStore.get(this.sessionId);
         if (session) {
           const rel = path.relative(this.cwd, fullPath);
           session.files[rel] = content;
@@ -334,7 +334,7 @@ export class LocalProvider implements SandboxProvider {
 
     if (this.sessionId) {
       try {
-        const session = getSessionData(this.sessionId);
+        const session = sessionStore.get(this.sessionId);
         if (session) {
           const rel = path.relative(this.cwd, fullPath);
           delete session.files[rel];

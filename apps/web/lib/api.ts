@@ -14,12 +14,15 @@ export async function createSession(
   title?: string,
   message?: string,
   model?: string,
+  providerId?: string,
+  environment?: string,
+  extra?: Record<string, any>
 ): Promise<{ id: string; title: string }> {
   const base = getApiBase();
   const res = await fetch(`${base}/api/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, message, model }),
+    body: JSON.stringify({ title, message, model, providerId, environment, ...extra }),
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.statusText}`);
   return res.json();

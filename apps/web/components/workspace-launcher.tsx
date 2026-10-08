@@ -111,7 +111,9 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
       const session = await createSession(
         `Local Project: ${folderName}`,
         `Working copy at ${localFolderPath}`,
-        "opencode/zen-coder-free"
+        "opencode/zen-coder-free",
+        "local",
+        "local"
       );
 
       // Set session environment to local
@@ -142,7 +144,10 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
       const session = await createSession(
         `Codespace: ${repo}`,
         `Remote workspace attached to ${repo} on branch ${branch}`,
-        "opencode/zen-coder-free"
+        "opencode/zen-coder-free",
+        "github-codespaces",
+        "sandbox",
+        { codespaceId, repository: repo, branch }
       );
 
       setStatusMessage("2/3 Initialisation du Remote Filesystem & démarrage de la machine...");
@@ -191,7 +196,10 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
       const session = await createSession(
         `Codespace: ${selectedRepo}`,
         `Remote workspace created for ${selectedRepo} on ${selectedBranch}`,
-        "opencode/zen-coder-free"
+        "opencode/zen-coder-free",
+        "github-codespaces",
+        "sandbox",
+        { codespaceId, repository: selectedRepo, branch: selectedBranch }
       );
 
       setStatusMessage("2/3 Initialisation du Remote Filesystem & chargement des fichiers...");
@@ -237,7 +245,10 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
       const session = await createSession(
         `Remote Workspace (${meta.name})`,
         `Execution environment: ${meta.name}`,
-        "opencode/zen-coder-free"
+        "opencode/zen-coder-free",
+        providerId,
+        "sandbox",
+        cloudApiKey ? { apiKey: cloudApiKey.trim() } : {}
       );
 
       await fetch(`/api/sessions/${session.id}`, {

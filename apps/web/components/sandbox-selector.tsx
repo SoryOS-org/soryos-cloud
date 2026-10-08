@@ -150,8 +150,8 @@ interface SandboxSelectorProps {
 
 export function SandboxSelector({
   sessionId = "session",
-  currentEnvironment = "sandbox",
-  currentProviderId = "e2b",
+  currentEnvironment = "local",
+  currentProviderId = "local",
   onSelectEnvironmentAndProvider,
   disabled = false,
 }: SandboxSelectorProps) {
@@ -461,7 +461,7 @@ export function SandboxSelector({
                     type="button"
                     onClick={() => {
                       if (activeEnv !== "sandbox") {
-                        checkGitAndInitiateTransition("sandbox", currentProviderId === "local" ? "e2b" : currentProviderId);
+                        checkGitAndInitiateTransition("sandbox", currentProviderId === "local" ? "github-codespaces" : currentProviderId);
                       }
                     }}
                     className={`flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold rounded-lg border transition cursor-pointer ${

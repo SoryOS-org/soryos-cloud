@@ -131,17 +131,21 @@ export async function initializeAgentProviders(): Promise<void> {
 
   // Try to register Cursor and Gemini providers (new)
   try {
-    const { CursorProvider } = await import('@soryos/provider/src/cursor');
-    agentProviderRegistry.register(new CursorProvider());
-    console.log('[Agent] Registered Cursor provider');
+    const p = await import('@soryos/provider');
+    if ((p as any).CursorProvider) {
+      agentProviderRegistry.register(new (p as any).CursorProvider());
+      console.log('[Agent] Registered Cursor provider');
+    }
   } catch (error) {
     console.warn('[Agent] Failed to register Cursor provider:', error);
   }
 
   try {
-    const { GeminiProvider } = await import('@soryos/provider/src/gemini');
-    agentProviderRegistry.register(new GeminiProvider());
-    console.log('[Agent] Registered Gemini provider');
+    const p = await import('@soryos/provider');
+    if ((p as any).GeminiProvider) {
+      agentProviderRegistry.register(new (p as any).GeminiProvider());
+      console.log('[Agent] Registered Gemini provider');
+    }
   } catch (error) {
     console.warn('[Agent] Failed to register Gemini provider:', error);
   }

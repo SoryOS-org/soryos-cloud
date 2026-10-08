@@ -70,3 +70,15 @@ export class WorkspaceManager {
 }
 
 export const workspaceManager = new WorkspaceManager();
+
+export class WorkspaceStore {
+  public static async get(id: string) {
+    return workspaceManager.getWorkspace(id) || null;
+  }
+}
+
+export class ProjectStore {
+  public static async get(id: string) {
+    return null;
+  }
+}

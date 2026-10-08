@@ -59,7 +59,7 @@ class SandboxManager {
   // Get or Create Sandbox for Session
   async getOrCreateSandbox(
     sessionId: string,
-    requestedProviderId: ProviderId = "e2b"
+    requestedProviderId: ProviderId = "local"
   ): Promise<{ provider: SandboxProvider; sandboxId: string; providerId: ProviderId }> {
     const existing = this.activeSandboxes.get(sessionId);
 
@@ -101,12 +101,12 @@ class SandboxManager {
   }
 
   // Unified File System Operations
-  async readFile(sessionId: string, filePath: string, providerId: ProviderId = "e2b"): Promise<string> {
+  async readFile(sessionId: string, filePath: string, providerId: ProviderId = "local"): Promise<string> {
     const { provider } = await this.getOrCreateSandbox(sessionId, providerId);
     return provider.readFile(filePath);
   }
 
-  async writeFile(sessionId: string, filePath: string, content: string, providerId: ProviderId = "e2b"): Promise<void> {
+  async writeFile(sessionId: string, filePath: string, content: string, providerId: ProviderId = "local"): Promise<void> {
     const { provider } = await this.getOrCreateSandbox(sessionId, providerId);
     await provider.writeFile(filePath, content);
   }
@@ -116,18 +116,18 @@ class SandboxManager {
     filePath: string,
     targetContent: string,
     replacementContent: string,
-    providerId: ProviderId = "e2b"
+    providerId: ProviderId = "local"
   ): Promise<void> {
     const { provider } = await this.getOrCreateSandbox(sessionId, providerId);
     await provider.editFile(filePath, targetContent, replacementContent);
   }
 
-  async deleteFile(sessionId: string, filePath: string, providerId: ProviderId = "e2b"): Promise<void> {
+  async deleteFile(sessionId: string, filePath: string, providerId: ProviderId = "local"): Promise<void> {
     const { provider } = await this.getOrCreateSandbox(sessionId, providerId);
     await provider.deleteFile(filePath);
   }
 
-  async listFiles(sessionId: string, directoryPath?: string, providerId: ProviderId = "e2b"): Promise<FileEntry[]> {
+  async listFiles(sessionId: string, directoryPath?: string, providerId: ProviderId = "local"): Promise<FileEntry[]> {
     const { provider } = await this.getOrCreateSandbox(sessionId, providerId);
     return provider.listFiles(directoryPath);
   }
@@ -137,7 +137,7 @@ class SandboxManager {
     sessionId: string,
     command: string,
     options?: CommandOptions,
-    providerId: ProviderId = "e2b"
+    providerId: ProviderId = "local"
   ): Promise<CommandResult> {
     const { provider, sandboxId } = await this.getOrCreateSandbox(sessionId, providerId);
 
@@ -159,7 +159,7 @@ class SandboxManager {
     sessionId: string,
     command: string,
     options?: CommandOptions,
-    providerId: ProviderId = "e2b"
+    providerId: ProviderId = "local"
   ): Promise<ProcessHandle> {
     const { provider, sandboxId } = await this.getOrCreateSandbox(sessionId, providerId);
     const handle = await provider.startProcess(command, options);
@@ -167,7 +167,7 @@ class SandboxManager {
     return handle;
   }
 
-  async stopProcess(sessionId: string, processId: string, providerId: ProviderId = "e2b"): Promise<void> {
+  async stopProcess(sessionId: string, processId: string, providerId: ProviderId = "local"): Promise<void> {
     const { provider, sandboxId } = await this.getOrCreateSandbox(sessionId, providerId);
     await provider.stopProcess(processId);
     this.emitEvent("sandbox.process.stopped", sessionId, providerId, sandboxId, { processId });

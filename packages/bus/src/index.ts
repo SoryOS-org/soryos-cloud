@@ -62,3 +62,5 @@ export class EventBus {
 }
 
 export const globalEventBus = new EventBus();
+export const GlobalEventBus = globalEventBus;
+export type { EventBus as GlobalEventBusType };

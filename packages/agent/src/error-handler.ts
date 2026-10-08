@@ -730,25 +730,3 @@ export async function handleError(
   return manager.handleError(error, context);
 }
 
-// ============================================================================
-// Exports
-// ============================================================================
-
-export {
-  ErrorClassifier,
-  ErrorRecoveryManager,
-  // Error types
-  SandboxTerminatedError,
-  SandboxTimeoutError,
-  SandboxNotReadyError,
-  SessionExpiredError,
-  RateLimitError,
-  PermissionDeniedError,
-  ValidationError,
-  ResourceExhaustedError,
-  JobCanceledError,
-  // Types
-  ErrorType,
-  ClassifiedError,
-  ErrorClassification
-};

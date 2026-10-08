@@ -6,11 +6,19 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@google/genai": "^2.26.0",
-    "@soryos/bus": "workspace:*",
-    "@soryos/core": "workspace:*",
-    "@soryos/execution": "workspace:*",
-    "@soryos/permissions": "workspace:*",
-    "@soryos/schema": "workspace:*",
-    "@soryos/tool": "workspace:*"
+    "@soryos/bus": "*",
+    "@soryos/core": "*",
+    "@soryos/execution": "*",
+    "@soryos/permissions": "*",
+    "@soryos/schema": "*",
+    "@soryos/tool": "*",
+    "@soryos/images": "*",
+    "@soryos/voice": "*",
+    "@soryos/provider": "*",
+    "@soryos/session": "*",
+    "@soryos/workspace": "*",
+    "@soryos/filesystem": "*",
+    "@soryos/git": "*",
+    "@soryos/jobs": "*"
   }
 }

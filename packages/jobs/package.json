@@ -5,11 +5,11 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
-    "@soryos/core": "workspace:*",
-    "@soryos/schema": "workspace:*",
-    "@soryos/sandbox": "workspace:*",
-    "@soryos/session": "workspace:*",
-    "@soryos/bus": "workspace:*",
+    "@soryos/core": "*",
+    "@soryos/schema": "*",
+    "@soryos/sandbox": "*",
+    "@soryos/session": "*",
+    "@soryos/bus": "*",
     "inngest": "^3.0.0"
   }
 }

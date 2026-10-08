@@ -21,9 +21,9 @@
   "author": "SoryOS Team",
   "license": "MIT",
   "dependencies": {
-    "@soryos/schema": "workspace:*",
-    "@soryos/core": "workspace:*",
-    "@soryos/execution": "workspace:*"
+    "@soryos/schema": "*",
+    "@soryos/core": "*",
+    "@soryos/execution": "*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

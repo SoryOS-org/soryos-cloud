@@ -72,8 +72,8 @@ export default function ChatPage({
   const [sessionTitle, setSessionTitle] = useState<string>("Session");
   const [currentModel, setCurrentModel] = useState<string>(DEFAULT_MODEL_ID);
   const [currentAgent, setCurrentAgent] = useState<string>("build");
-  const [currentEnvironment, setCurrentEnvironment] = useState<EnvironmentType>("sandbox");
-  const [currentProvider, setCurrentProvider] = useState<ProviderId>("e2b");
+  const [currentEnvironment, setCurrentEnvironment] = useState<EnvironmentType>("local");
+  const [currentProvider, setCurrentProvider] = useState<ProviderId>("local");
   const [workspaceState, setWorkspaceState] = useState<
     "NO_WORKSPACE" | "WORKSPACE_LOADING" | "WORKSPACE_READY" | "WORKSPACE_ERROR"
   >("WORKSPACE_READY");

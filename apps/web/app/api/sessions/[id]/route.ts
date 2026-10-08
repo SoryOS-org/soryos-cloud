@@ -24,7 +24,7 @@ export async function GET(
     sandbox_id: session.sandbox_id,
     sandbox_state: session.sandbox_state,
     environment: session.environment || (session.providerId === "local" ? "local" : "sandbox"),
-    providerId: session.providerId || "e2b",
+    providerId: session.providerId || "local",
     codespaceId: session.codespaceId,
     repository: session.repository,
     branch: session.branch,
@@ -69,8 +69,6 @@ export async function PATCH(
     session.environment = body.environment as "sandbox" | "local";
     if (session.environment === "local") {
       session.providerId = "local";
-    } else if (session.providerId === "local") {
-      session.providerId = "e2b";
     }
   }
 
@@ -80,8 +78,8 @@ export async function PATCH(
     session.environment = newProviderId === "local" ? "local" : "sandbox";
   }
 
-  // Switch sandbox provider if needed
-  if (session.providerId) {
+  // Switch sandbox provider if needed (only if providerId is explicitly set and not local)
+  if (session.providerId && session.providerId !== "local") {
     try {
       const { sandboxId } = await sandboxManager.switchProvider(id, session.providerId);
       session.sandbox_id = sandboxId;

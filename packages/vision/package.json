@@ -26,10 +26,10 @@
   "author": "SoryOS Team",
   "license": "MIT",
   "dependencies": {
-    "@soryos/schema": "workspace:*",
-    "@soryos/core": "workspace:*",
-    "@soryos/images": "workspace:*",
-    "@soryos/provider": "workspace:*"
+    "@soryos/schema": "*",
+    "@soryos/core": "*",
+    "@soryos/images": "*",
+    "@soryos/provider": "*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

@@ -16,6 +16,10 @@ const sessionsStore: Map<string, SessionData> =
 globalThis.__soryos_sessions = sessionsStore;
 
 export class SessionStore {
+  public static async get(id: string): Promise<SessionData | null> {
+    return sessionStore.get(id) || null;
+  }
+
   public get(id: string): SessionData | undefined {
     return sessionsStore.get(id);
   }
@@ -84,3 +88,11 @@ export class SessionStore {
 }
 
 export const sessionStore = new SessionStore();
+export { workspaceManager } from "@soryos/workspace";
+
+export class MessageStore {
+  public static async getBySession(sessionId: string): Promise<ChatMessage[]> {
+    const session = sessionStore.get(sessionId);
+    return session?.messages || [];
+  }
+}

@@ -6,7 +6,7 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@google/genai": "^2.26.0",
-    "@soryos/core": "workspace:*",
-    "@soryos/schema": "workspace:*"
+    "@soryos/core": "*",
+    "@soryos/schema": "*"
   }
 }

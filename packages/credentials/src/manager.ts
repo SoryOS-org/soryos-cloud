@@ -1,5 +1,5 @@
-import { computeFingerprint, maskSecret } from "../ai/helpers";
-import type { ResolvedCredential, CredentialSource } from "../ai/types";
+import { computeFingerprint, maskSecret } from "@soryos/provider";
+import type { ResolvedCredential, CredentialSource } from "@soryos/provider";
 
 export type AuthMethod = "github_oauth" | "api_key" | "api_token" | "service_account";
 

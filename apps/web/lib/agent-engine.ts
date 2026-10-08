@@ -65,10 +65,6 @@ export { executionManager };
 // FONCTIONS DE CRÉATION (pour compatibilité avec l'API existante)
 // ============================================================================
 
-import { workspaceManager } from "@soryos/workspace";
-import { sessionStore } from "@soryos/session";
-import type { ProviderId } from "@soryos/schema";
-
 /**
  * Crée une nouvelle session avec un workspace.
  * @param title - Titre de la session
@@ -79,14 +75,16 @@ import type { ProviderId } from "@soryos/schema";
 export function createNewSession(
   title: string = "New Session",
   message?: string,
-  model?: string
+  model?: string,
+  providerId: ProviderId = "local"
 ): SessionData {
   const id = `session-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   
-  // Créer le workspace
+  // Créer le workspace (default local, never force e2b unless requested)
+  const env = providerId === "local" ? "local" : "sandbox";
   const ws = workspaceManager.getOrCreateWorkspace(id, {
-    environment: "sandbox",
-    providerId: "e2b",
+    environment: env,
+    providerId: providerId,
   });
   
   // Créer la session

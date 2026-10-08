@@ -10,6 +10,7 @@
 export * from './client';
 export * from './middleware';
 export * from './types';
+export * from './queue';
 
 // Export job functions (will be imported dynamically)
 export * from './functions/create-session';

@@ -5,8 +5,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
-    "@soryos/core": "workspace:*",
-    "@soryos/schema": "workspace:*",
-    "@soryos/execution": "workspace:*"
+    "@soryos/core": "*",
+    "@soryos/schema": "*",
+    "@soryos/execution": "*",
+    "@soryos/github": "*"
   }
 }

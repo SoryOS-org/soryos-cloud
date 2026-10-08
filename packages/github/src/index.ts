@@ -21,6 +21,9 @@ export * from './types';
 // Re-export client
 export * from './client';
 
+// Re-export service
+export * from './service';
+
 // Additional utilities
 import { 
   GitHubClient, 

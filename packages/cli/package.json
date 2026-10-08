@@ -8,11 +8,11 @@
     "soryos-code": "./src/index.ts"
   },
   "dependencies": {
-    "@soryos/agent": "workspace:*",
-    "@soryos/bus": "workspace:*",
-    "@soryos/core": "workspace:*",
-    "@soryos/execution": "workspace:*",
-    "@soryos/schema": "workspace:*",
-    "@soryos/tool": "workspace:*"
+    "@soryos/agent": "*",
+    "@soryos/bus": "*",
+    "@soryos/core": "*",
+    "@soryos/execution": "*",
+    "@soryos/schema": "*",
+    "@soryos/tool": "*"
   }
 }

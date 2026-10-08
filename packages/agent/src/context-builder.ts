@@ -12,8 +12,7 @@
 
 import { GlobalEventBus } from '@soryos/bus';
 import { SessionStore, MessageStore } from '@soryos/session';
-import { WorkspaceStore } from '@soryos/workspace';
-import { ProjectStore } from '@soryos/project';
+import { WorkspaceStore, ProjectStore } from '@soryos/workspace';
 import { FileSystem } from '@soryos/filesystem';
 import { GitManager } from '@soryos/git';
 

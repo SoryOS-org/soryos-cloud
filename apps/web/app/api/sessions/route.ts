@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sessionStore, workspaceManager } from "@soryos/session";
+import { sessionStore } from "@soryos/session";
+import { workspaceManager } from "@soryos/workspace";
 import type { SessionData, ProviderId } from "@soryos/schema";
 
 /**
@@ -18,10 +19,16 @@ export async function POST(req: NextRequest) {
     // Créer une nouvelle session via @soryos/session
     const id = `session-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     
+    // Determine provider and environment (defaults to local, never force e2b unless requested)
+    const providerId: ProviderId = body.providerId || "local";
+    const environment = body.environment || (providerId === "local" ? "local" : "sandbox");
+
     // Créer le workspace
     workspaceManager.getOrCreateWorkspace(id, {
-      environment: "sandbox",
-      providerId: "e2b",
+      environment,
+      providerId,
+      repository: body.repository,
+      branch: body.branch,
     });
     
     // Créer la session
@@ -30,8 +37,11 @@ export async function POST(req: NextRequest) {
       title: body.title || "New Session",
       sandbox_id: `sandbox-${id}`,
       sandbox_state: "running",
-      environment: "sandbox",
-      providerId: "e2b",
+      environment,
+      providerId,
+      codespaceId: body.codespaceId,
+      repository: body.repository,
+      branch: body.branch,
       model: body.model || "deepseek-chat",
       provider: "DeepSeek",
       created_at: new Date().toISOString(),
@@ -40,7 +50,7 @@ export async function POST(req: NextRequest) {
       preview_url: null,
       needs_run: false,
       agent_running: false,
-      cwd: "/home/user",
+      cwd: providerId === "local" ? (typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet") : "/home/user",
     };
     
     // Ajouter le message initial si fourni

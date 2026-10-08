@@ -123,6 +123,9 @@ export class WebSpeechTranscriber implements Transcriber {
     recognition.lang = options.language || this.config.language;
 
     let finalText = '';
+    const queue: string[] = [];
+    let resolveNext: (() => void) | null = null;
+    let isDone = false;
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
@@ -139,7 +142,11 @@ export class WebSpeechTranscriber implements Transcriber {
 
       if (finalTranscript) {
         finalText += finalTranscript;
-        yield finalText;
+        queue.push(finalText);
+        if (resolveNext) {
+          resolveNext();
+          resolveNext = null;
+        }
       }
 
       if (interimTranscript && options.onProgress) {
@@ -149,15 +156,40 @@ export class WebSpeechTranscriber implements Transcriber {
 
     recognition.onerror = (event: any) => {
       recognition.stop();
-      throw new Error(`Speech recognition error: ${event.error}`);
+      isDone = true;
+      if (resolveNext) {
+        resolveNext();
+        resolveNext = null;
+      }
+    };
+
+    recognition.onend = () => {
+      isDone = true;
+      if (resolveNext) {
+        resolveNext();
+        resolveNext = null;
+      }
     };
 
     recognition.start();
 
-    // Return cleanup function
-    return () => {
-      recognition.stop();
-    };
+    try {
+      while (!isDone || queue.length > 0) {
+        if (queue.length > 0) {
+          yield queue.shift()!;
+        } else if (!isDone) {
+          await new Promise<void>((resolve) => {
+            resolveNext = resolve;
+          });
+        }
+      }
+    } finally {
+      try {
+        recognition.stop();
+      } catch {
+        // ignore
+      }
+    }
   }
 }
 

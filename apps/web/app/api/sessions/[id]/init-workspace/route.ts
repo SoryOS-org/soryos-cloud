@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sessionStore, workspaceManager } from "@soryos/session";
+import { sessionStore } from "@soryos/session";
+import { workspaceManager } from "@soryos/workspace";
 import { sandboxManager } from "@soryos/sandbox";
 import { GitHubRemoteFilesystem } from "@soryos/filesystem";
 import type { SessionData } from "@soryos/schema";
@@ -25,19 +26,28 @@ export async function POST(
       codespaceId: body.codespaceId,
       repository: body.repository,
       branch: body.branch,
-      providerId: body.providerId,
+      providerId: body.providerId as ProviderId | undefined,
     };
 
-    // Initialize workspace
+    // Determine target provider: overrides first, then session.providerId, fallback to "local"
+    const targetProviderId: ProviderId = overrides.providerId || session.providerId || "local";
+    session.providerId = targetProviderId;
+    if (overrides.repository) session.repository = overrides.repository;
+    if (overrides.branch) session.branch = overrides.branch;
+    if (overrides.codespaceId) session.codespaceId = overrides.codespaceId;
+    session.environment = targetProviderId === "local" ? "local" : "sandbox";
+
+    // Initialize workspace with target provider
     const ws = workspaceManager.getOrCreateWorkspace(id, {
       environment: session.environment,
-      providerId: session.providerId,
+      providerId: targetProviderId,
       repository: overrides.repository,
       branch: overrides.branch,
     });
+    ws.providerId = targetProviderId;
 
-    // Initialize sandbox
-    const { sandboxId } = await sandboxManager.getOrCreateSandbox(id, ws.providerId);
+    // Initialize sandbox for target provider (NEVER call E2B when targetProviderId is github-codespaces or local!)
+    const { sandboxId } = await sandboxManager.getOrCreateSandbox(id, targetProviderId);
     session.sandbox_id = sandboxId;
 
     // If GitHub repository, sync files
