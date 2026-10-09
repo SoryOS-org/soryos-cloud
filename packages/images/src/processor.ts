@@ -48,7 +48,7 @@ export class ImageProcessor {
   /**
    * Load image from various sources
    */
-  private async loadImage(source: Blob | File | string | HTMLImageElement): Promise<HTMLImageElement> {
+  private async loadImage(source: Blob | File | string | HTMLImageElement | ImageData): Promise<HTMLImageElement> {
     if (typeof document === 'undefined') {
       throw new Error('Image processing requires a browser environment');
     }
@@ -56,33 +56,13 @@ export class ImageProcessor {
     return new Promise((resolve, reject) => {
       let img: HTMLImageElement;
 
-      if (source instanceof HTMLImageElement) {
-        img = source;
-        resolve(img);
-        return;
-      }
-
-      img = new Image();
-
-      if (source instanceof Blob || source instanceof File) {
-        const url = URL.createObjectURL(source);
-        img.onload = () => {
-          URL.revokeObjectURL(url);
-          resolve(img);
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          reject(new Error('Failed to load image from blob'));
-        };
-        img.src = url;
-      } else if (typeof source === 'string') {
-        // Check if it's a data URL or a regular URL
+      if (typeof source === 'string') {
+        img = new Image();
         if (source.startsWith('data:')) {
           img.onload = () => resolve(img);
           img.onerror = () => reject(new Error('Failed to load image from data URL'));
           img.src = source;
         } else {
-          // Regular URL - use fetch
           fetch(source)
             .then(response => response.blob())
             .then(blob => {
@@ -99,6 +79,27 @@ export class ImageProcessor {
             })
             .catch(error => reject(error));
         }
+        return;
+      }
+
+      if (source instanceof HTMLImageElement) {
+        resolve(source);
+        return;
+      }
+
+      img = new Image();
+
+      if (source instanceof Blob) {
+        const url = URL.createObjectURL(source);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Failed to load image from blob'));
+        };
+        img.src = url;
       } else {
         reject(new Error('Unsupported image source type'));
       }
@@ -126,13 +127,13 @@ export class ImageProcessor {
 
       // Apply operations in sequence
       const operationsApplied: ImageOperation[] = [];
-      let currentImage = await this.toBlob(this.canvas, options.operations?.find(op => op.type === 'convert')?.params?.format as ImageFormat || 'png');
+      let currentImage: Blob = await this.toBlob(this.canvas, options.operations?.find(op => op.type === 'convert')?.params?.format as ImageFormat || 'png');
 
       // Apply each operation
       if (options.operations) {
         for (const operation of options.operations) {
           const result = await this.applyOperation(operation, currentImage);
-          currentImage = result.image;
+          currentImage = typeof result.image === 'string' ? await this.dataUrlToBlob(result.image) : result.image;
           operationsApplied.push(operation);
         }
       } else {
@@ -141,9 +142,7 @@ export class ImageProcessor {
       }
 
       // Get final blob
-      const finalBlob = typeof currentImage === 'string' 
-        ? await this.dataUrlToBlob(currentImage) 
-        : currentImage;
+      const finalBlob = currentImage;
 
       const result: ImageProcessingResult = {
         success: true,

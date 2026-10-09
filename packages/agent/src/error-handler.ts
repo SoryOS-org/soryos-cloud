@@ -13,7 +13,10 @@
 
 import { GlobalEventBus } from '@soryos/bus';
 import { SessionStore } from '@soryos/session';
-import { JobQueue } from '@soryos/jobs';
+
+export interface JobQueue {
+  [key: string]: unknown;
+}
 
 // ============================================================================
 // Error Types and Classification

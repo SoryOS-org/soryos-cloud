@@ -16,11 +16,12 @@ import { globalEventBus } from '@soryos/bus';
 import { permissionsManager } from '@soryos/permissions';
 
 export interface ShellCommandOptions {
-  command: string;
+  command?: string;
   cwd?: string;
   timeoutMs?: number;
   env?: Record<string, string>;
   background?: boolean;
+  continueOnError?: boolean;
 }
 
 export interface ShellCommandResult {
@@ -33,6 +34,7 @@ export interface ShellCommandResult {
   pid?: number;
   error?: string;
   verified?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ProcessInfo {

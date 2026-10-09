@@ -116,12 +116,12 @@ export interface ImageAnalysisOptions {
 /**
  * Image analysis result
  */
-export interface ImageAnalysisResult {
+export interface ImageAnalysisResult<T = any> {
   success: boolean;
   analysisType: ImageAnalysisType;
   provider: VisionModel;
   model?: string;
-  results: ImageAnalysisData[];
+  results: T[];
   timestamp: number;
   error?: string;
   sessionId?: string;

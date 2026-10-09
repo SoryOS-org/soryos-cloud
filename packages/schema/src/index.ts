@@ -30,6 +30,7 @@ export interface CommandOptions {
   cwd?: string;
   env?: Record<string, string>;
   timeoutMs?: number;
+  background?: boolean;
 }
 
 export interface CommandResult {

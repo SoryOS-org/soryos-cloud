@@ -107,38 +107,3 @@ export const imageManager = new ImageManager();
 export async function initializeImages(options?: any): Promise<ImageManager> {
   return imageManager;
 }
-
-// Export all types for convenience
-export type {
-  ImageProvider,
-  ImageFormat,
-  ImageAnalysisType,
-  VisionModel,
-  ImageProcessingState,
-  ImageUploadOptions,
-  ImageUploadResult,
-  ImageProcessingOptions,
-  ImageProcessingResult,
-  ImageOperation,
-  ImageAnalysisOptions,
-  ImageAnalysisResult,
-  ImageAnalysisData,
-  OCRResult,
-  OCRTextRegion,
-  OCRTextLine,
-  OCRWord,
-  ObjectDetectionResult,
-  DetectedObject,
-  ImageDescriptionResult,
-  ImageDescription,
-  ImageEventType,
-  ImageEventPayload,
-  ImageInputResult,
-  ImageCapabilities,
-  ImageSessionState,
-  MockupInput,
-  MockupAnalysisResult,
-  LayoutElement,
-  ColorPalette,
-  ColorInfo,
-};

@@ -16,6 +16,8 @@ import {
   RecordingState,
   RecordingOptions,
   VoiceConfig,
+  SampleRate,
+  ChannelCount,
   DEFAULT_VOICE_CONFIG,
 } from './types';
 
@@ -52,7 +54,7 @@ export class AudioRecorder {
   static isSupported(): boolean {
     return (
       typeof window !== 'undefined' &&
-      (navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+      !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
     );
   }
 
@@ -245,8 +247,9 @@ export class AudioRecorder {
     this.sampleBuffer.push(samples);
 
     // Create audio chunk
+    const int16 = this.float32ToInt16(samples);
     const chunk: AudioChunk = {
-      data: this.float32ToInt16(samples),
+      data: new Uint8Array(int16.buffer, int16.byteOffset, int16.byteLength),
       timestamp,
       durationMs: (samples.length / this.sampleRate) * 1000,
       sampleCount: samples.length,
@@ -378,8 +381,8 @@ export class AudioRecorder {
 
     return {
       samples: mergedSamples,
-      sampleRate: this.sampleRate,
-      channelCount: this.channelCount,
+      sampleRate: this.sampleRate as SampleRate,
+      channelCount: this.channelCount as ChannelCount,
       durationMs,
     };
   }
@@ -441,7 +444,7 @@ export class AudioRecorder {
     view.setUint32(40, dataSize, true);
 
     // Write PCM data
-    const int16Samples = this.float32ToInt16(samples);
+    const int16Samples = samples instanceof Float32Array ? this.float32ToInt16(samples) : samples;
     for (let i = 0; i < int16Samples.length; i++) {
       view.setInt16(44 + i * 2, int16Samples[i], true);
     }

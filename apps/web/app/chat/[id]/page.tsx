@@ -241,6 +241,7 @@ export default function ChatPage({
               name: ev.name,
               input: ev.input,
               status: "running",
+              startedAt: new Date().toISOString(),
             }),
           );
         } else if (ev.type === "tool_end") {
@@ -250,6 +251,7 @@ export default function ChatPage({
               output: ev.output,
               isError: Boolean(ev.isError),
               status: ev.isError ? "error" : "done",
+              completedAt: new Date().toISOString(),
             }),
           );
           void refreshFiles();

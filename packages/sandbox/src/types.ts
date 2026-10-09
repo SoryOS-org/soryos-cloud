@@ -48,6 +48,9 @@ export interface CommandOptions {
   cwd?: string;
   env?: Record<string, string>;
   timeoutMs?: number;
+  background?: boolean;
+  onStdout?: (data: string) => void;
+  onStderr?: (data: string) => void;
 }
 
 export interface CommandResult {

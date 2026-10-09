@@ -50,6 +50,8 @@ export interface ExecutionProvider {
   editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void>;
   deleteFile(filePath: string): Promise<void>;
   listFiles(dirPath?: string): Promise<FileEntry[]>;
+  createDirectory?(dirPath: string): Promise<void>;
+  moveFile?(sourcePath: string, destinationPath: string): Promise<void>;
 }
 
 export class LocalExecutionProvider implements ExecutionProvider {
@@ -223,6 +225,22 @@ export class LocalExecutionProvider implements ExecutionProvider {
 
     await scan(targetDir, "");
     return results;
+  }
+
+  async createDirectory(dirPath: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const targetDir = path.isAbsolute(dirPath) ? dirPath : path.join(this.workspaceDir, dirPath);
+    await fs.mkdir(targetDir, { recursive: true });
+  }
+
+  async moveFile(sourcePath: string, destinationPath: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const src = path.isAbsolute(sourcePath) ? sourcePath : path.join(this.workspaceDir, sourcePath);
+    const dst = path.isAbsolute(destinationPath) ? destinationPath : path.join(this.workspaceDir, destinationPath);
+    await fs.mkdir(path.dirname(dst), { recursive: true });
+    await fs.rename(src, dst);
   }
 }
 

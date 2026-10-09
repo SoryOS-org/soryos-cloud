@@ -4,6 +4,7 @@
  */
 
 export * from "@soryos/core";
+export type { ChatMessage, ProviderId } from "@soryos/schema";
 export * from "@soryos/schema";
 export * from "@soryos/bus";
 export * from "@soryos/permissions";

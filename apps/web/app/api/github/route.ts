@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const gitHubService = getGitHubService();
   const { searchParams } = new URL(req.url);
   const action = searchParams.get("action") || "";
   const body = await req.json().catch(() => ({}));

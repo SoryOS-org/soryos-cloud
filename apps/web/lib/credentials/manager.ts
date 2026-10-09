@@ -1,1 +1,1 @@
-export { credentialManager } from "@soryos/credentials";
+export { credentialManager, PROVIDER_REGISTRY } from "@soryos/credentials";

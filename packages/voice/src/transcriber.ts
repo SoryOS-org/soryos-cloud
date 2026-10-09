@@ -225,7 +225,7 @@ export abstract class ApiTranscriber implements Transcriber {
     if (options.audio instanceof Blob) {
       audioBlob = options.audio;
     } else if (options.audio instanceof Uint8Array) {
-      audioBlob = new Blob([options.audio], { type: 'audio/wav' });
+      audioBlob = new Blob([options.audio as unknown as BlobPart], { type: 'audio/wav' });
     } else {
       throw new Error('Unsupported audio format');
     }
@@ -267,7 +267,7 @@ export class WhisperTranscriber extends ApiTranscriber {
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
     const formData = new FormData();
-    formData.append('audio', audio instanceof Blob ? audio : new Blob([audio]));
+    formData.append('audio', audio instanceof Blob ? audio : new Blob([audio as unknown as BlobPart]));
     formData.append('language', options.language || this.config.language);
     formData.append('model', options.model || this.config.model || 'whisper-1');
 
@@ -324,7 +324,8 @@ export class GoogleTranscriber extends ApiTranscriber {
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
     const audioContent = await (audio instanceof Blob ? audio.arrayBuffer() : audio);
-    const base64Audio = Buffer.from(audioContent).toString('base64');
+    const bufferData = audioContent instanceof Uint8Array ? audioContent : new Uint8Array(audioContent);
+    const base64Audio = Buffer.from(bufferData).toString('base64');
 
     const requestBody = {
       config: {
@@ -394,6 +395,7 @@ export class AzureTranscriber extends ApiTranscriber {
     options: TranscriptionOptions
   ): Promise<TranscriptionResult> {
     const audioContent = await (audio instanceof Blob ? audio.arrayBuffer() : audio);
+    const bodyPayload = audioContent instanceof Uint8Array ? (audioContent.buffer as ArrayBuffer) : audioContent;
 
     const response = await fetch(this.apiUrl, {
       method: 'POST',
@@ -401,7 +403,7 @@ export class AzureTranscriber extends ApiTranscriber {
         'Ocp-Apim-Subscription-Key': this.apiKey || '',
         'Content-Type': 'audio/wav',
       },
-      body: audioContent,
+      body: bodyPayload,
     });
 
     if (!response.ok) {

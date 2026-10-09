@@ -50,6 +50,13 @@ export class GitHubClient {
   }
 
   /**
+   * Get auth token
+   */
+  getToken(sessionId?: string): string | null {
+    return this.token || null;
+  }
+
+  /**
    * Make a request to GitHub API with retries
    */
   private async request<T>(

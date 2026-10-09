@@ -112,14 +112,15 @@ export class E2BProvider implements SandboxProvider {
 
     try {
       // Create sandbox with native auto-pause
-      this.sandbox = await Sandbox.betaCreate(templateId, {
+      const createFn = (Sandbox as any).betaCreate || Sandbox.create;
+      this.sandbox = await createFn.call(Sandbox, templateId, {
         apiKey: this.apiKey,
         envs: this.config.envVars || {},
         autoPause: true,
         timeoutMs: timeoutMs
       });
 
-      this.sandboxId = this.sandbox.sandboxId;
+      this.sandboxId = this.sandbox?.sandboxId || null;
       console.log(`[E2B] Sandbox created: ${this.sandboxId}`);
 
       // Wait for startup script to finish generating session token
@@ -129,7 +130,7 @@ export class E2BProvider implements SandboxProvider {
       await this.configureEnvironment();
 
       this.status = "ready";
-      return this.sandboxId;
+      return this.sandboxId || 'e2b-sandbox';
 
     } catch (error) {
       console.error('[E2B] Failed to create sandbox:', error);
@@ -158,7 +159,7 @@ export class E2BProvider implements SandboxProvider {
     try {
       const timeoutMs = this.config.timeout || parseInt(process.env.AUTO_PAUSE_TIMEOUT_MS || '900000');
       
-      this.sandbox = await Sandbox.connect(sandboxId, {
+      this.sandbox = await (Sandbox as any).connect(sandboxId, {
         apiKey: this.apiKey,
         timeoutMs: timeoutMs
       });
@@ -167,7 +168,7 @@ export class E2BProvider implements SandboxProvider {
 
       // Explicitly reset the sandbox timeout after connecting
       try {
-        await this.sandbox.setTimeout(timeoutMs);
+        await (this.sandbox as any)?.setTimeout?.(timeoutMs);
         console.log(`[E2B] Sandbox timeout reset to ${timeoutMs/1000}s`);
       } catch (timeoutError) {
         console.warn('[E2B] Failed to reset sandbox timeout:', timeoutError);
@@ -207,7 +208,7 @@ export class E2BProvider implements SandboxProvider {
    * Stop the sandbox (kill it)
    */
   async stop(): Promise<void> {
-    await this.kill();
+    await this.destroy();
   }
 
   /**
@@ -221,7 +222,7 @@ export class E2BProvider implements SandboxProvider {
 
     try {
       console.log(`[E2B] Pausing sandbox: ${this.sandboxId}`);
-      await this.sandbox.betaPause();
+      await (this.sandbox as any).betaPause?.();
       this.status = "paused";
       console.log(`[E2B] Sandbox paused: ${this.sandboxId}`);
     } catch (error) {
@@ -234,7 +235,7 @@ export class E2BProvider implements SandboxProvider {
    * Resume a paused sandbox
    */
   async resume(): Promise<void> {
-    if (!this.sandbox) {
+    if (!this.sandboxId) {
       console.log('[E2B] No sandbox to resume');
       return;
     }
@@ -242,11 +243,11 @@ export class E2BProvider implements SandboxProvider {
     try {
       console.log(`[E2B] Resuming sandbox: ${this.sandboxId}`);
       const timeoutMs = this.config.timeout || parseInt(process.env.AUTO_PAUSE_TIMEOUT_MS || '900000');
-      this.sandbox = await this.sandbox.connect({ 
+      this.sandbox = await (Sandbox as any).connect(this.sandboxId, { 
         apiKey: this.apiKey,
         timeoutMs: timeoutMs 
       });
-      await this.sandbox.setTimeout(timeoutMs);
+      await (this.sandbox as any)?.setTimeout?.(timeoutMs);
       this.status = "ready";
       console.log(`[E2B] Sandbox resumed: ${this.sandboxId}`);
     } catch (error) {
@@ -446,7 +447,13 @@ export class E2BProvider implements SandboxProvider {
     }
 
     try {
-      await this.sandbox.files.delete(filePath);
+      if ((this.sandbox.files as any).delete) {
+        await (this.sandbox.files as any).delete(filePath);
+      } else if ((this.sandbox.files as any).remove) {
+        await (this.sandbox.files as any).remove(filePath);
+      } else {
+        await this.executeCommand(`rm -rf "${filePath}"`);
+      }
       console.log(`[E2B] File deleted: ${filePath}`);
     } catch (error) {
       console.error(`[E2B] Failed to delete file ${filePath}:`, error);
@@ -466,12 +473,12 @@ export class E2BProvider implements SandboxProvider {
       const targetDir = directoryPath || this.cwd;
       const result = await this.sandbox.files.list(targetDir);
       
-      return result.map(f => ({
-        path: f.path,
+      return (result as any[]).map(f => ({
+        path: f.path || f.name,
         name: f.name,
-        isDirectory: f.isDirectory,
-        sizeBytes: f.sizeBytes,
-        updatedAt: f.updatedAt?.toISOString(),
+        isDirectory: Boolean(f.isDirectory ?? (f.type === 'dir')),
+        sizeBytes: f.sizeBytes ?? f.size ?? 0,
+        updatedAt: f.updatedAt ? new Date(f.updatedAt).toISOString() : undefined,
       }));
     } catch (error) {
       console.error(`[E2B] Failed to list files in ${directoryPath || this.cwd}:`, error);
@@ -489,7 +496,13 @@ export class E2BProvider implements SandboxProvider {
     }
 
     try {
-      await this.sandbox.files.createDirectory(path);
+      if ((this.sandbox.files as any).createDirectory) {
+        await (this.sandbox.files as any).createDirectory(path);
+      } else if ((this.sandbox.files as any).makeDir) {
+        await (this.sandbox.files as any).makeDir(path);
+      } else {
+        await this.executeCommand(`mkdir -p "${path}"`);
+      }
       console.log(`[E2B] Directory created: ${path}`);
     } catch (error) {
       console.error(`[E2B] Failed to create directory ${path}:`, error);

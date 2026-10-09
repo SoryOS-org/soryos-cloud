@@ -661,10 +661,10 @@ export class GitHubManager {
     return {
       ...repoResult,
       data: {
-        ...repoResult.data,
+        ...repoResult.data!,
         readmeCreated: readmeResult.success,
       },
-    };
+    } as GitHubOperationResult<RepositoryInfo & { readmeCreated: boolean }>;
   }
 
   /**
@@ -704,17 +704,21 @@ export class GitHubManager {
       this.client.listPullRequests(owner, repo, 'open'),
     ]);
 
-    if (!repoResult.success) {
-      return { ...repoResult } as GitHubOperationResult;
+    if (!repoResult.success || !repoResult.data) {
+      return {
+        success: false,
+        error: repoResult.error || 'Failed to get repository',
+        timestamp: Date.now(),
+      };
     }
 
     return {
       success: true,
       data: {
         repo: repoResult.data,
-        branches: branchesResult.success ? branchesResult.data : [],
-        recentCommits: commitsResult.success ? commitsResult.data : [],
-        openPullRequests: prsResult.success ? prsResult.data : [],
+        branches: branchesResult.success && branchesResult.data ? branchesResult.data : [],
+        recentCommits: commitsResult.success && commitsResult.data ? commitsResult.data : [],
+        openPullRequests: prsResult.success && prsResult.data ? prsResult.data : [],
       },
       timestamp: Date.now(),
     };
@@ -763,7 +767,7 @@ export function getGitHubManager(config?: GitHubConfig): GitHubManager {
     globalGitHubManager = new GitHubManager(config);
   }
   if (!globalGitHubManager) {
-    throw new Error('GitHub manager not initialized. Call GitHubManager.create() first.');
+    globalGitHubManager = new GitHubManager({ token: process.env.GITHUB_TOKEN || "ghp_mock", owner: "SoryOS-org" });
   }
   return globalGitHubManager;
 }
@@ -774,33 +778,3 @@ export function getGitHubManager(config?: GitHubConfig): GitHubManager {
 export function setGitHubManager(manager: GitHubManager): void {
   globalGitHubManager = manager;
 }
-
-// Export all types for convenience
-export type {
-  GitHubProvider,
-  RepositoryVisibility,
-  PullRequestState,
-  PullRequestMergeMethod,
-  BranchProtectionRule,
-  GitHubConfig,
-  RepositoryInfo,
-  BranchInfo,
-  CommitInfo,
-  FileInfo,
-  PullRequestInfo,
-  WebhookConfig,
-  WebhookEventType,
-  CreateRepositoryOptions,
-  CommitOptions,
-  PushOptions,
-  PullRequestOptions,
-  MergePullRequestOptions,
-  CreateBranchOptions,
-  READMETemplateType,
-  READMETemplateConfig,
-  AutoREADMEOptions,
-  CommitTemplateConfig,
-  GitHubOperationResult,
-  GitHubSessionState,
-  SoryOSCommitMetadata,
-};

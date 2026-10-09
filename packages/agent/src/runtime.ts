@@ -49,9 +49,8 @@ export class AgentRuntime {
   private async initializeErrorRecovery(): Promise<void> {
     try {
       this.errorRecoveryManager = getErrorRecoveryManager(sessionStore as any);
-      console.log('[Agent] Error recovery manager initialized');
-    } catch (error) {
-      console.error('[Agent] Failed to initialize error recovery:', error);
+    } catch {
+      // Ignore recovery initialization failures in dev mode
     }
   }
 

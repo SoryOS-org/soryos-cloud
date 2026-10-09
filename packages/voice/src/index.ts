@@ -166,26 +166,3 @@ export async function initializeVoice(options?: any): Promise<VoiceManager> {
   await voiceManager.initialize(options);
   return voiceManager;
 }
-
-// Export all types for convenience
-export type {
-  VoiceProvider,
-  AudioFormat,
-  SampleRate,
-  ChannelCount,
-  BitDepth,
-  RecordingState,
-  TranscriptionState,
-  VoiceConfig,
-  AudioChunk,
-  AudioBuffer,
-  RecordingOptions,
-  TranscriptionOptions,
-  TranscriptionResult,
-  VoiceRecognitionResult,
-  VoiceEventType,
-  VoiceEventPayload,
-  VoiceInputResult,
-  VoiceCapabilities,
-  VoiceSessionState,
-};

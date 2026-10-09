@@ -956,7 +956,11 @@ export class FilesystemTools {
       });
 
       // Créer le répertoire
-      await this.provider.createDirectory(directoryPath);
+      if (this.provider.createDirectory) {
+        await this.provider.createDirectory(directoryPath);
+      } else {
+        await this.provider.executeCommand(`mkdir -p "${directoryPath}"`);
+      }
       
       // VÉRIFICATION PHYSIQUE: Vérifier que le répertoire existe
       const entries = await this.provider.listFiles(directoryPath);
@@ -1032,7 +1036,11 @@ export class FilesystemTools {
       const content = await this.provider.readFile(sourcePath);
       
       // Déplacer le fichier
-      await this.provider.moveFile(sourcePath, targetPath);
+      if (this.provider.moveFile) {
+        await this.provider.moveFile(sourcePath, targetPath);
+      } else {
+        await this.provider.executeCommand(`mv "${sourcePath}" "${targetPath}"`);
+      }
       
       // VÉRIFICATION PHYSIQUE
       const verifiedContent = await this.provider.readFile(targetPath);

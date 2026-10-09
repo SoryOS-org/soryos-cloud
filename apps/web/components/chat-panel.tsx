@@ -38,6 +38,7 @@ import { LiveButton } from "@/components/live-button";
 import { ContextFilesModal } from "@/components/context-files-modal";
 import { DEFAULT_MODEL_ID } from "@/lib/providers";
 import { SandboxSelector, EnvironmentType, ProviderId } from "@/components/sandbox-selector";
+import { ToolProgressBar } from "@/components/tool-progress-bar";
 
 interface ChatPanelProps {
   sessionId?: string;
@@ -227,7 +228,15 @@ export function ChatPanel({
         </div>
       </div>
 
-      {/* 3. Messages Scroll Area */}
+      {/* 3. Visual Progress Bar & Spinner for Tool Executions */}
+      <ToolProgressBar
+        loading={loading}
+        status={status}
+        messages={messages}
+        onAbort={onAbort}
+      />
+
+      {/* 4. Messages Scroll Area */}
       <ScrollArea className="relative z-10 min-h-0 flex-1">
         <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 py-6 pb-6">
           {/* Empty state when no messages */}

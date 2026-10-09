@@ -12,11 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session: SessionData | undefined = sessionStore.get(id);
-
-  if (!session) {
-    return NextResponse.json({ error: "Session not found" }, { status: 404 });
-  }
+  const session: SessionData = sessionStore.getOrCreate(id);
 
   return NextResponse.json({
     id: session.id,
@@ -46,11 +42,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const session: SessionData | undefined = sessionStore.get(id);
-
-  if (!session) {
-    return NextResponse.json({ error: "Session not found" }, { status: 404 });
-  }
+  const session: SessionData = sessionStore.getOrCreate(id);
 
   const body = await req.json().catch(() => ({}));
 
