@@ -52,6 +52,70 @@ export interface ExecutionProvider {
   listFiles(dirPath?: string): Promise<FileEntry[]>;
 }
 
+/**
+ * Base class for cloud providers that require API configuration
+ */
+export abstract class CloudExecutionProvider implements ExecutionProvider {
+  readonly type: "cloud" | "container" = "cloud";
+  protected apiKey: string | null = null;
+  protected workspaceDir: string;
+
+  constructor(protected providerId: ProviderId, protected providerName: string) {
+    this.workspaceDir = "";
+  }
+
+  readonly id: ProviderId = this.providerId;
+  readonly name: string = this.providerName;
+
+  /**
+   * Check if provider is properly configured
+   */
+  protected isConfigured(): boolean {
+    return Boolean(this.apiKey);
+  }
+
+  /**
+   * Get the environment variable name for this provider's API key
+   */
+  protected abstract getApiKeyEnvVar(): string;
+
+  /**
+   * Initialize the provider with workspace path
+   */
+  async init(workspacePath?: string): Promise<void> {
+    this.apiKey = this.getApiKeyFromEnvironment();
+    this.workspaceDir = workspacePath || "";
+    
+    if (!this.isConfigured()) {
+      throw new ExecutionError(
+        `Provider ${this.name} is not configured. Please set the ${this.getApiKeyEnvVar()} environment variable.`
+      );
+    }
+  }
+
+  /**
+   * Get API key from environment
+   */
+  protected getApiKeyFromEnvironment(): string | null {
+    const envVar = this.getApiKeyEnvVar();
+    return typeof process !== "undefined" ? process.env[envVar] || null : null;
+  }
+
+  getWorkspacePath(): string {
+    return this.workspaceDir;
+  }
+
+  abstract executeCommand(command: string, options?: CommandOptions): Promise<CommandResult>;
+  abstract readFile(filePath: string): Promise<string>;
+  abstract writeFile(filePath: string, content: string): Promise<void>;
+  abstract editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void>;
+  abstract deleteFile(filePath: string): Promise<void>;
+  abstract listFiles(dirPath?: string): Promise<FileEntry[]>;
+}
+
+/**
+ * Local Execution Provider - executes commands on the local machine
+ */
 export class LocalExecutionProvider implements ExecutionProvider {
   readonly id: ProviderId = "local";
   readonly name = "Machine Locale";
@@ -110,10 +174,62 @@ export class LocalExecutionProvider implements ExecutionProvider {
     return this.workspaceDir;
   }
 
+  /**
+   * Resolve a path relative to the workspace, ensuring it stays within the workspace
+   * @param relPath - The relative or absolute path to resolve
+   * @returns The resolved absolute path within the workspace
+   * @throws ExecutionError if the path attempts to escape the workspace
+   */
   private resolvePath(relPath: string): string {
     const path = getNodePath();
-    const clean = relPath.startsWith("/") ? relPath.slice(1) : relPath;
-    return path.resolve(this.workspaceDir, clean);
+    const fs = getNodeFs();
+    
+    // Normalize the path
+    let normalizedPath = relPath.replace(/^[/\\]+/, "");
+    
+    // Check for path traversal attempts
+    if (normalizedPath.includes("..") || path.isAbsolute(relPath)) {
+      // If it's an absolute path, verify it's within workspace
+      const absolutePath = path.isAbsolute(relPath) ? relPath : path.resolve(this.workspaceDir, relPath);
+      const workspaceAbs = path.resolve(this.workspaceDir);
+      
+      // Normalize both paths for comparison
+      const normalizedAbsolute = path.normalize(absolutePath);
+      const normalizedWorkspace = path.normalize(workspaceAbs);
+      
+      // Ensure the path is within the workspace
+      if (!normalizedAbsolute.startsWith(normalizedWorkspace + path.sep) && 
+          normalizedAbsolute !== normalizedWorkspace) {
+        throw new ExecutionError(
+          `Path traversal detected: '${relPath}' attempts to access outside workspace '${this.workspaceDir}'`
+        );
+      }
+      return normalizedAbsolute;
+    }
+    
+    return path.resolve(this.workspaceDir, normalizedPath);
+  }
+
+  /**
+   * Validate that a path is within the workspace directory
+   * @param absolutePath - The absolute path to validate
+   * @returns The validated path
+   * @throws ExecutionError if path is outside workspace
+   */
+  private validatePath(absolutePath: string): string {
+    const path = getNodePath();
+    const workspaceAbs = path.resolve(this.workspaceDir);
+    const normalizedPath = path.normalize(absolutePath);
+    const normalizedWorkspace = path.normalize(workspaceAbs);
+    
+    if (!normalizedPath.startsWith(normalizedWorkspace + path.sep) && 
+        normalizedPath !== normalizedWorkspace) {
+      throw new ExecutionError(
+        `Access denied: path '${absolutePath}' is outside workspace '${this.workspaceDir}'`
+      );
+    }
+    
+    return normalizedPath;
   }
 
   async executeCommand(command: string, options?: CommandOptions): Promise<CommandResult> {
@@ -226,26 +342,736 @@ export class LocalExecutionProvider implements ExecutionProvider {
   }
 }
 
+/**
+ * E2B Cloud Execution Provider
+ * Requires E2B_API_KEY to be configured
+ */
+export class E2BExecutionProvider extends CloudExecutionProvider {
+  readonly id: ProviderId = "e2b";
+  readonly name = "E2B Cloud Sandbox";
+  readonly type = "cloud" as const;
+
+  constructor() {
+    super("e2b", "E2B Cloud Sandbox");
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "E2B_API_KEY";
+  }
+
+  async init(workspacePath?: string): Promise<void> {
+    this.apiKey = this.getApiKeyFromEnvironment();
+    this.workspaceDir = workspacePath || "/tmp/soryos-workspaces/e2b";
+    
+    if (!this.isConfigured()) {
+      throw new ExecutionError(
+        `E2B provider is not configured. Please set the E2B_API_KEY environment variable.`
+      );
+    }
+    
+    // In a real implementation, this would connect to E2B SDK
+    // For now, we'll use the sandbox package's E2B provider
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      // Initialize the sandbox
+      await provider.create({ sessionId: "execution-init" });
+    } catch (err) {
+      throw new ExecutionError(
+        `Failed to initialize E2B sandbox: ${(err as Error).message}`
+      );
+    }
+  }
+
+  getWorkspacePath(): string {
+    return this.workspaceDir;
+  }
+
+  async executeCommand(command: string, options?: CommandOptions): Promise<CommandResult> {
+    const start = Date.now();
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      const result = await provider.executeCommand(command, options);
+      
+      return {
+        stdout: result.output || result.stdout || "",
+        stderr: result.stderr || "",
+        exitCode: result.exitCode,
+        durationMs: Date.now() - start,
+      };
+    } catch (err: unknown) {
+      const errorMessage = (err as Error).message;
+      return {
+        stdout: "",
+        stderr: `E2B execution error: ${errorMessage}`,
+        exitCode: 1,
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  async readFile(filePath: string): Promise<string> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      return await provider.readFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`E2B read file error: ${(err as Error).message}`);
+    }
+  }
+
+  async writeFile(filePath: string, content: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      await provider.writeFile(filePath, content);
+    } catch (err: unknown) {
+      throw new ExecutionError(`E2B write file error: ${(err as Error).message}`);
+    }
+  }
+
+  async editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      await provider.editFile(filePath, targetContent, replacementContent);
+    } catch (err: unknown) {
+      throw new ExecutionError(`E2B edit file error: ${(err as Error).message}`);
+    }
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      await provider.deleteFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`E2B delete file error: ${(err as Error).message}`);
+    }
+  }
+
+  async listFiles(dirPath?: string): Promise<FileEntry[]> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("e2b");
+      return await provider.listFiles(dirPath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`E2B list files error: ${(err as Error).message}`);
+    }
+  }
+}
+
+/**
+ * Vercel Sandbox Execution Provider
+ * Requires VERCEL_TOKEN to be configured
+ */
+export class VercelExecutionProvider extends CloudExecutionProvider {
+  readonly id: ProviderId = "vercel";
+  readonly name = "Vercel Sandbox";
+  readonly type = "cloud" as const;
+
+  constructor() {
+    super("vercel", "Vercel Sandbox");
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "VERCEL_TOKEN";
+  }
+
+  async init(workspacePath?: string): Promise<void> {
+    this.apiKey = this.getApiKeyFromEnvironment();
+    this.workspaceDir = workspacePath || "/tmp/soryos-workspaces/vercel";
+    
+    if (!this.isConfigured()) {
+      throw new ExecutionError(
+        `Vercel provider is not configured. Please set the VERCEL_TOKEN environment variable.`
+      );
+    }
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      await provider.create({ sessionId: "execution-init" });
+    } catch (err) {
+      throw new ExecutionError(
+        `Failed to initialize Vercel sandbox: ${(err as Error).message}`
+      );
+    }
+  }
+
+  getWorkspacePath(): string {
+    return this.workspaceDir;
+  }
+
+  async executeCommand(command: string, options?: CommandOptions): Promise<CommandResult> {
+    const start = Date.now();
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      const result = await provider.executeCommand(command, options);
+      
+      return {
+        stdout: result.output || result.stdout || "",
+        stderr: result.stderr || "",
+        exitCode: result.exitCode,
+        durationMs: Date.now() - start,
+      };
+    } catch (err: unknown) {
+      const errorMessage = (err as Error).message;
+      return {
+        stdout: "",
+        stderr: `Vercel execution error: ${errorMessage}`,
+        exitCode: 1,
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  async readFile(filePath: string): Promise<string> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      return await provider.readFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Vercel read file error: ${(err as Error).message}`);
+    }
+  }
+
+  async writeFile(filePath: string, content: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      await provider.writeFile(filePath, content);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Vercel write file error: ${(err as Error).message}`);
+    }
+  }
+
+  async editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      await provider.editFile(filePath, targetContent, replacementContent);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Vercel edit file error: ${(err as Error).message}`);
+    }
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      await provider.deleteFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Vercel delete file error: ${(err as Error).message}`);
+    }
+  }
+
+  async listFiles(dirPath?: string): Promise<FileEntry[]> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("vercel");
+      return await provider.listFiles(dirPath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Vercel list files error: ${(err as Error).message}`);
+    }
+  }
+}
+
+/**
+ * GitHub Codespaces Execution Provider
+ * Requires GITHUB_TOKEN to be configured
+ */
+export class GitHubCodespacesExecutionProvider extends CloudExecutionProvider {
+  readonly id: ProviderId = "github-codespaces";
+  readonly name = "GitHub Codespaces";
+  readonly type = "cloud" as const;
+
+  constructor() {
+    super("github-codespaces", "GitHub Codespaces");
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "GITHUB_TOKEN";
+  }
+
+  async init(workspacePath?: string): Promise<void> {
+    this.apiKey = this.getApiKeyFromEnvironment();
+    this.workspaceDir = workspacePath || "/tmp/soryos-workspaces/github-codespaces";
+    
+    if (!this.isConfigured()) {
+      throw new ExecutionError(
+        `GitHub Codespaces provider is not configured. Please set the GITHUB_TOKEN environment variable.`
+      );
+    }
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      await provider.create({ sessionId: "execution-init" });
+    } catch (err) {
+      throw new ExecutionError(
+        `Failed to initialize GitHub Codespaces: ${(err as Error).message}`
+      );
+    }
+  }
+
+  getWorkspacePath(): string {
+    return this.workspaceDir;
+  }
+
+  async executeCommand(command: string, options?: CommandOptions): Promise<CommandResult> {
+    const start = Date.now();
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      const result = await provider.executeCommand(command, options);
+      
+      return {
+        stdout: result.output || result.stdout || "",
+        stderr: result.stderr || "",
+        exitCode: result.exitCode,
+        durationMs: Date.now() - start,
+      };
+    } catch (err: unknown) {
+      const errorMessage = (err as Error).message;
+      return {
+        stdout: "",
+        stderr: `GitHub Codespaces execution error: ${errorMessage}`,
+        exitCode: 1,
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  async readFile(filePath: string): Promise<string> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      return await provider.readFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`GitHub Codespaces read file error: ${(err as Error).message}`);
+    }
+  }
+
+  async writeFile(filePath: string, content: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      await provider.writeFile(filePath, content);
+    } catch (err: unknown) {
+      throw new ExecutionError(`GitHub Codespaces write file error: ${(err as Error).message}`);
+    }
+  }
+
+  async editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      await provider.editFile(filePath, targetContent, replacementContent);
+    } catch (err: unknown) {
+      throw new ExecutionError(`GitHub Codespaces edit file error: ${(err as Error).message}`);
+    }
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      await provider.deleteFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`GitHub Codespaces delete file error: ${(err as Error).message}`);
+    }
+  }
+
+  async listFiles(dirPath?: string): Promise<FileEntry[]> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("github-codespaces");
+      return await provider.listFiles(dirPath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`GitHub Codespaces list files error: ${(err as Error).message}`);
+    }
+  }
+}
+
+/**
+ * GitHub Repository Execution Provider
+ * This provider works with GitHub repositories but doesn't create a full sandbox
+ * It uses git operations to read/write files
+ */
+export class GitHubRepositoryExecutionProvider extends CloudExecutionProvider {
+  readonly id: ProviderId = "github-repository";
+  readonly name = "GitHub Repository";
+  readonly type = "cloud" as const;
+
+  constructor() {
+    super("github-repository", "GitHub Repository");
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "GITHUB_TOKEN";
+  }
+
+  async init(workspacePath?: string): Promise<void> {
+    this.apiKey = this.getApiKeyFromEnvironment();
+    this.workspaceDir = workspacePath || "/tmp/soryos-workspaces/github-repository";
+    
+    if (!this.isConfigured()) {
+      throw new ExecutionError(
+        `GitHub Repository provider is not configured. Please set the GITHUB_TOKEN environment variable.`
+      );
+    }
+    
+    // For github-repository, we use local execution with git operations
+    // This is a simplified provider that works with git repos
+  }
+
+  getWorkspacePath(): string {
+    return this.workspaceDir;
+  }
+
+  async executeCommand(command: string, options?: CommandOptions): Promise<CommandResult> {
+    const start = Date.now();
+    const cwd = options?.cwd || this.workspaceDir;
+    const timeoutMs = options?.timeoutMs || 60_000;
+    const execAsync = getNodeExecAsync();
+
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        cwd,
+        env: { ...(typeof process !== "undefined" ? process.env : {}), ...(options?.env || {}) },
+        timeout: timeoutMs,
+      });
+
+      return {
+        stdout: stdout.trimEnd(),
+        stderr: stderr.trimEnd(),
+        exitCode: 0,
+        durationMs: Date.now() - start,
+      };
+    } catch (err: unknown) {
+      const execErr = err as { stdout?: string; stderr?: string; code?: number; message?: string };
+      return {
+        stdout: (execErr.stdout || "").trimEnd(),
+        stderr: (execErr.stderr || execErr.message || "").trimEnd(),
+        exitCode: typeof execErr.code === "number" ? execErr.code : 1,
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  async readFile(filePath: string): Promise<string> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const fullPath = path.resolve(this.workspaceDir, filePath);
+    try {
+      return await fs.readFile(fullPath, "utf-8");
+    } catch (err: unknown) {
+      throw new ExecutionError(`Impossible de lire le fichier ${filePath}: ${(err as Error).message}`);
+    }
+  }
+
+  async writeFile(filePath: string, content: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const fullPath = path.resolve(this.workspaceDir, filePath);
+    try {
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, content, "utf-8");
+    } catch (err: unknown) {
+      throw new ExecutionError(`Impossible d'écrire dans ${filePath}: ${(err as Error).message}`);
+    }
+  }
+
+  async editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void> {
+    const current = await this.readFile(filePath);
+    if (!current.includes(targetContent)) {
+      throw new ExecutionError(`Le bloc cible à remplacer n'a pas été trouvé dans ${filePath}.`);
+    }
+    const updated = current.replace(targetContent, replacementContent);
+    await this.writeFile(filePath, updated);
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const fullPath = path.resolve(this.workspaceDir, filePath);
+    try {
+      await fs.unlink(fullPath);
+    } catch {
+      // ignore
+    }
+  }
+
+  async listFiles(dirPath = ""): Promise<FileEntry[]> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const targetDir = path.resolve(this.workspaceDir, dirPath);
+    const results: FileEntry[] = [];
+
+    const scan = async (currentDir: string, relativeRoot: string) => {
+      try {
+        const entries = await fs.readdir(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.name === "node_modules" || entry.name === ".git" || entry.name === ".next") {
+            continue;
+          }
+          const fullPath = path.join(currentDir, entry.name);
+          const relPath = path.join(relativeRoot, entry.name);
+          const stat = await fs.stat(fullPath);
+
+          results.push({
+            path: relPath,
+            name: entry.name,
+            isDirectory: entry.isDirectory(),
+            sizeBytes: stat.size,
+            updatedAt: stat.mtime.toISOString(),
+          });
+
+          if (entry.isDirectory()) {
+            await scan(fullPath, relPath);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    await scan(targetDir, "");
+    return results;
+  }
+}
+
+/**
+ * Google Cloud Run Execution Provider
+ * Requires GCP credentials to be configured
+ */
+export class GoogleCloudRunExecutionProvider extends CloudExecutionProvider {
+  readonly id: ProviderId = "google-cloud-run";
+  readonly name = "Google Cloud Run";
+  readonly type = "container" as const;
+
+  constructor() {
+    super("google-cloud-run", "Google Cloud Run");
+  }
+
+  protected getApiKeyEnvVar(): string {
+    return "GOOGLE_CLOUD_CREDENTIALS";
+  }
+
+  async init(workspacePath?: string): Promise<void> {
+    this.apiKey = this.getApiKeyFromEnvironment();
+    this.workspaceDir = workspacePath || "/tmp/soryos-workspaces/google-cloud-run";
+    
+    if (!this.isConfigured()) {
+      throw new ExecutionError(
+        `Google Cloud Run provider is not configured. Please set the GOOGLE_CLOUD_CREDENTIALS environment variable.`
+      );
+    }
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      await provider.create({ sessionId: "execution-init" });
+    } catch (err) {
+      throw new ExecutionError(
+        `Failed to initialize Google Cloud Run: ${(err as Error).message}`
+      );
+    }
+  }
+
+  getWorkspacePath(): string {
+    return this.workspaceDir;
+  }
+
+  async executeCommand(command: string, options?: CommandOptions): Promise<CommandResult> {
+    const start = Date.now();
+    
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      const result = await provider.executeCommand(command, options);
+      
+      return {
+        stdout: result.output || result.stdout || "",
+        stderr: result.stderr || "",
+        exitCode: result.exitCode,
+        durationMs: Date.now() - start,
+      };
+    } catch (err: unknown) {
+      const errorMessage = (err as Error).message;
+      return {
+        stdout: "",
+        stderr: `Google Cloud Run execution error: ${errorMessage}`,
+        exitCode: 1,
+        durationMs: Date.now() - start,
+      };
+    }
+  }
+
+  async readFile(filePath: string): Promise<string> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      return await provider.readFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Google Cloud Run read file error: ${(err as Error).message}`);
+    }
+  }
+
+  async writeFile(filePath: string, content: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      await provider.writeFile(filePath, content);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Google Cloud Run write file error: ${(err as Error).message}`);
+    }
+  }
+
+  async editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      await provider.editFile(filePath, targetContent, replacementContent);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Google Cloud Run edit file error: ${(err as Error).message}`);
+    }
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      await provider.deleteFile(filePath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Google Cloud Run delete file error: ${(err as Error).message}`);
+    }
+  }
+
+  async listFiles(dirPath?: string): Promise<FileEntry[]> {
+    try {
+      const { sandboxRegistry } = await import("@soryos/sandbox");
+      const provider = await sandboxRegistry.createProvider("google-cloud-run");
+      return await provider.listFiles(dirPath);
+    } catch (err: unknown) {
+      throw new ExecutionError(`Google Cloud Run list files error: ${(err as Error).message}`);
+    }
+  }
+}
+
+/**
+ * Execution Manager - Manages provider instances per session
+ */
 export class ExecutionManager {
   private providers: Map<string, ExecutionProvider> = new Map();
 
-  public async getOrCreateProvider(sessionId: string, providerId: ProviderId = "local"): Promise<ExecutionProvider> {
+  /**
+   * Get a provider instance for a specific session and provider ID
+   * Creates a new instance if one doesn't exist
+   */
+  public async getProvider(sessionId: string, providerId: ProviderId = "local"): Promise<ExecutionProvider> {
     const key = `${sessionId}:${providerId}`;
     let provider = this.providers.get(key);
 
     if (!provider) {
-      const path = getNodePath();
-      const rootDir = typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet";
-      const workspaceDir = (providerId === "local" || providerId === "github-repository")
-        ? rootDir
-        : path.join("/tmp/soryos-workspaces", sessionId);
-
-      provider = new LocalExecutionProvider(workspaceDir);
-      await provider.init();
+      provider = await this.createProvider(providerId, sessionId);
       this.providers.set(key, provider);
     }
 
     return provider;
+  }
+
+  /**
+   * Get or create a provider instance for a session
+   * This is the main method used by the system
+   */
+  public async getOrCreateProvider(sessionId: string, providerId: ProviderId = "local"): Promise<ExecutionProvider> {
+    return this.getProvider(sessionId, providerId);
+  }
+
+  /**
+   * Create a provider instance based on the provider ID
+   * Each provider must be properly configured or it will throw an error
+   */
+  private async createProvider(providerId: ProviderId, sessionId: string): Promise<ExecutionProvider> {
+    const path = getNodePath();
+    const rootDir = typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet";
+    
+    switch (providerId) {
+      case "local":
+        return new LocalExecutionProvider();
+      
+      case "github-repository":
+        return new GitHubRepositoryExecutionProvider();
+      
+      case "e2b":
+        return new E2BExecutionProvider();
+      
+      case "vercel":
+        return new VercelExecutionProvider();
+      
+      case "github-codespaces":
+        return new GitHubCodespacesExecutionProvider();
+      
+      case "google-cloud-run":
+        return new GoogleCloudRunExecutionProvider();
+      
+      default:
+        throw new ExecutionError(`Provider ${providerId} is not supported or does not exist.`);
+    }
+  }
+
+  /**
+   * Get a provider instance without session context
+   * Useful for direct provider access
+   */
+  public async getProviderById(providerId: ProviderId): Promise<ExecutionProvider> {
+    return this.createProvider(providerId, "");
+  }
+
+  /**
+   * Check if a provider is configured and available
+   */
+  public async isProviderConfigured(providerId: ProviderId): Promise<boolean> {
+    try {
+      const provider = await this.createProvider(providerId, "");
+      // For cloud providers, check if they have API keys
+      if (provider instanceof CloudExecutionProvider) {
+        return provider.isConfigured();
+      }
+      // Local provider is always configured
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Clean up provider instances for a session
+   */
+  public cleanupSession(sessionId: string): void {
+    const keysToRemove: string[] = [];
+    for (const key of this.providers.keys()) {
+      if (key.startsWith(`${sessionId}:`)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      this.providers.delete(key);
+    }
+  }
+
+  /**
+   * Clear all provider instances
+   */
+  public clearAll(): void {
+    this.providers.clear();
   }
 }
 
