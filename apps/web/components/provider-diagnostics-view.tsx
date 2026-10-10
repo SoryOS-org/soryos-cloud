@@ -535,7 +535,7 @@ export function ProviderDiagnosticsView({
                 {currentStatus?.configured ? "Mettre à jour la clé API" : "Renseigner la clé API"}
               </div>
 
-              {currentDef.fields.map((field) => (
+              {currentDef.fields.map((field: { key: string; label: string; type: string; placeholder?: string }) => (
                 <div key={field.key} className="space-y-1">
                   <label className="text-xs font-semibold text-[var(--foreground)] block">
                     {field.label}
