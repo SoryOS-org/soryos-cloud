@@ -30,10 +30,13 @@ export async function GET(
     for (const port of devPorts) {
       try {
         // Try to fetch from the port
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
         const response = await fetch(`http://localhost:${port}`, {
           method: "HEAD",
-          connectTimeout: 1000,
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
         if (response.ok) {
           previewUrl = `http://localhost:${port}`;
           break;
