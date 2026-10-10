@@ -111,6 +111,15 @@ export interface ChatMessage {
   created_at?: string;
 }
 
+export interface SessionError {
+  timestamp: string;
+  type: string;
+  code?: string;
+  message: string;
+  userMessage?: string;
+  recoverySuggestions?: string[];
+}
+
 export interface SessionData {
   id: string;
   title: string;
@@ -132,6 +141,7 @@ export interface SessionData {
   needs_run: boolean;
   agent_running: boolean;
   cwd: string;
+  errors?: SessionError[];
 }
 
 // 5. Event Bus Contracts
