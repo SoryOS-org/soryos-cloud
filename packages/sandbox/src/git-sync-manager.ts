@@ -134,6 +134,69 @@ export class GitSyncManager {
   }
 
   /**
+   * Synchronize git changes - main sync method
+   */
+  async sync(
+    sessionId: string,
+    provider: any,
+    session: any
+  ): Promise<{ success: boolean; commitHash?: string; message?: string }> {
+    // Full sync - commit and push current changes
+    const commitMessage = `soryos-code: sync session ${sessionId.slice(0, 8)}`;
+    return this.commitAndPush(sessionId, session.providerId as ProviderId, commitMessage);
+  }
+
+  /**
+   * Get sync status
+   */
+  async getStatus(
+    sessionId: string,
+    provider: any
+  ): Promise<GitSyncState> {
+    return this.getGitStatus(sessionId, session.providerId as ProviderId);
+  }
+
+  /**
+   * Pull latest changes from remote
+   */
+  async pull(
+    sessionId: string,
+    provider: any
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      const status = await this.getGitStatus(sessionId, session.providerId as ProviderId);
+      if (!status.remoteRepoUrl) {
+        return { success: false, message: "No remote repository configured" };
+      }
+      
+      await sandboxManager.executeCommand(
+        sessionId,
+        "git pull origin HEAD",
+        {},
+        session.providerId as ProviderId
+      );
+      
+      return { success: true, message: "Pulled latest changes" };
+    } catch (e) {
+      return {
+        success: false,
+        message: e instanceof Error ? e.message : "Pull failed",
+      };
+    }
+  }
+
+  /**
+   * Push changes to remote
+   */
+  async push(
+    sessionId: string,
+    provider: any,
+    commitMessage: string
+  ): Promise<{ success: boolean; commitHash?: string; message?: string }> {
+    return this.commitAndPush(sessionId, session.providerId as ProviderId, commitMessage);
+  }
+
+  /**
    * Sync cloud working copy from GitHub (Checkout session branch)
    */
   async syncWorkingCopyFromGitHub(
