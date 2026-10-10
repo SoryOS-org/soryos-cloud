@@ -46,8 +46,16 @@ class SandboxRegistry {
         return new LocalProvider();
       case "e2b":
         if (!E2BProvider) {
-          const mod = await import("./providers/e2b");
-          E2BProvider = mod.E2BProvider;
+          try {
+            const mod = await import("./providers/e2b");
+            E2BProvider = mod.E2BProvider;
+          } catch (error) {
+            // If E2B module is not available, throw a clear error
+            throw new Error(
+              `E2B provider requires '@e2b/code-interpreter' package. ` +
+              `Please install it with: npm install @e2b/code-interpreter`
+            );
+          }
         }
         return new E2BProvider();
       case "vercel":
@@ -68,6 +76,14 @@ class SandboxRegistry {
           GitHubCodespacesProvider = mod.GitHubCodespacesProvider;
         }
         return new GitHubCodespacesProvider();
+      case "github-repository":
+        // GitHub Repository is not a sandbox provider, it's a source control integration
+        // For now, we'll treat it as an alias for local or codespaces
+        // But we should be explicit that it's not a real sandbox provider
+        throw new Error(
+          `github-repository is not a sandbox execution provider. ` +
+          `Use 'local' for local execution or 'github-codespaces' for GitHub Codespaces.`
+        );
       default:
         throw new Error(`Provider ${id} not found or not supported.`);
     }
