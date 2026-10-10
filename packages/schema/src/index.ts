@@ -114,7 +114,7 @@ export interface ChatMessage {
 export interface SessionError {
   timestamp: string;
   type: string;
-  code?: string;
+  code: string;
   message: string;
   userMessage?: string;
   recoverySuggestions?: string[];
