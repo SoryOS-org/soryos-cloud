@@ -3,7 +3,7 @@ import { sessionStore } from "@soryos/session";
 import { workspaceManager } from "@soryos/workspace";
 import { sandboxManager } from "@soryos/sandbox";
 import { GitHubRemoteFilesystem } from "@soryos/filesystem";
-import type { SessionData } from "@soryos/schema";
+import type { SessionData, ProviderId } from "@soryos/schema";
 
 /**
  * Initialisation du workspace pour une session.
