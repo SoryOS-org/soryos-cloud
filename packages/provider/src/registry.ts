@@ -1,9 +1,46 @@
 import type { AIProvider, ProviderAITestResult, ProviderConnectionTestResult } from "./types";
 import type { ModelInfo } from "./models";
 import { SUPPORTED_AI_MODELS } from "./models";
+import {
+  GoogleProvider,
+  OpenAIProvider,
+  AnthropicProvider,
+  MistralProvider,
+  OpenRouterProvider,
+  OpenCodeProvider,
+  DeepSeekProvider,
+  GrokProvider,
+  CursorProvider,
+  GenericAIProvider,
+} from "./providers";
 
 export class AIProviderRegistry {
   private providers: Map<string, AIProvider> = new Map();
+  private initialized: boolean = false;
+
+  constructor() {
+    this.initialize();
+  }
+
+  /**
+   * Initialize the registry with all available providers
+   */
+  private initialize(): void {
+    if (this.initialized) return;
+    
+    // Register all standard AI providers
+    this.register(new GoogleProvider());
+    this.register(new OpenAIProvider());
+    this.register(new AnthropicProvider());
+    this.register(new MistralProvider());
+    this.register(new OpenRouterProvider());
+    this.register(new OpenCodeProvider());
+    this.register(new DeepSeekProvider());
+    this.register(new GrokProvider());
+    this.register(new CursorProvider());
+    
+    this.initialized = true;
+  }
 
   register(provider: AIProvider) {
     this.providers.set(provider.id, provider);
@@ -40,13 +77,38 @@ export class AIProviderRegistry {
   }
 
   resolveApiKey(providerId: string): string {
-    if (providerId === "google") {
-      return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+    const provider = this.getProvider(providerId);
+    if (provider) {
+      // If provider has a getApiKey method, use it
+      if (typeof (provider as any).getApiKeyFromEnvironment === "function") {
+        return (provider as any).getApiKeyFromEnvironment() || "";
+      }
     }
-    if (providerId === "openai") {
-      return process.env.OPENAI_API_KEY || "";
+    
+    // Fallback to environment variables
+    switch (providerId) {
+      case "google":
+        return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+      case "openai":
+        return process.env.OPENAI_API_KEY || "";
+      case "anthropic":
+        return process.env.ANTHROPIC_API_KEY || "";
+      case "mistral":
+        return process.env.MISTRAL_API_KEY || "";
+      case "openrouter":
+        return process.env.OPENROUTER_API_KEY || "";
+      case "opencode-zen":
+      case "opencode":
+        return process.env.OPENCODE_API_KEY || "";
+      case "deepseek":
+        return process.env.DEEPSEEK_API_KEY || "";
+      case "grok":
+        return process.env.GROK_API_KEY || process.env.XAI_API_KEY || "";
+      case "cursor":
+        return process.env.CURSOR_API_KEY || "";
+      default:
+        return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
     }
-    return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
   }
 
   async testConnection(
