@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { ProviderStatus, ProviderDefinition } from "@/lib/credentials/manager";
+import type { ProviderStatus, ProviderDefinition } from "@soryos/credentials";
 import type {
   ProviderConnectionTestResult,
   ProviderAITestResult,
