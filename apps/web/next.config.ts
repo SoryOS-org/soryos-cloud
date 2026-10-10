@@ -3,9 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
-  experimental: {
-    allowedDevOrigins: ["*.run.app", "localhost:3000"],
-  },
   transpilePackages: [
     "@soryos/core",
     "@soryos/schema",
