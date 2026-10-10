@@ -257,6 +257,70 @@ export class GitSyncManager {
     if (commitA === "no-commit" || commitB === "no-commit") return false;
     return commitA !== commitB;
   }
+
+  /**
+   * Commit uncommitted changes without push
+   */
+  async commit(
+    sessionId: string,
+    provider: any,
+    commitMessage: string
+  ): Promise<{ success: boolean; commitHash?: string; message?: string }> {
+    try {
+      const branchName = `soryos-code/${sessionId.slice(0, 8)}`;
+
+      // Ensure git is initialized
+      await sandboxManager.executeCommand(
+        sessionId,
+        "git init && git config user.name 'SoryOS-Code Agent' && git config user.email 'agent@soryos.code'",
+        {},
+        session.providerId as ProviderId
+      );
+
+      // Checkout or create session branch
+      await sandboxManager.executeCommand(
+        sessionId,
+        `git checkout -b ${branchName} 2>/dev/null || git checkout ${branchName}`,
+        {},
+        session.providerId as ProviderId
+      );
+
+      // Add files respecting .gitignore
+      await sandboxManager.executeCommand(sessionId, "git add .", {}, session.providerId as ProviderId);
+
+      // Commit
+      const commitRes = await sandboxManager.executeCommand(
+        sessionId,
+        `git commit -m "${commitMessage.replace(/"/g, '\\"')}" --allow-empty`,
+        {},
+        session.providerId as ProviderId
+      );
+
+      if (!commitRes.isError) {
+        const hashRes = await sandboxManager.executeCommand(
+          sessionId,
+          "git rev-parse HEAD",
+          {},
+          session.providerId as ProviderId
+        );
+        return {
+          success: true,
+          commitHash: hashRes.stdout.trim(),
+          message: `Committed: ${commitMessage}`,
+        };
+      }
+
+      return {
+        success: false,
+        message: commitRes.stderr || "Commit failed",
+      };
+    } catch (e) {
+      return {
+        success: false,
+        message: e instanceof Error ? e.message : "Commit failed",
+      };
+    }
+  }
 }
 
 export const gitSyncManager = new GitSyncManager();
