@@ -20,9 +20,10 @@ import {
   Laptop,
   Code2,
   FolderGit2,
+  Loader2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { listSessions } from "@/lib/api";
+import { listSessions, createSession } from "@/lib/api";
 import { ImportRepoModal } from "@/components/import-repo-modal";
 import { SettingsPanel } from "@/components/settings-panel";
 import { PWAInstallButton } from "@/components/pwa-install-button";
@@ -56,7 +57,30 @@ export function AppSidebar({
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateNewSession = async () => {
+    if (isCreating) return;
+    setIsCreating(true);
+    try {
+      const session = await createSession(
+        "Nouveau Projet IA",
+        undefined,
+        "opencode/zen-coder-free",
+        "local",
+        "local"
+      );
+      fetchSessions();
+      onMobileClose?.();
+      router.push(`/chat/${session.id}`);
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      router.push("/");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   // Keyboard shortcut (⌘K or Ctrl+K) to focus search
   useEffect(() => {
@@ -203,19 +227,24 @@ export function AppSidebar({
 
       {/* 2. Primary Action: Nouveau projet */}
       <div className="p-3 pb-2 space-y-2">
-        <Link
-          href="/"
-          onClick={onMobileClose}
-          className="flex items-center justify-between w-full rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] px-3.5 py-2.5 text-xs font-bold shadow-xs hover:opacity-95 active:scale-[0.99] transition cursor-pointer"
+        <button
+          type="button"
+          onClick={handleCreateNewSession}
+          disabled={isCreating}
+          className="flex items-center justify-between w-full rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] px-3.5 py-2.5 text-xs font-bold shadow-xs hover:opacity-95 active:scale-[0.99] transition cursor-pointer disabled:opacity-60"
         >
           <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            <span>Nouveau projet IA</span>
+            {isCreating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            <span>{isCreating ? "Création..." : "Nouveau projet IA"}</span>
           </div>
           <span className="text-[10px] font-mono opacity-80 bg-black/15 px-1.5 py-0.5 rounded">
             ⌘N
           </span>
-        </Link>
+        </button>
 
         {/* Secondary Quick Nav Items */}
         <div className="grid grid-cols-2 gap-1.5 pt-0.5">

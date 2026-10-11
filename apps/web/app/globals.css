@@ -1,14 +1,16 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@plugin "@tailwindcss/typography";
+
+@source "../components";
+@source "../lib";
+@source "../app";
 
 @custom-variant dark (&:is(.dark *));
 
 body {
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
@@ -122,10 +124,11 @@ body {
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 

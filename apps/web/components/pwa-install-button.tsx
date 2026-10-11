@@ -28,6 +28,7 @@ export function PWAInstallButton({ className = "" }: { className?: string }) {
   });
 
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [showGeneralGuide, setShowGeneralGuide] = useState(false);
 
   useEffect(() => {
     const handlePrompt = (e: Event) => {
@@ -61,6 +62,8 @@ export function PWAInstallButton({ className = "" }: { className?: string }) {
       }
     } else if (isIOS) {
       setShowIOSGuide(true);
+    } else {
+      setShowGeneralGuide(true);
     }
   };
 
@@ -134,6 +137,63 @@ export function PWAInstallButton({ className = "" }: { className?: string }) {
               className="mt-5 w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 font-semibold"
             >
               Compris
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* General / Desktop Installation Guide Modal */}
+      {showGeneralGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--foreground)] p-6 shadow-2xl">
+            <button
+              onClick={() => setShowGeneralGuide(false)}
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3 pb-3 border-b border-[var(--border)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
+                <Download className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                  Installer SoryOS-Code
+                </h3>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Application Web Progressive (PWA)
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3 text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <p className="text-[var(--foreground)]">
+                Pour installer l&apos;application sur votre ordinateur ou appareil :
+              </p>
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--surface-hover)] font-bold text-[var(--primary)]">
+                  1
+                </span>
+                <p className="text-[var(--foreground)]">
+                  Cliquez sur l&apos;icône <strong>Installer</strong> dans la barre d&apos;adresse de Chrome / Edge, ou via le menu du navigateur (<strong>⋮ &gt; Installer SoryOS-Code</strong>).
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--surface-hover)] font-bold text-[var(--primary)]">
+                  2
+                </span>
+                <p className="text-[var(--foreground)]">
+                  L&apos;application s&apos;ouvrira alors dans sa propre fenêtre autonome avec support hors-ligne et accès direct.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setShowGeneralGuide(false)}
+              className="mt-5 w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 font-semibold cursor-pointer"
+            >
+              Fermer
             </Button>
           </div>
         </div>

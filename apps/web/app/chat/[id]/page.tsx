@@ -365,6 +365,15 @@ export default function ChatPage({
                   <span>Chargement du Remote Filesystem & de l&apos;arborescence...</span>
                 </div>
               </div>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceState("WORKSPACE_READY")}
+                  className="py-1.5 px-3 text-xs font-semibold text-[var(--primary)] hover:bg-[var(--surface-hover)] rounded-lg transition cursor-pointer"
+                >
+                  Accéder au Chat & Code immédiatement →
+                </button>
+              </div>
             </div>
           </div>
         )}

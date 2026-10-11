@@ -35,15 +35,46 @@ export type EnvironmentMode = "local" | "remote" | null;
 export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps) {
   const router = useRouter();
 
-  // Environment & Provider Selection State
-  const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>(null);
+  // Environment & Provider Selection State (defaults to "local" so options are interactive immediately)
+  const [environmentMode, setEnvironmentMode] = useState<EnvironmentMode>("local");
   const [remoteProvider, setRemoteProvider] = useState<ProviderId | null>(null);
 
+  // Quick Start Prompt
+  const [quickPrompt, setQuickPrompt] = useState("");
+
   // Local folder input
-  const [localFolderPath, setLocalFolderPath] = useState("/home/user/projects/soryos");
+  const [localFolderPath, setLocalFolderPath] = useState("./");
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Handle Quick Start with 1 Click
+  const handleQuickStart = async (customPrompt?: string) => {
+    const text = customPrompt !== undefined ? customPrompt : quickPrompt.trim();
+    setLoading(true);
+    setErrorMessage(null);
+    setStatusMessage("Initialisation de l'espace de travail et démarrage de la session IA...");
+
+    try {
+      const session = await createSession(
+        text ? text.slice(0, 35) : "Nouveau Projet IA",
+        text || undefined,
+        "opencode/zen-coder-free",
+        "local",
+        "local"
+      );
+
+      if (onWorkspaceOpened) {
+        onWorkspaceOpened(session.id, "local", "local");
+      } else {
+        router.push(`/chat/${session.id}`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur lors du démarrage du projet.";
+      setErrorMessage(msg);
+      setLoading(false);
+    }
+  };
 
   // GitHub Auth hook for GitHub Codespaces (Connecting to real GitHub API)
   const {
@@ -287,6 +318,61 @@ export function WorkspaceLauncher({ onWorkspaceOpened }: WorkspaceLauncherProps)
         <p className="text-xs sm:text-sm text-[var(--muted-foreground)] max-w-md mx-auto leading-relaxed">
           Choisissez ou ouvrez votre environnement de travail pour charger l&apos;IDE SoryOS-Code.
         </p>
+      </div>
+
+      {/* Quick Launch Card: Direct 1-Click Start or Prompt */}
+      <div className="rounded-2xl border border-[var(--primary)]/40 bg-[var(--surface-elevated)] p-4 sm:p-5 shadow-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5">
+            <Plus className="h-4 w-4" />
+            Démarrage Rapide & Nouveau Projet
+          </span>
+          <span className="text-[10px] font-mono text-[var(--muted-foreground)] bg-[var(--surface)] px-2 py-0.5 rounded border border-[var(--border)]">
+            Prêt instantanément
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={quickPrompt}
+            onChange={(e) => setQuickPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleQuickStart();
+            }}
+            placeholder="Décrivez votre idée (ex: Crée un dashboard interactif en React)..."
+            className="flex-1 px-3.5 py-2.5 text-xs border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] bg-[var(--input)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
+          />
+          <button
+            type="button"
+            onClick={() => void handleQuickStart()}
+            disabled={loading}
+            className="py-2.5 px-5 text-xs font-bold text-[var(--primary-foreground)] bg-[var(--primary)] hover:opacity-95 rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-[0.98]"
+          >
+            <ArrowRight className="h-4 w-4" />
+            <span>Lancer l&apos;IDE IA</span>
+          </button>
+        </div>
+
+        {/* Quick Suggestion Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[10px] font-semibold text-[var(--muted-foreground)]">Suggestions :</span>
+          {[
+            "Créer une app React & Tailwind",
+            "Créer une API REST TypeScript",
+            "Développer un jeu 2D Canvas",
+            "Ouvrir un projet vide",
+          ].map((suggestion, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => void handleQuickStart(suggestion === "Ouvrir un projet vide" ? "" : suggestion)}
+              className="text-[11px] px-2.5 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/50 text-[var(--foreground)] font-medium transition cursor-pointer"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Loading Overlay State */}
