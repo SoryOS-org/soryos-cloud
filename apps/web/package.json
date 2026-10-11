@@ -8,7 +8,7 @@
     "start": "next start -p 3000 -H 0.0.0.0",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:engine": "tsx lib/agent/__tests__/engine-verification.ts"
+    "test:engine": "bunx tsx lib/agent/__tests__/engine-verification.ts"
   },
   "dependencies": {
     "@google/genai": "^2.26.0",

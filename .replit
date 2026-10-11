@@ -1,0 +1,23 @@
+modules = ["bun"]
+run = "bun run dev"
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["bun", "install", "--frozen-lockfile"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "SoryOS Cloud Preview"
+
+[agent]
+# Runtime is declared via modules = ["bun"] above. Keeping the nodejs stack
+# label here because Replit Agent does not document a BUN stack value.
+stack = "NODEJS_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
