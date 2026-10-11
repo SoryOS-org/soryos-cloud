@@ -4,7 +4,7 @@
  */
 
 import { AIProvider, ProviderId, GenericAIProvider, AnthropicProvider, GoogleProvider, OpenAIProvider, CursorProvider, GeminiProvider } from '@soryos/provider';
-import { AgentConfig, DEFAULT_AGENT_CONFIG } from './config';
+import { AgentDefaultsConfig, DEFAULT_AGENT_CONFIG } from './config';
 
 /**
  * Agent Provider Registry
@@ -13,9 +13,9 @@ import { AgentConfig, DEFAULT_AGENT_CONFIG } from './config';
  */
 export class AgentProviderRegistry {
   private providers = new Map<ProviderId | string, AIProvider>();
-  private config: AgentConfig;
+  private config: AgentDefaultsConfig;
 
-  constructor(config: Partial<AgentConfig> = {}) {
+  constructor(config: Partial<AgentDefaultsConfig> = {}) {
     this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
     // Pre-register standard providers
     try {
@@ -60,7 +60,8 @@ export class AgentProviderRegistry {
    */
   getByModel(model: string): AIProvider | undefined {
     for (const provider of this.providers.values()) {
-      if (provider.models.includes(model as any)) {
+      const models = provider.listModels();
+      if (models.some(m => m.id === model)) {
         return provider;
       }
     }
@@ -84,14 +85,14 @@ export class AgentProviderRegistry {
   /**
    * Get provider configuration
    */
-  getConfig(): AgentConfig {
+  getConfig(): AgentDefaultsConfig {
     return { ...this.config };
   }
 
   /**
    * Update provider configuration
    */
-  updateConfig(config: Partial<AgentConfig>): void {
+  updateConfig(config: Partial<AgentDefaultsConfig>): void {
     this.config = { ...this.config, ...config };
   }
 

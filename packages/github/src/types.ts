@@ -378,6 +378,9 @@ export interface READMETemplateConfig {
   installation?: string;
   usage?: string;
   contributing?: string;
+  /** Custom content appended to README (e.g., generated docs). */
+  customContent?: string;
+  /** Map of custom section titles to their markdown content. */
   customSections?: Record<string, string>;
 }
 
@@ -395,6 +398,8 @@ export interface AutoREADMEOptions {
   installation?: string;
   usage?: string;
   contributing?: string;
+  /** Map of custom section titles to their markdown content. */
+  customSections?: Record<string, string>;
   license?: string;
   author?: string;
   version?: string;

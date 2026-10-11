@@ -136,7 +136,7 @@ async function runEngineVerification() {
   // 8. Execution Manager
   try {
     const provider = executionManager.getProvider("local");
-    if (provider) {
+    if (provider !== null && provider !== undefined) {
       console.log("✅ 8/10 Execution Manager: PASSED (LocalExecutionProvider ready)");
       passed++;
     } else {

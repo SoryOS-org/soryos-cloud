@@ -406,7 +406,13 @@ export function getAgentByModel(model: string): AgentDefinition | undefined {
 /**
  * Agent configuration
  */
-export interface AgentConfig {
+/**
+ * Resolved default settings for the agent runtime.
+ *
+ * Named `AgentDefaultsConfig` to avoid colliding with the per-run `AgentConfig`
+ * in ./types, which carries `model`/`provider` instead of the defaults.
+ */
+export interface AgentDefaultsConfig {
   defaultModel: string;
   defaultProvider: string;
   maxTokens: number;
@@ -418,7 +424,7 @@ export interface AgentConfig {
 /**
  * Default agent configuration
  */
-export const DEFAULT_AGENT_CONFIG: AgentConfig = {
+export const DEFAULT_AGENT_CONFIG: AgentDefaultsConfig = {
   defaultModel: 'gemini-2.5-flash',
   defaultProvider: 'google',
   maxTokens: 4096,

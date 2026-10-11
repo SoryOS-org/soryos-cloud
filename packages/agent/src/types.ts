@@ -3,8 +3,6 @@
  * Core types for the Agent Runtime.
  */
 
-import { Id } from '@soryos/schema';
-
 /**
  * Agent definition
  */

@@ -3,87 +3,43 @@
  * Type Definitions for Real-time Database
  */
 
-import { Id } from '@soryos/shared';
+import { Id } from './schema';
+import type { Session as SessionSchemaType, Message as MessageSchemaType } from './schema';
+import type { SessionStatus, MessageRole } from './schema';
+
+// `Session`, `SessionStatus`, `Message` and `MessageRole` are derived from the
+// Zod schemas in ./schema and re-exported below so there is a single source of
+// truth. Only the types Zod does not model (query options, subscriptions,
+// events, tool payload shapes) are declared in this file.
+export type {
+  Session,
+  SessionStatus,
+  Message,
+  MessageRole,
+} from './schema';
+
+// The Zod schemas mark `_id` and `_creationTime` optional because the backing
+// store injects them. Once a record has been persisted those fields are always
+// present, so reads and in-memory storage use these narrowed types.
+export type StoredSession = SessionSchemaType & {
+  _id: Id<'sessions'>;
+  _creationTime: number;
+};
+
+export type StoredMessage = MessageSchemaType & {
+  _id: Id<'messages'>;
+  _creationTime: number;
+};
 
 // ============================================================================
 // Session Types
 // ============================================================================
-
-export type SessionStatus =
-  | 'IN_PROGRESS'
-  | 'CLONING_REPO'
-  | 'INSTALLING_DEPENDENCIES'
-  | 'STARTING_DEV_SERVER'
-  | 'CREATING_TUNNEL'
-  | 'RUNNING'
-  | 'CUSTOM'
-  | 'CREATING_GITHUB_REPO'
-  | 'INITIALIZING_GIT'
-  | 'ADDING_FILES'
-  | 'COMMITTING_CHANGES'
-  | 'PUSHING_TO_GITHUB'
-  | 'PUSH_COMPLETE'
-  | 'PUSH_FAILED'
-  | 'AUTO_PUSHING'
-  | 'USING_EXISTING_REPO'
-  | 'PAUSED'
-  | 'TERMINATED'
-  | 'ERROR';
-
-export interface Session {
-  _id: Id<'sessions'>;
-  _creationTime: number;
-  
-  // Identification
-  id: string;
-  sessionId: string; // E2B sandbox ID
-  name: string;
-  
-  // Ownership
-  createdBy: string; // Clerk user ID
-  
-  // Configuration
-  templateId: string;
-  repository?: string;
-  pullRequest?: any;
-  
-  // State
-  status: SessionStatus;
-  statusMessage?: string;
-  
-  // Environment
-  tunnelUrl?: string;
-  envs?: Record<string, string>;
-  
-  // GitHub
-  githubRepository?: string;
-  githubRepositoryUrl?: string;
-  githubPushStatus?: 'pending' | 'in_progress' | 'completed' | 'failed';
-  githubPushDate?: number;
-  
-  // Agent
-  agentStopped?: boolean;
-  
-  // Cost tracking
-  totalCostUSD?: number;
-  messageCount?: number;
-  lastCostUpdate?: number;
-  
-  // Convex project
-  convexProject?: {
-    deploymentName: string;
-    deploymentUrl: string;
-    adminKey: string;
-    projectSlug?: string;
-    teamSlug?: string;
-  };
-}
+// `Session` and `SessionStatus` come from ./schema (see re-export above).
 
 // ============================================================================
 // Message Types
 // ============================================================================
-
-export type MessageRole = 'user' | 'assistant' | 'system';
+// `Message` and `MessageRole` come from ./schema (see re-export above).
 
 export type ToolType = 
   | 'read'
@@ -145,78 +101,14 @@ export interface MessageCodebaseSearch {
   targetDirectories?: string[];
 }
 
-export interface Message {
-  _id: Id<'messages'>;
-  _creationTime: number;
-  
-  // Identification
-  id: string;
-  sessionId: Id<'sessions'>;
-  
-  // Content
-  role: MessageRole;
-  content: string;
-  
-  // Tools
-  edits?: MessageEdit;
-  read?: MessageRead;
-  bash?: MessageBash;
-  tool?: MessageTool;
-  searchReplace?: MessageSearchReplace;
-  webSearch?: MessageWebSearch;
-  mcpTool?: MessageMcpTool;
-  codebaseSearch?: MessageCodebaseSearch;
-  
-  // Attachments
-  images?: Array<{
-    fileName: string;
-    path: string;
-    storageId?: Id<'_storage'>;
-  }>;
-  audios?: Array<{
-    fileName: string;
-    path: string;
-    storageId?: Id<'_storage'>;
-  }>;
-  videos?: Array<{
-    fileName: string;
-    path: string;
-    storageId?: Id<'_storage'>;
-  }>;
-  
-  // Tasks
-  todos?: Array<{
-    id: string;
-    content: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-    priority: 'low' | 'medium' | 'high';
-  }>;
-  
-  // Metadata
-  checkpoint?: {
-    branch: string;
-    patch?: string;
-  };
-  thinking?: string;
-  streamId?: string;
-  
-  // Cost tracking
-  costUSD?: number;
-  modelUsed?: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  cacheReadTokens?: number;
-  cacheCreationTokens?: number;
-  durationMs?: number;
-  createdAt?: number;
-}
-
 // ============================================================================
 // Subscription Types
 // ============================================================================
 
 export interface SubscriptionOptions {
   sessionId?: string;
+  /** Max number of records returned by the initial fetch. */
+  limit?: number;
   messageLimit?: number;
   includeMessages?: boolean;
   includeFiles?: boolean;

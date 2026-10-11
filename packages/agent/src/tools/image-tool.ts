@@ -6,8 +6,15 @@
  * and process them for analysis, OCR, or design feedback.
  */
 
-import { ToolDefinition, ToolResult } from '../types';
-import { ImageManager, ImageUploadResult, ImageAnalysisResult } from '@soryos/images';
+import { ToolDefinition, ToolExecutionResult } from '@soryos/schema';
+import {
+  ImageManager,
+  ImageUploader,
+  ImageUploadResult,
+  ImageAnalysisResult,
+  type ImageFormat,
+  type ImageAnalysisType,
+} from '@soryos/images';
 
 /**
  * Image tool definition
@@ -67,13 +74,13 @@ export class ImageTool {
     prompt?: string;
     maxSizeMB?: number;
     allowedFormats?: string[];
-  }): Promise<ToolResult> {
+  }): Promise<ToolExecutionResult> {
     const startTime = Date.now();
 
     try {
       // For now, we return the upload request status
       // The actual upload is handled by the frontend
-      const result: ToolResult = {
+      const result: ToolExecutionResult = {
         toolName: 'image_input',
         output: JSON.stringify({
           status: 'awaiting_upload',
@@ -83,8 +90,6 @@ export class ImageTool {
           timestamp: Date.now(),
         }),
         isError: false,
-        success: true,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'request_upload',
           source: params.source,
@@ -103,9 +108,6 @@ export class ImageTool {
         toolName: 'image_input',
         output: '',
         isError: true,
-        success: false,
-        error: errorMessage,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'error',
           error: errorMessage,
@@ -122,61 +124,48 @@ export class ImageTool {
     image: Blob | File | string,
     analysisType?: string,
     prompt?: string
-  ): Promise<ToolResult> {
+  ): Promise<ToolExecutionResult> {
     const startTime = Date.now();
 
     try {
-      // Upload image
-      const uploadResult: ImageUploadResult = {
-        success: true,
-        id: `img-${Date.now()}`,
-        url: typeof image === 'string' ? image : URL.createObjectURL(image),
-        base64: typeof image === 'string' && image.startsWith('data:') ? image : '',
-        blob: image instanceof Blob ? image : new Blob([image]),
-        file: image instanceof File ? image : undefined,
-        format: this.getFormat(image),
-        width: 0, // Would be set by actual upload
-        height: 0,
-        sizeBytes: image instanceof Blob ? image.size : 0,
+      // Delegate to the real uploader so the bytes are actually read and the
+      // image dimensions are measured instead of guessed.
+      const uploadResult = (await this.imageManager.upload(image, {
         sessionId,
-        timestamp: Date.now(),
-      };
+        maxSizeMB: 10,
+      })) as ImageUploadResult;
 
-      // For now, return upload result
-      // In a real implementation, we would also perform analysis
-      
-      const analysisResult: Partial<ImageAnalysisResult> = {
-        analysisType: analysisType || 'none',
-        provider: 'soryos',
-        timestamp: Date.now(),
-        sessionId,
-      };
-
-      if (analysisType === 'ocr') {
-        analysisResult.results = [{ type: 'text', content: 'OCR text would be extracted here', confidence: 0.95 }];
-      } else if (analysisType === 'description') {
-        analysisResult.results = [{ type: 'description', content: 'Image description would be generated here' }];
+      if (!uploadResult || uploadResult.success === false) {
+        throw new Error(uploadResult?.error || 'Image upload failed');
       }
+
+      // Image analysis is not wired up yet: there is no vision provider call in
+      // this package. Report the upload only rather than inventing a result.
+      const requestedAnalysis = (analysisType ?? undefined) as ImageAnalysisType | undefined;
 
       return {
         toolName: 'image_input',
         output: JSON.stringify({
-          status: 'completed',
+          status: 'uploaded',
           upload: {
             id: uploadResult.id,
             url: uploadResult.url,
             format: uploadResult.format,
+            width: uploadResult.width,
+            height: uploadResult.height,
             sizeBytes: uploadResult.sizeBytes,
           },
-          analysis: analysisResult,
+          analysis: {
+            performed: false,
+            requestedType: requestedAnalysis ?? null,
+            reason: 'No vision provider is configured for this session.',
+          },
           timestamp: Date.now(),
         }),
         isError: false,
-        success: true,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'process_image',
-          analysisType: analysisType,
+          analysisType: requestedAnalysis ?? null,
           format: uploadResult.format,
           sizeBytes: uploadResult.sizeBytes,
           sessionId,
@@ -190,9 +179,6 @@ export class ImageTool {
         toolName: 'image_input',
         output: '',
         isError: true,
-        success: false,
-        error: errorMessage,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'error',
           error: errorMessage,
@@ -209,7 +195,7 @@ export class ImageTool {
     sessionId: string,
     image: Blob | File | string,
     description?: string
-  ): Promise<ToolResult> {
+  ): Promise<ToolExecutionResult> {
     const startTime = Date.now();
 
     try {
@@ -235,9 +221,6 @@ export class ImageTool {
         toolName: 'image_input',
         output: '',
         isError: true,
-        success: false,
-        error: errorMessage,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'error',
           error: errorMessage,
@@ -248,36 +231,10 @@ export class ImageTool {
   }
 
   /**
-   * Get image format from blob or file
-   */
-  private getFormat(image: Blob | File | string): string {
-    if (typeof image === 'string') {
-      if (image.startsWith('data:')) {
-        const type = image.split(',')[0].split(':')[1].split(';')[0];
-        if (type.includes('jpeg') || type.includes('jpg')) return 'jpeg';
-        if (type.includes('png')) return 'png';
-        if (type.includes('webp')) return 'webp';
-        if (type.includes('gif')) return 'gif';
-        if (type.includes('svg')) return 'svg';
-        return 'unknown';
-      }
-      return 'url';
-    }
-
-    const type = (image as Blob).type.toLowerCase();
-    if (type.includes('jpeg') || type.includes('jpg')) return 'jpeg';
-    if (type.includes('png')) return 'png';
-    if (type.includes('webp')) return 'webp';
-    if (type.includes('gif')) return 'gif';
-    if (type.includes('svg')) return 'svg';
-    return 'unknown';
-  }
-
-  /**
    * Check if image input is supported
    */
   isSupported(): boolean {
-    return ImageManager.isSupported();
+    return ImageUploader.isSupported();
   }
 
   /**

@@ -478,8 +478,8 @@ export class E2BProvider implements SandboxProvider {
         name: f.name,
         isDirectory: Boolean(f.isDirectory ?? (f.type === 'dir')),
         sizeBytes: f.sizeBytes ?? f.size ?? 0,
-        updatedAt: f.updatedAt ? new Date(f.updatedAt).toISOString() : undefined,
-      }));
+        updatedAt: f.updatedAt ? new Date(f.updatedAt).toISOString() : (f.mtime ? new Date(f.mtime).toISOString() : new Date().toISOString()),
+      })) as FileEntry[];
     } catch (error) {
       console.error(`[E2B] Failed to list files in ${directoryPath || this.cwd}:`, error);
       // Return empty array on error

@@ -7,8 +7,10 @@
  */
 
 import { 
-  Session, 
-  Message, 
+  Session,
+  Message,
+  StoredSession,
+  StoredMessage,
   Subscription, 
   SubscriptionOptions,
   DatabaseEvent,
@@ -37,7 +39,7 @@ export class SubscriptionManager {
    */
   subscribeToSession(
     sessionId: string,
-    callback: (session: Session | null) => void,
+    callback: (session: StoredSession | null) => void,
     options?: SubscriptionOptions
   ): Subscription {
     const subscription = this.database.subscribeToSession(sessionId, (session) => {
@@ -76,7 +78,7 @@ export class SubscriptionManager {
    */
   subscribeToMessages(
     sessionId: string,
-    callback: (messages: Message[]) => void,
+    callback: (messages: StoredMessage[]) => void,
     options?: SubscriptionOptions
   ): Subscription {
     const subscription = this.database.subscribeToMessages(sessionId, (messages) => {
@@ -96,7 +98,7 @@ export class SubscriptionManager {
    */
   subscribeToNewMessages(
     sessionId: string,
-    callback: (message: Message) => void
+    callback: (message: StoredMessage) => void
   ): Subscription {
     let lastMessageId: string | null = null;
     
@@ -152,13 +154,19 @@ export class SubscriptionManager {
   subscribeToSessionAndMessages(
     sessionId: string,
     callback: { 
-      onSession?: (session: Session | null) => void;
-      onMessages?: (messages: Message[]) => void;
-      onNewMessage?: (message: Message) => void;
+      onSession?: (session: StoredSession | null) => void;
+      onMessages?: (messages: StoredMessage[]) => void;
+      onNewMessage?: (message: StoredMessage) => void;
     }
   ): { sessionSub: Subscription; messagesSub: Subscription; newMessageSub?: Subscription } {
-    const sessionSub = this.subscribeToSession(sessionId, callback.onSession);
-    const messagesSub = this.subscribeToMessages(sessionId, callback.onMessages);
+    const noop = { unsubscribe: () => {}, isActive: false };
+
+    const sessionSub = callback.onSession
+      ? this.subscribeToSession(sessionId, callback.onSession)
+      : noop;
+    const messagesSub = callback.onMessages
+      ? this.subscribeToMessages(sessionId, callback.onMessages)
+      : noop;
     let newMessageSub: Subscription | undefined;
     
     if (callback.onNewMessage) {
@@ -177,7 +185,7 @@ export class SubscriptionManager {
    */
   subscribeToUserSessions(
     userId: string,
-    callback: (sessions: Session[]) => void,
+    callback: (sessions: StoredSession[]) => void,
     options?: SubscriptionOptions
   ): Subscription {
     // Initial fetch
@@ -287,9 +295,3 @@ export function getSubscriptionManager(): SubscriptionManager {
 export function createSubscriptionManager(database?: RealTimeDatabase): SubscriptionManager {
   return new SubscriptionManager(database);
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export { SubscriptionManager };

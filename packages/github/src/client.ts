@@ -5,6 +5,8 @@
 
 import {
   GitHubConfig,
+  RepositoryVisibility,
+  PullRequestState,
   RepositoryInfo,
   BranchInfo,
   CommitInfo,

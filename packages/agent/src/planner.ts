@@ -1078,4 +1078,17 @@ export class Planner {
       // Exécuter via l'agent
       const result = await this.agentRuntime.run({
         sessionId,
-        input: `Evaluate this condition: ${condition}. Return only 
+        input: `Evaluate this condition: ${condition}. Return only true or false`,
+        streaming: false
+      });
+
+      if (result.exitCode !== 0) {
+        return false;
+      }
+
+      return String(result.output || '').trim().toLowerCase().startsWith('true');
+    } catch {
+      return false;
+    }
+  }
+}

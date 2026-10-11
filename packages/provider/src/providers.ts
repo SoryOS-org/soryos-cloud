@@ -166,8 +166,8 @@ export class GenericAIProvider implements AIProvider {
  * Google Gemini Provider
  */
 export class GoogleProvider extends GenericAIProvider {
-  readonly id = "google" as const;
-  readonly name = "Google Gemini" as const;
+  readonly id: string = "google";
+  readonly name: string = "Google Gemini";
 
   constructor() {
     super("google");
@@ -198,22 +198,22 @@ export class GoogleProvider extends GenericAIProvider {
     try {
       // Import Google GenAI SDK
       const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: options.modelId || this.getDefaultModel() });
+      const genAI = new GoogleGenAI({ apiKey });
 
       const start = Date.now();
-      const result = await model.generateContent({
+      const result = await genAI.models.generateContent({
+        model: options.modelId || this.getDefaultModel(),
         contents: options.messages.map(msg => ({
-          role: msg.role === "assistant" ? "model" : msg.role,
+          role: msg.role === "assistant" ? "model" : "user",
           parts: [{ text: msg.content }],
         })),
-        generationConfig: {
-          temperature: options.temperature || 0.7,
+        config: {
+          temperature: options.temperature ?? 0.7,
         },
       });
 
       const latencyMs = Date.now() - start;
-      const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
       return {
         text,
@@ -222,16 +222,15 @@ export class GoogleProvider extends GenericAIProvider {
         providerName: this.name,
         latencyMs,
         usage: {
-          promptTokens: result.response.usageMetadata?.promptTokenCount,
-          completionTokens: result.response.usageMetadata?.candidatesTokenCount,
-          totalTokens: result.response.usageMetadata?.totalTokenCount,
+          promptTokens: result.usageMetadata?.promptTokenCount,
+          completionTokens: result.usageMetadata?.candidatesTokenCount,
+          totalTokens: result.usageMetadata?.totalTokenCount,
         },
       };
     } catch (error) {
       const errorMessage = (error as Error).message;
-      // Fallback to generic implementation if Google SDK fails
-      console.warn(`[GoogleProvider] Failed to generate: ${errorMessage}`);
-      return super.generate(options);
+      // Surface the real failure instead of masking it behind placeholder text.
+      throw new Error(`[GoogleProvider] generateContent failed: ${errorMessage}`);
     }
   }
 
@@ -243,52 +242,56 @@ export class GoogleProvider extends GenericAIProvider {
 
     try {
       const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: options.modelId || this.getDefaultModel() });
+      const genAI = new GoogleGenAI({ apiKey });
 
       const start = Date.now();
-      const stream = await model.generateContentStream({
+      const stream = await genAI.models.generateContentStream({
+        model: options.modelId || this.getDefaultModel(),
         contents: options.messages.map(msg => ({
-          role: msg.role === "assistant" ? "model" : msg.role,
+          role: msg.role === "assistant" ? "model" : "user",
           parts: [{ text: msg.content }],
         })),
-        generationConfig: {
-          temperature: options.temperature || 0.7,
+        config: {
+          temperature: options.temperature ?? 0.7,
         },
       });
 
       let accumulatedText = "";
+      let usage = {
+        promptTokens: undefined as number | undefined,
+        completionTokens: undefined as number | undefined,
+        totalTokens: undefined as number | undefined,
+      };
       for await (const chunk of stream) {
         if (options.signal?.aborted) {
           break;
         }
-        const text = chunk.candidate?.content?.parts?.[0]?.text || "";
+        const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
         accumulatedText += text;
-        
+
+        if (chunk.usageMetadata) {
+          usage = {
+            promptTokens: chunk.usageMetadata.promptTokenCount,
+            completionTokens: chunk.usageMetadata.candidatesTokenCount,
+            totalTokens: chunk.usageMetadata.totalTokenCount,
+          };
+        }
+
         yield {
           delta: text,
           isComplete: false,
-          usage: {
-            promptTokens: chunk.usageMetadata?.promptTokenCount,
-            completionTokens: chunk.usageMetadata?.candidatesTokenCount,
-            totalTokens: chunk.usageMetadata?.totalTokenCount,
-          },
+          usage,
         };
       }
 
       yield {
         delta: "",
         isComplete: true,
-        usage: {
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0,
-        },
+        usage,
       };
     } catch (error) {
       const errorMessage = (error as Error).message;
-      console.warn(`[GoogleProvider] Failed to stream: ${errorMessage}`);
-      yield* super.stream(options);
+      throw new Error(`[GoogleProvider] generateContentStream failed: ${errorMessage}`);
     }
   }
 }
@@ -783,10 +786,13 @@ export class CursorProvider extends GenericAIProvider {
 
 /**
  * Gemini Provider (alias for Google)
+ *
+ * Registers under the "gemini" id so sessions that declare provider "gemini"
+ * resolve to the same Gemini endpoint, without duplicating the request logic.
  */
 export class GeminiProvider extends GoogleProvider {
-  readonly id = "gemini" as const;
-  readonly name = "Gemini" as const;
+  override readonly id = "gemini" as const;
+  override readonly name = "Gemini" as const;
 
   constructor() {
     super();

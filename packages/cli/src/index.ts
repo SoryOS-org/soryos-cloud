@@ -138,14 +138,14 @@ ${colors.bold}OPTIONS:${colors.reset}
     modelId,
     agentId,
     apiKey,
-    emit: (e) => {
+    emit: (e: any) => {
       if (e.type === "text" && e.delta) {
         process.stdout.write(e.delta as string);
       }
     },
   });
 
-  if (!res.success) {
+  if (res.exitCode !== 0) {
     process.exit(1);
   }
 }

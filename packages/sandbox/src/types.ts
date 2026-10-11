@@ -3,13 +3,10 @@
  * Types pour la gestion des sandboxes.
  */
 
-export type ProviderId =
-  | "e2b"
-  | "vercel"
-  | "google-cloud-run"
-  | "github-codespaces"
-  | "github-repository"
-  | "local";
+// `ProviderId` is owned by @soryos/schema; re-exported here so sandbox
+// consumers keep a single import path.
+export type { ProviderId } from "@soryos/schema";
+import type { ProviderId } from "@soryos/schema";
 
 export type ProviderType =
   | "cloud sandbox"
@@ -75,13 +72,9 @@ export interface ProcessHandle {
   pid?: number;
 }
 
-export interface FileEntry {
-  path: string;
-  name: string;
-  isDirectory: boolean;
-  sizeBytes?: number;
-  updatedAt?: string;
-}
+// `FileEntry` is owned by @soryos/schema; re-exported here so sandbox
+// consumers keep a single import path.
+export type { FileEntry } from "@soryos/schema";
 
 export interface GitSyncState {
   isClean: boolean;

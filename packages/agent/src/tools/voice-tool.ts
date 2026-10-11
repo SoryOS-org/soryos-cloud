@@ -6,8 +6,8 @@
  * and process it as text commands.
  */
 
-import { ToolDefinition, ToolResult } from '../types';
-import { VoiceManager, VoiceInputResult } from '@soryos/voice';
+import { ToolDefinition, ToolExecutionResult } from '@soryos/schema';
+import { VoiceManager, AudioRecorder, type VoiceInputResult } from '@soryos/voice';
 
 /**
  * Voice tool definition
@@ -60,7 +60,7 @@ export class VoiceTool {
     maxDurationMs?: number;
     language?: string;
     provider?: string;
-  }): Promise<ToolResult> {
+  }): Promise<ToolExecutionResult> {
     const startTime = Date.now();
 
     try {
@@ -78,7 +78,7 @@ export class VoiceTool {
       await this.voiceManager.startRecording();
 
       // Return intermediate response with recording started
-      const recordingStartResult: ToolResult = {
+      const recordingStartResult: ToolExecutionResult = {
         toolName: 'voice_input',
         output: JSON.stringify({
           status: 'recording_started',
@@ -86,8 +86,6 @@ export class VoiceTool {
           timestamp: Date.now(),
         }),
         isError: false,
-        success: true,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'start_recording',
           provider: params.provider || 'web-speech-api',
@@ -108,9 +106,6 @@ export class VoiceTool {
         toolName: 'voice_input',
         output: '',
         isError: true,
-        success: false,
-        error: errorMessage,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'error',
           error: errorMessage,
@@ -122,28 +117,24 @@ export class VoiceTool {
   /**
    * Process recorded audio and return transcription
    */
-  async processRecording(sessionId: string): Promise<ToolResult> {
+  async processRecording(sessionId: string): Promise<ToolExecutionResult> {
     const startTime = Date.now();
 
     try {
       // Stop recording
       const audioBuffer = await this.voiceManager.stopRecording();
 
-      // Transcribe audio
-      const result: VoiceInputResult = {
-        success: true,
-        text: '',
+      // Run the real transcription pipeline instead of returning an empty
+      // string: an empty transcript would silently look like valid input.
+      const result = (await this.voiceManager.transcribe({
         audio: audioBuffer,
-        durationMs: Date.now() - startTime,
-        provider: 'web-speech-api',
-        confidence: 1.0,
-        timestamp: Date.now(),
         sessionId,
-      };
+      })) as VoiceInputResult;
 
-      // Note: In a real implementation, we would use the transcriber
-      // For now, we return a placeholder
-      
+      if (!result || result.success === false) {
+        throw new Error(result?.error || 'Transcription failed');
+      }
+
       return {
         toolName: 'voice_input',
         output: JSON.stringify({
@@ -151,17 +142,15 @@ export class VoiceTool {
           text: result.text,
           durationMs: result.durationMs,
           provider: result.provider,
-          confidence: result.confidence,
-          sessionId: result.sessionId,
+          confidence: result.confidence ?? null,
+          sessionId: result.sessionId ?? sessionId,
         }),
         isError: false,
-        success: true,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'transcribe',
           provider: result.provider,
           durationMs: result.durationMs,
-          sessionId: result.sessionId,
+          sessionId: result.sessionId ?? sessionId,
         },
       };
 
@@ -172,9 +161,6 @@ export class VoiceTool {
         toolName: 'voice_input',
         output: '',
         isError: true,
-        success: false,
-        error: errorMessage,
-        durationMs: Date.now() - startTime,
         metadata: {
           action: 'error',
           error: errorMessage,
@@ -188,7 +174,7 @@ export class VoiceTool {
    * Check if voice input is supported
    */
   isSupported(): boolean {
-    return VoiceManager.isSupported();
+    return AudioRecorder.isSupported();
   }
 
   /**

@@ -538,7 +538,7 @@ export class ErrorRecoveryManager {
         // Add error to session history
         session.errors = session.errors || [];
         session.errors.push({
-          timestamp: error.timestamp,
+          timestamp: new Date(error.timestamp).toISOString(),
           type: error.type,
           code: error.code,
           message: error.message,
@@ -546,13 +546,13 @@ export class ErrorRecoveryManager {
           recoverySuggestions: error.recoverySuggestions
         });
 
-        // Update session status based on error type
+        // Update sandbox state based on error type
         if (error.type === 'sandbox_terminated' || error.type === 'sandbox_not_ready') {
-          session.status = 'paused';
+          session.sandbox_state = 'paused';
         } else if (error.type === 'session_expired') {
-          session.status = 'expired';
+          session.sandbox_state = 'dead';
         } else if (!error.isRetryable) {
-          session.status = 'error';
+          session.agent_running = false;
         }
 
         await this.sessionStore.save(session);

@@ -1240,11 +1240,12 @@ export class AgentRuntime {
    * Process provider result for non-streaming
    */
   private processProviderResult(
-    result: { stdout: string; stderr: string; exitCode: number; result?: unknown },
+    result: { stdout: string; stderr: string; exitCode: number; result?: { content?: string } | unknown },
     sessionId: string,
     options: AgentRunOptions
   ): { content: string; steps: AgentStep[] } {
-    const content = result.stdout || result.result?.content || '';
+    const nested = result.result as { content?: string } | undefined | null;
+    const content = result.stdout || nested?.content || '';
     const steps: AgentStep[] = [];
 
     // Add text step

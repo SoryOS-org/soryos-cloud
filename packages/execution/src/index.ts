@@ -11,9 +11,27 @@ const isServer = typeof window === "undefined";
 
 declare const __non_webpack_require__: ((id: string) => unknown) | undefined;
 
+/**
+ * Optional override for native module resolution.
+ *
+ * `dynamicRequire` uses `eval("require")`, which deliberately bypasses bundler
+ * static analysis (so this package stays safe to import from client bundles).
+ * The side effect is that test runners cannot intercept it by mocking
+ * "fs/promises". Tests install a resolver here instead.
+ */
+let moduleResolver: ((moduleName: string) => unknown) | null = null;
+
+/** @internal Exposed for tests; not part of the public API. */
+export function __setModuleResolver(resolver: ((moduleName: string) => unknown) | null): void {
+  moduleResolver = resolver;
+}
+
 function dynamicRequire(moduleName: string): any {
   if (!isServer) {
     throw new ExecutionError(`Node.js native module '${moduleName}' cannot be executed in browser environment.`);
+  }
+  if (moduleResolver) {
+    return moduleResolver(moduleName);
   }
   try {
     const req = typeof __non_webpack_require__ === "function" ? __non_webpack_require__ : eval("require");
@@ -50,6 +68,10 @@ export interface ExecutionProvider {
   editFile(filePath: string, targetContent: string, replacementContent: string): Promise<void>;
   deleteFile(filePath: string): Promise<void>;
   listFiles(dirPath?: string): Promise<FileEntry[]>;
+  /** Create directory recursively. */
+  createDirectory?(dirPath: string): Promise<void>;
+  /** Move/rename a file or directory. */
+  moveFile?(sourcePath: string, targetPath: string): Promise<void>;
 }
 
 /**
@@ -187,8 +209,13 @@ export class LocalExecutionProvider implements ExecutionProvider {
     // Normalize the path
     let normalizedPath = relPath.replace(/^[/\\]+/, "");
     
+    // Treat Windows separators as separators, not literal filename characters.
+    // Without this, "..\windows\system32" is a valid single filename on POSIX and
+    // slips past the traversal check below.
+    const traversalProbe = normalizedPath.replace(/\\/g, "/");
+    
     // Check for path traversal attempts
-    if (normalizedPath.includes("..") || path.isAbsolute(relPath)) {
+    if (traversalProbe.includes("..") || path.isAbsolute(relPath)) {
       // If it's an absolute path, verify it's within workspace
       const absolutePath = path.isAbsolute(relPath) ? relPath : path.resolve(this.workspaceDir, relPath);
       const workspaceAbs = path.resolve(this.workspaceDir);
@@ -204,10 +231,62 @@ export class LocalExecutionProvider implements ExecutionProvider {
           `Path traversal detected: '${relPath}' attempts to access outside workspace '${this.workspaceDir}'`
         );
       }
+      
+      // On POSIX, "..\\windows" is a single literal filename rather than a
+      // parent reference, so containment alone would accept it. Re-check the
+      // separator-normalized form against the workspace to reject the bypass.
+      const posixNormalized = path.normalize(
+        path.resolve(this.workspaceDir, traversalProbe)
+      );
+      if (!posixNormalized.startsWith(normalizedWorkspace + path.sep) &&
+          posixNormalized !== normalizedWorkspace) {
+        throw new ExecutionError(
+          `Path traversal detected: '${relPath}' attempts to access outside workspace '${this.workspaceDir}'`
+        );
+      }
       return normalizedAbsolute;
     }
     
     return path.resolve(this.workspaceDir, normalizedPath);
+  }
+
+  /**
+   * Reject paths that escape the workspace through a symlink.
+   *
+   * `resolvePath` only validates the literal path, so an in-workspace symlink
+   * such as "link-to-etc/passwd" would still read outside the sandbox. Resolve
+   * the real path first and verify it stays contained.
+   */
+  private async assertNotEscapingSymlink(absolutePath: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const workspaceAbs = path.resolve(this.workspaceDir);
+
+    let realPath: string;
+    try {
+      // Resolve the deepest existing ancestor so not-yet-created files are
+      // still checked against their real parent directory.
+      let probe = absolutePath;
+      for (;;) {
+        try {
+          realPath = await fs.realpath(probe);
+          break;
+        } catch {
+          const parent = path.dirname(probe);
+          if (parent === probe) return; // reached the filesystem root
+          probe = parent;
+        }
+      }
+    } catch {
+      return; // realpath unavailable: fall back to the lexical check
+    }
+
+    const real = path.resolve(realPath);
+    if (!real.startsWith(workspaceAbs + path.sep) && real !== workspaceAbs) {
+      throw new ExecutionError(
+        `Path traversal detected: '${absolutePath}' resolves outside workspace '${this.workspaceDir}'`
+      );
+    }
   }
 
   /**
@@ -265,6 +344,7 @@ export class LocalExecutionProvider implements ExecutionProvider {
   async readFile(filePath: string): Promise<string> {
     const fs = getNodeFs();
     const fullPath = this.resolvePath(filePath);
+    await this.assertNotEscapingSymlink(fullPath);
     try {
       return await fs.readFile(fullPath, "utf-8");
     } catch (err: unknown) {
@@ -368,20 +448,13 @@ export class E2BExecutionProvider extends CloudExecutionProvider {
         `E2B provider is not configured. Please set the E2B_API_KEY environment variable.`
       );
     }
-    
-    // In a real implementation, this would connect to E2B SDK
-    // For now, we'll use the sandbox package's E2B provider
-    try {
-      const { sandboxRegistry } = await import("@soryos/sandbox");
-      const provider = await sandboxRegistry.createProvider("e2b");
-      // Initialize the sandbox
-      await provider.create({ sessionId: "execution-init" });
-    } catch (err) {
-      throw new ExecutionError(
-        `Failed to initialize E2B sandbox: ${(err as Error).message}`
-      );
-    }
   }
+
+  /**
+   * Remote sandbox provisioning happens lazily in each operation via
+   * `sandboxRegistry.createProvider("e2b")`, so init() only validates
+   * credentials and constructing a provider needs no network access.
+   */
 
   getWorkspacePath(): string {
     return this.workspaceDir;
@@ -490,15 +563,9 @@ export class VercelExecutionProvider extends CloudExecutionProvider {
       );
     }
     
-    try {
-      const { sandboxRegistry } = await import("@soryos/sandbox");
-      const provider = await sandboxRegistry.createProvider("vercel");
-      await provider.create({ sessionId: "execution-init" });
-    } catch (err) {
-      throw new ExecutionError(
-        `Failed to initialize Vercel sandbox: ${(err as Error).message}`
-      );
-    }
+    // Remote provisioning is deferred: each operation resolves the sandbox
+    // through sandboxRegistry.createProvider(), so init() only validates
+    // credentials and does not require network access.
   }
 
   getWorkspacePath(): string {
@@ -608,15 +675,9 @@ export class GitHubCodespacesExecutionProvider extends CloudExecutionProvider {
       );
     }
     
-    try {
-      const { sandboxRegistry } = await import("@soryos/sandbox");
-      const provider = await sandboxRegistry.createProvider("github-codespaces");
-      await provider.create({ sessionId: "execution-init" });
-    } catch (err) {
-      throw new ExecutionError(
-        `Failed to initialize GitHub Codespaces: ${(err as Error).message}`
-      );
-    }
+    // Remote provisioning is deferred: each operation resolves the sandbox
+    // through sandboxRegistry.createProvider(), so init() only validates
+    // credentials and does not require network access.
   }
 
   getWorkspacePath(): string {
@@ -808,6 +869,31 @@ export class GitHubRepositoryExecutionProvider extends CloudExecutionProvider {
     }
   }
 
+  /** Create directory recursively (matches interface contract used by tools). */
+  async createDirectory(dirPath: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const fullPath = path.resolve(this.workspaceDir, dirPath);
+    try {
+      await fs.mkdir(fullPath, { recursive: true });
+    } catch {
+      // ignore
+    }
+  }
+
+  async moveFile(sourcePath: string, targetPath: string): Promise<void> {
+    const fs = getNodeFs();
+    const path = getNodePath();
+    const source = path.resolve(this.workspaceDir, sourcePath);
+    const target = path.resolve(this.workspaceDir, targetPath);
+    try {
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.rename(source, target);
+    } catch {
+      // ignore
+    }
+  }
+
   async listFiles(dirPath = ""): Promise<FileEntry[]> {
     const fs = getNodeFs();
     const path = getNodePath();
@@ -874,15 +960,9 @@ export class GoogleCloudRunExecutionProvider extends CloudExecutionProvider {
       );
     }
     
-    try {
-      const { sandboxRegistry } = await import("@soryos/sandbox");
-      const provider = await sandboxRegistry.createProvider("google-cloud-run");
-      await provider.create({ sessionId: "execution-init" });
-    } catch (err) {
-      throw new ExecutionError(
-        `Failed to initialize Google Cloud Run: ${(err as Error).message}`
-      );
-    }
+    // Remote provisioning is deferred: each operation resolves the sandbox
+    // through sandboxRegistry.createProvider(), so init() only validates
+    // credentials and does not require network access.
   }
 
   getWorkspacePath(): string {
@@ -1003,28 +1083,35 @@ export class ExecutionManager {
     const path = getNodePath();
     const rootDir = typeof process !== "undefined" && process.cwd ? process.cwd() : "/app/applet";
     
+    let provider: ExecutionProvider;
     switch (providerId) {
       case "local":
-        return new LocalExecutionProvider();
-      
+        provider = new LocalExecutionProvider();
+        break;
       case "github-repository":
-        return new GitHubRepositoryExecutionProvider();
-      
+        provider = new GitHubRepositoryExecutionProvider();
+        break;
       case "e2b":
-        return new E2BExecutionProvider();
-      
+        provider = new E2BExecutionProvider();
+        break;
       case "vercel":
-        return new VercelExecutionProvider();
-      
+        provider = new VercelExecutionProvider();
+        break;
       case "github-codespaces":
-        return new GitHubCodespacesExecutionProvider();
-      
+        provider = new GitHubCodespacesExecutionProvider();
+        break;
       case "google-cloud-run":
-        return new GoogleCloudRunExecutionProvider();
-      
+        provider = new GoogleCloudRunExecutionProvider();
+        break;
       default:
         throw new ExecutionError(`Provider ${providerId} is not supported or does not exist.`);
     }
+
+    // Initialize so credential checks in init() actually run. Without this the
+    // provider is handed back unconfigured and every later call fails obscurely.
+    await provider.init();
+
+    return provider;
   }
 
   /**
@@ -1043,7 +1130,7 @@ export class ExecutionManager {
       const provider = await this.createProvider(providerId, "");
       // For cloud providers, check if they have API keys
       if (provider instanceof CloudExecutionProvider) {
-        return provider.isConfigured();
+        return (provider as any).isConfigured?.() ?? true;
       }
       // Local provider is always configured
       return true;

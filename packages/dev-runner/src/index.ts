@@ -53,6 +53,12 @@ export interface DevRunnerOptions {
   projectPath?: string;
   autoDetect?: boolean;
   projectType?: string;
+  /** Run `installDependencies` as part of the full cycle. */
+  autoInstall?: boolean;
+  /** Run `build` as part of the full cycle. */
+  autoBuild?: boolean;
+  /** Run `startDevServer` as part of the full cycle. */
+  autoStart?: boolean;
   forceInstall?: boolean;
   forceBuild?: boolean;
   forceStart?: boolean;
@@ -338,7 +344,7 @@ const PROJECT_TYPES: ProjectType[] = [
     name: 'Static HTML',
     language: 'HTML/CSS/JS',
     framework: 'Static',
-    packageManager: null,
+    packageManager: undefined,
     buildCommand: '',
     devCommand: '',
     startCommand: '',
@@ -608,9 +614,9 @@ export class DevRunner {
     
     try {
       // Détecter le type de projet si non spécifié
-      const projectType = options.projectType 
+      const projectType = (options.projectType 
         ? PROJECT_TYPES.find(pt => pt.type === options.projectType) 
-        : this.detectedProjectType;
+        : this.detectedProjectType) ?? undefined;
       
       if (!projectType) {
         const detectResult = await this.detectProjectType(path, options);
@@ -700,7 +706,7 @@ export class DevRunner {
   /**
    * Obtenir la commande d'installation
    */
-  private getInstallCommand(projectType: ProjectType | null): string | null {
+  private getInstallCommand(projectType: ProjectType | null | undefined): string | null {
     if (!projectType) return null;
     
     switch (projectType.packageManager) {
@@ -738,9 +744,9 @@ export class DevRunner {
     
     try {
       // Détecter le type de projet si non spécifié
-      const projectType = options.projectType 
+      const projectType = (options.projectType 
         ? PROJECT_TYPES.find(pt => pt.type === options.projectType) 
-        : this.detectedProjectType;
+        : this.detectedProjectType) ?? undefined;
       
       if (!projectType) {
         const detectResult = await this.detectProjectType(path, options);
@@ -838,9 +844,9 @@ export class DevRunner {
     
     try {
       // Détecter le type de projet si non spécifié
-      const projectType = options.projectType 
+      const projectType = (options.projectType 
         ? PROJECT_TYPES.find(pt => pt.type === options.projectType) 
-        : this.detectedProjectType;
+        : this.detectedProjectType) ?? undefined;
       
       if (!projectType) {
         const detectResult = await this.detectProjectType(path, options);
@@ -1139,7 +1145,7 @@ export class DevRunner {
         return startResult;
       }
 
-      GlobalEventBus.emit('dev-runner.restart.completed', { 
+      globalEventBus.emit('dev-runner.restart.completed', { 
         path,
         port: startResult.port,
         callId
@@ -1174,9 +1180,9 @@ export class DevRunner {
     
     try {
       // Détecter le type de projet si non spécifié
-      const projectType = options.projectType 
+      const projectType = (options.projectType 
         ? PROJECT_TYPES.find(pt => pt.type === options.projectType) 
-        : this.detectedProjectType;
+        : this.detectedProjectType) ?? undefined;
       
       if (!projectType) {
         const detectResult = await this.detectProjectType(path, options);

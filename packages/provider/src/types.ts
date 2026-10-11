@@ -150,3 +150,6 @@ export interface AIProvider {
 
   stream(options: StreamOptions): AsyncIterable<StreamChunk>;
 }
+
+// Re-exported so consumers can import the whole provider contract from here.
+export type { ModelInfo } from "./models";

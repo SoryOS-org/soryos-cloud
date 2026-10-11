@@ -12,9 +12,9 @@ import { z } from 'zod';
 // ID Types
 // ============================================================================
 
-export const IdSchema = (table: string) => z.string().brand<table>();
+export const IdSchema = <T extends string>(table: T) => z.string().brand<T>();
 
-export type Id<T> = z.infer<ReturnType<typeof IdSchema<T>>>;
+export type Id<T extends string> = z.infer<ReturnType<typeof IdSchema<T>>>;
 
 // ============================================================================
 // User Schema
@@ -413,28 +413,5 @@ export function isUser(obj: unknown): obj is User {
 // ============================================================================
 // Exports
 // ============================================================================
-
-export {
-  IdSchema,
-  UserSchema,
-  SessionSchema,
-  SessionStatusSchema,
-  MessageSchema,
-  MessageRoleSchema,
-  MessageEditSchema,
-  MessageReadSchema,
-  MessageBashSchema,
-  MessageToolSchema,
-  MessageSearchReplaceSchema,
-  MessageWebSearchSchema,
-  MessageMcpToolSchema,
-  MessageCodebaseSearchSchema,
-  MessageTodoSchema,
-  MessageImageSchema,
-  MessageAudioSchema,
-  MessageVideoSchema,
-  GitHubCredentialsSchema,
-  PaymentTransactionSchema,
-  TemplateSchema,
-  GlobalConfigSchema,
-};
+// All schemas above are declared with `export const` and therefore already
+// exported from this module. No re-export block is required here.

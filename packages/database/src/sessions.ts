@@ -322,10 +322,10 @@ export class SessionManager {
     // 86400000ms = 24 hours
     const cutoff = Date.now() - maxAgeMs;
     const sessions = await this.listSessions();
-    const oldSessions = sessions.filter(s => s._creationTime < cutoff);
+    const oldSessions = sessions.filter(s => (s._creationTime ?? 0) < cutoff);
     
     for (const session of oldSessions) {
-      await this.deleteSession(session._id);
+      await this.deleteSession(session.id);
     }
     
     return oldSessions.length;
@@ -348,9 +348,3 @@ export function getSessionManager(): SessionManager {
 export function createSessionManager(): SessionManager {
   return new SessionManager();
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export { SessionManager };

@@ -6,7 +6,7 @@
  * Provides real-time synchronization for SoryOS-Cloud
  */
 
-import { Session, Message, MessageRole, SessionStatus, DatabaseEvent, DatabaseEventType, Subscription, SubscriptionOptions } from './types';
+import { Session, Message, MessageRole, SessionStatus, DatabaseEvent, DatabaseEventType, Subscription, SubscriptionOptions, StoredSession, StoredMessage } from './types';
 
 // ============================================================================
 // Real-time Database Interface
@@ -14,28 +14,28 @@ import { Session, Message, MessageRole, SessionStatus, DatabaseEvent, DatabaseEv
 
 export interface RealTimeDatabase {
   // Session operations
-  createSession(session: Omit<Session, '_id' | '_creationTime' | 'id'>): Promise<Session>;
-  getSession(id: string): Promise<Session | null>;
-  updateSession(id: string, updates: Partial<Session>): Promise<Session>;
+  createSession(session: Omit<Session, '_id' | '_creationTime' | 'id'>): Promise<StoredSession>;
+  getSession(id: string): Promise<StoredSession | null>;
+  updateSession(id: string, updates: Partial<Session>): Promise<StoredSession>;
   deleteSession(id: string): Promise<void>;
-  listSessions(options?: { createdBy?: string; limit?: number }): Promise<Session[]>;
+  listSessions(options?: { createdBy?: string; limit?: number }): Promise<StoredSession[]>;
   
   // Message operations
-  addMessage(message: Omit<Message, '_id' | '_creationTime' | 'id'>): Promise<Message>;
-  getMessage(id: string): Promise<Message | null>;
-  updateMessage(id: string, updates: Partial<Message>): Promise<Message>;
+  addMessage(message: Omit<Message, '_id' | '_creationTime' | 'id'>): Promise<StoredMessage>;
+  getMessage(id: string): Promise<StoredMessage | null>;
+  updateMessage(id: string, updates: Partial<Message>): Promise<StoredMessage>;
   deleteMessage(id: string): Promise<void>;
-  listMessages(sessionId: string, options?: { limit?: number; order?: 'asc' | 'desc' }): Promise<Message[]>;
+  listMessages(sessionId: string, options?: { limit?: number; order?: 'asc' | 'desc' }): Promise<StoredMessage[]>;
   
   // Subscriptions
-  subscribeToSession(sessionId: string, callback: (session: Session | null) => void): Subscription;
-  subscribeToMessages(sessionId: string, callback: (messages: Message[]) => void): Subscription;
+  subscribeToSession(sessionId: string, callback: (session: StoredSession | null) => void): Subscription;
+  subscribeToMessages(sessionId: string, callback: (messages: StoredMessage[]) => void): Subscription;
   subscribeToEvents(callback: (event: DatabaseEvent) => void): Subscription;
   
   // Real-time streaming
-  onMessageAdded(callback: (message: Message) => void): Subscription;
-  onMessageUpdated(callback: (message: Message) => void): Subscription;
-  onSessionUpdated(callback: (session: Session) => void): Subscription;
+  onMessageAdded(callback: (message: StoredMessage) => void): Subscription;
+  onMessageUpdated(callback: (message: StoredMessage) => void): Subscription;
+  onSessionUpdated(callback: (session: StoredSession) => void): Subscription;
   
   // Event emitter
   emitEvent(type: DatabaseEventType, data?: any): void;
@@ -47,14 +47,14 @@ export interface RealTimeDatabase {
 // ============================================================================
 
 class InMemoryRealTimeDatabase implements RealTimeDatabase {
-  private sessions: Map<string, Session> = new Map();
-  private messages: Map<string, Message[]> = new Map();
-  private sessionSubscriptions: Map<string, Set<(session: Session | null) => void>> = new Map();
-  private messageSubscriptions: Map<string, Set<(messages: Message[]) => void>> = new Map();
+  private sessions: Map<string, StoredSession> = new Map();
+  private messages: Map<string, StoredMessage[]> = new Map();
+  private sessionSubscriptions: Map<string, Set<(session: StoredSession | null) => void>> = new Map();
+  private messageSubscriptions: Map<string, Set<(messages: StoredMessage[]) => void>> = new Map();
   private eventListeners: Map<DatabaseEventType, Set<(event: DatabaseEvent) => void>> = new Map();
-  private messageAddedListeners: Set<(message: Message) => void> = new Set();
-  private messageUpdatedListeners: Set<(message: Message) => void> = new Set();
-  private sessionUpdatedListeners: Set<(session: Session) => void> = new Set();
+  private messageAddedListeners: Set<(message: StoredMessage) => void> = new Set();
+  private messageUpdatedListeners: Set<(message: StoredMessage) => void> = new Set();
+  private sessionUpdatedListeners: Set<(session: StoredSession) => void> = new Set();
 
   constructor() {
     // Initialize event types
@@ -77,11 +77,11 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
   // Session Operations
   // ==========================================================================
 
-  async createSession(sessionData: Omit<Session, '_id' | '_creationTime' | 'id'>): Promise<Session> {
+  async createSession(sessionData: Omit<Session, '_id' | '_creationTime' | 'id'>): Promise<StoredSession> {
     const id = this.generateId();
-    const session: Session = {
+    const session: StoredSession = {
       ...sessionData,
-      _id: id as any,
+      _id: id as unknown as StoredSession['_id'],
       _creationTime: Date.now(),
       id,
       status: sessionData.status || 'IN_PROGRESS',
@@ -96,11 +96,11 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     return session;
   }
 
-  async getSession(id: string): Promise<Session | null> {
+  async getSession(id: string): Promise<StoredSession | null> {
     return this.sessions.get(id) || null;
   }
 
-  async updateSession(id: string, updates: Partial<Session>): Promise<Session> {
+  async updateSession(id: string, updates: Partial<Session>): Promise<StoredSession> {
     const session = this.sessions.get(id);
     if (!session) {
       throw new Error(`Session ${id} not found`);
@@ -134,7 +134,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     this.sessionSubscriptions.delete(id);
   }
 
-  async listSessions(options?: { createdBy?: string; limit?: number }): Promise<Session[]> {
+  async listSessions(options?: { createdBy?: string; limit?: number }): Promise<StoredSession[]> {
     let sessions = Array.from(this.sessions.values());
     
     if (options?.createdBy) {
@@ -152,11 +152,11 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
   // Message Operations
   // ==========================================================================
 
-  async addMessage(messageData: Omit<Message, '_id' | '_creationTime' | 'id'>): Promise<Message> {
+  async addMessage(messageData: Omit<Message, '_id' | '_creationTime' | 'id'>): Promise<StoredMessage> {
     const id = this.generateId();
-    const message: Message = {
+    const message: StoredMessage = {
       ...messageData,
-      _id: id as any,
+      _id: id as unknown as StoredMessage['_id'],
       _creationTime: Date.now(),
       id,
       createdAt: Date.now(),
@@ -190,7 +190,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     return message;
   }
 
-  async getMessage(id: string): Promise<Message | null> {
+  async getMessage(id: string): Promise<StoredMessage | null> {
     for (const [, messages] of this.messages) {
       const message = messages.find(m => m.id === id || m._id === id);
       if (message) return message;
@@ -198,18 +198,19 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     return null;
   }
 
-  async updateMessage(id: string, updates: Partial<Message>): Promise<Message> {
-    let updatedMessage: Message | null = null;
+  async updateMessage(id: string, updates: Partial<Message>): Promise<StoredMessage> {
+    let updatedMessage: StoredMessage | null = null;
     
     for (const [sessionId, messages] of this.messages) {
       const index = messages.findIndex(m => m.id === id || m._id === id);
       if (index !== -1) {
         const message = messages[index];
-        updatedMessage = { ...message, ...updates, _id: message._id };
-        messages[index] = updatedMessage;
+        const next: StoredMessage = { ...message, ...updates, _id: message._id };
+        updatedMessage = next;
+        messages[index] = next;
         
-        this.emitEvent('message.updated', updatedMessage);
-        this.messageUpdatedListeners.forEach(callback => callback(updatedMessage));
+        this.emitEvent('message.updated', next);
+        this.messageUpdatedListeners.forEach(callback => callback(next));
         
         // Notify message subscribers for this session
         const callbacks = this.messageSubscriptions.get(sessionId);
@@ -245,7 +246,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     throw new Error(`Message ${id} not found`);
   }
 
-  async listMessages(sessionId: string, options?: { limit?: number; order?: 'asc' | 'desc' }): Promise<Message[]> {
+  async listMessages(sessionId: string, options?: { limit?: number; order?: 'asc' | 'desc' }): Promise<StoredMessage[]> {
     const messages = this.messages.get(sessionId) || [];
     const sorted = [...messages].sort((a, b) => 
       options?.order === 'asc' ? a._creationTime - b._creationTime : b._creationTime - a._creationTime
@@ -261,7 +262,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
   // Subscription Operations
   // ==========================================================================
 
-  subscribeToSession(sessionId: string, callback: (session: Session | null) => void): Subscription {
+  subscribeToSession(sessionId: string, callback: (session: StoredSession | null) => void): Subscription {
     if (!this.sessionSubscriptions.has(sessionId)) {
       this.sessionSubscriptions.set(sessionId, new Set());
     }
@@ -284,7 +285,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     };
   }
 
-  subscribeToMessages(sessionId: string, callback: (messages: Message[]) => void): Subscription {
+  subscribeToMessages(sessionId: string, callback: (messages: StoredMessage[]) => void): Subscription {
     if (!this.messageSubscriptions.has(sessionId)) {
       this.messageSubscriptions.set(sessionId, new Set());
     }
@@ -331,7 +332,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     };
   }
 
-  onMessageAdded(callback: (message: Message) => void): Subscription {
+  onMessageAdded(callback: (message: StoredMessage) => void): Subscription {
     this.messageAddedListeners.add(callback);
     return {
       unsubscribe: () => this.messageAddedListeners.delete(callback),
@@ -339,7 +340,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     };
   }
 
-  onMessageUpdated(callback: (message: Message) => void): Subscription {
+  onMessageUpdated(callback: (message: StoredMessage) => void): Subscription {
     this.messageUpdatedListeners.add(callback);
     return {
       unsubscribe: () => this.messageUpdatedListeners.delete(callback),
@@ -347,7 +348,7 @@ class InMemoryRealTimeDatabase implements RealTimeDatabase {
     };
   }
 
-  onSessionUpdated(callback: (session: Session) => void): Subscription {
+  onSessionUpdated(callback: (session: StoredSession) => void): Subscription {
     this.sessionUpdatedListeners.add(callback);
     return {
       unsubscribe: () => this.sessionUpdatedListeners.delete(callback),
@@ -434,9 +435,3 @@ export function getRealTimeDatabase(): RealTimeDatabase {
 export function createRealTimeDatabase(): RealTimeDatabase {
   return new InMemoryRealTimeDatabase();
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export { RealTimeDatabase, InMemoryRealTimeDatabase };

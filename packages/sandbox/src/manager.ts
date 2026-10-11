@@ -92,6 +92,11 @@ class SandboxManager {
     return entry;
   }
 
+  // Get the provider bound to a session, if a sandbox is already active
+  getActiveProviderId(sessionId: string): ProviderId | undefined {
+    return this.activeSandboxes.get(sessionId)?.providerId;
+  }
+
   // Switch Provider for Session
   async switchProvider(
     sessionId: string,

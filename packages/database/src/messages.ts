@@ -424,8 +424,8 @@ export class MessageManager {
    */
   async getToolMessages(sessionId: string): Promise<Message[]> {
     const messages = await this.listMessages(sessionId);
-    return messages.filter(m => 
-      m.read || m.edit || m.bash || m.tool || m.searchReplace || m.mcpTool
+    return messages.filter(m =>
+      m.read || m.edits || m.bash || m.tool || m.searchReplace || m.mcpTool
     );
   }
 
@@ -475,7 +475,7 @@ export class MessageManager {
   async clearMessages(sessionId: string): Promise<void> {
     const messages = await this.listMessages(sessionId);
     for (const message of messages) {
-      await this.deleteMessage(message._id);
+      await this.deleteMessage(message.id);
     }
   }
 }
@@ -496,9 +496,3 @@ export function getMessageManager(): MessageManager {
 export function createMessageManager(): MessageManager {
   return new MessageManager();
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export { MessageManager };

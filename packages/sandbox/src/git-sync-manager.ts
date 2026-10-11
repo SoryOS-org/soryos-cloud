@@ -3,6 +3,14 @@ import { ProviderId, GitSyncState, SessionWorkspaceContext } from "./types";
 
 export class GitSyncManager {
   /**
+   * Resolve the ProviderId bound to a session's active sandbox.
+   * Falls back to `local` when no sandbox has been created yet.
+   */
+  private resolveProviderId(sessionId: string): ProviderId {
+    return sandboxManager.getActiveProviderId(sessionId) ?? "local";
+  }
+
+  /**
    * Get current Git state for a session workspace
    */
   async getGitStatus(
@@ -138,12 +146,13 @@ export class GitSyncManager {
    */
   async sync(
     sessionId: string,
-    provider: any,
-    session: any
+    provider?: unknown,
+    session?: { providerId?: ProviderId }
   ): Promise<{ success: boolean; commitHash?: string; message?: string }> {
     // Full sync - commit and push current changes
+    const providerId = session?.providerId ?? this.resolveProviderId(sessionId);
     const commitMessage = `soryos-code: sync session ${sessionId.slice(0, 8)}`;
-    return this.commitAndPush(sessionId, session.providerId as ProviderId, commitMessage);
+    return this.commitAndPush(sessionId, providerId, commitMessage);
   }
 
   /**
@@ -151,9 +160,9 @@ export class GitSyncManager {
    */
   async getStatus(
     sessionId: string,
-    provider: any
+    provider?: unknown
   ): Promise<GitSyncState> {
-    return this.getGitStatus(sessionId, session.providerId as ProviderId);
+    return this.getGitStatus(sessionId, this.resolveProviderId(sessionId));
   }
 
   /**
@@ -161,10 +170,11 @@ export class GitSyncManager {
    */
   async pull(
     sessionId: string,
-    provider: any
+    provider?: unknown
   ): Promise<{ success: boolean; message?: string }> {
+    const providerId = this.resolveProviderId(sessionId);
     try {
-      const status = await this.getGitStatus(sessionId, session.providerId as ProviderId);
+      const status = await this.getGitStatus(sessionId, providerId);
       if (!status.remoteRepoUrl) {
         return { success: false, message: "No remote repository configured" };
       }
@@ -173,7 +183,7 @@ export class GitSyncManager {
         sessionId,
         "git pull origin HEAD",
         {},
-        session.providerId as ProviderId
+        providerId
       );
       
       return { success: true, message: "Pulled latest changes" };
@@ -190,10 +200,10 @@ export class GitSyncManager {
    */
   async push(
     sessionId: string,
-    provider: any,
-    commitMessage: string
+    provider?: unknown,
+    commitMessage?: string
   ): Promise<{ success: boolean; commitHash?: string; message?: string }> {
-    return this.commitAndPush(sessionId, session.providerId as ProviderId, commitMessage);
+    return this.commitAndPush(sessionId, this.resolveProviderId(sessionId), commitMessage);
   }
 
   /**
@@ -263,9 +273,10 @@ export class GitSyncManager {
    */
   async commit(
     sessionId: string,
-    provider: any,
-    commitMessage: string
+    provider?: unknown,
+    commitMessage?: string
   ): Promise<{ success: boolean; commitHash?: string; message?: string }> {
+    const providerId = this.resolveProviderId(sessionId);
     try {
       const branchName = `soryos-code/${sessionId.slice(0, 8)}`;
 
@@ -274,7 +285,7 @@ export class GitSyncManager {
         sessionId,
         "git init && git config user.name 'SoryOS-Code Agent' && git config user.email 'agent@soryos.code'",
         {},
-        session.providerId as ProviderId
+        providerId
       );
 
       // Checkout or create session branch
@@ -282,18 +293,18 @@ export class GitSyncManager {
         sessionId,
         `git checkout -b ${branchName} 2>/dev/null || git checkout ${branchName}`,
         {},
-        session.providerId as ProviderId
+        providerId
       );
 
       // Add files respecting .gitignore
-      await sandboxManager.executeCommand(sessionId, "git add .", {}, session.providerId as ProviderId);
+      await sandboxManager.executeCommand(sessionId, "git add .", {}, providerId);
 
       // Commit
       const commitRes = await sandboxManager.executeCommand(
         sessionId,
-        `git commit -m "${commitMessage.replace(/"/g, '\\"')}" --allow-empty`,
+        `git commit -m "${(commitMessage || 'soryos-code: checkpoint').replace(/"/g, '\\"')}" --allow-empty`,
         {},
-        session.providerId as ProviderId
+        providerId
       );
 
       if (!commitRes.isError) {
@@ -301,7 +312,7 @@ export class GitSyncManager {
           sessionId,
           "git rev-parse HEAD",
           {},
-          session.providerId as ProviderId
+          providerId
         );
         return {
           success: true,

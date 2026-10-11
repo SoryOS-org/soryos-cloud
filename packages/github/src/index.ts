@@ -490,23 +490,22 @@ ${config.license || 'MIT'}
    */
   static generateREADME(options: AutoREADMEOptions): string {
     const config: READMETemplateConfig = {
-      type: options.template?.type || 'generic',
+      type: typeof options.template === 'string' ? options.template : options.template?.type || 'generic',
       projectName: options.projectName,
       description: options.description,
       author: options.author,
       version: options.version,
       license: options.license,
-      dependencies: options.technologies?.reduce((acc, tech) => {
+      dependencies: options.technologies ? options.technologies.reduce((acc, tech) => {
         acc[tech] = 'latest';
         return acc;
-      }, {} as Record<string, string>),
-      scripts: options.installation ? { 'dev': options.installation } : undefined,
+      }, {} as Record<string, string>) : undefined,
       features: options.features,
       installation: options.installation,
       usage: options.usage,
       contributing: options.contributing,
-      customContent: options.customContent,
-      customSections: options.customContent ? { 'Custom': options.customContent } : undefined,
+      customContent: options.customContent || (typeof options.template !== 'string' ? options.template?.customContent : undefined),
+      customSections: options.customSections || (typeof options.template !== 'string' ? options.template?.customSections : undefined),
     };
 
     const templateType = typeof options.template === 'string' 
@@ -646,8 +645,8 @@ export class GitHubManager {
       autoInit: true,
     });
 
-    if (!repoResult.success) {
-      return { ...repoResult, readmeCreated: false } as GitHubOperationResult;
+    if (!repoResult.success || !repoResult.data) {
+      return { ...repoResult, readmeCreated: false } as GitHubOperationResult<RepositoryInfo & { readmeCreated: boolean }>;
     }
 
     // Create README
@@ -659,11 +658,12 @@ export class GitHubManager {
     );
 
     return {
-      ...repoResult,
+      success: repoResult.success,
       data: {
-        ...repoResult.data!,
+        ...repoResult.data,
         readmeCreated: readmeResult.success,
       },
+      error: repoResult.error,
     } as GitHubOperationResult<RepositoryInfo & { readmeCreated: boolean }>;
   }
 
