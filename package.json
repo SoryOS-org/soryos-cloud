@@ -1,17 +1,1 @@
-{
-  "name": "soryos-code",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "bun run --cwd apps/web dev",
-    "start": "bun run --cwd apps/web start",
-    "build": "bun run --cwd apps/web build",
-    "typecheck": "bun run --cwd apps/web typecheck",
-    "test:engine": "bun run --cwd apps/web test:engine"
-  },
-  "packageManager": "bun@1.3.6"
-}
+{"name":"soryos-code","version":"1.0.0","private":true,"workspaces":["apps/*","packages/*"],"scripts":{"dev":"bun run --cwd apps/web dev","start":"bun run --cwd apps/web start","build":"bun run --cwd apps/web build","typecheck":"bun run --cwd apps/web typecheck","test:engine":"bun run --cwd apps/web test:engine"}}
