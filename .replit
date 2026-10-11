@@ -13,11 +13,7 @@ env = { "CI" = "true" }
 runButton = "SoryOS Cloud Preview"
 
 [agent]
-# Runtime is declared via modules = ["bun"] above. Keeping the nodejs stack
-# label here because Replit Agent does not document a BUN stack value.
+# Runtime is declared via modules = ["bun"] above. Replit Agent does not
+# document a BUN value for this key, so the nodejs label is kept deliberately.
 stack = "NODEJS_WORKSPACE"
 expertMode = true
-
-[postMerge]
-path = "scripts/post-merge.sh"
-timeoutMs = 20000
